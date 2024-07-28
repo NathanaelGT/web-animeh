@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "allowJs": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"],
+      "~a/*": ["./src/assets/*"],
+      "~c/*": ["./src/client/*"],
+      "~s/*": ["./src/server/*"],
+      "@/*": ["./src/client/components/*"]
+    }
+  },
+  "include": ["./tailwind.config.js", "src/**/*.ts", "src/**/*.tsx", "src/shared/**/*.ts"],
+  "exclude": ["src/server/**/*.ts", "src/server/**/*.tsx"]
+}

@@ -1,0 +1,25 @@
+{
+  "files": [],
+  "compilerOptions": {
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./src/*"],
+      "~a/*": ["./src/assets/*"],
+      "~c/*": ["./src/client/*"],
+      "~s/*": ["./src/server/*"],
+      "@/*": ["./src/client/components/*"]
+    }
+  },
+  "references": [
+    {
+      "path": "./tsconfig.bundler.json"
+    },
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}

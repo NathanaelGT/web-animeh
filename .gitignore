@@ -1,0 +1,24 @@
+node_modules
+dist
+*.local
+.env
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Database
+db.sqlite
+
+# Vite
+vite.config.*.timestamp-*
+
+# Console Ninja
+unknown
