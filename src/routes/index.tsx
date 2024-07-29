@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
-import { logger } from '~/client/utils/logger'
-import { Image } from '~/client/components/Image'
+import { logger } from '~c/utils'
+import { Image } from '~c/components/Image'
 
 export const Route = createFileRoute('/')({
   component: Index,

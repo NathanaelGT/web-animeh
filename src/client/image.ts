@@ -3,7 +3,7 @@ import mime from 'mime/lite'
 import SuperJSON from 'superjson'
 import { wsClient } from '~c/trpc'
 import { imageIsLoaded, urlMap } from '~c/hooks/useImage'
-import { base64ToBlob } from '~c/utils/base64ToBlob'
+import { base64ToBlob } from '~c/utils'
 import type { ImageSubscriptionProcedure } from '~s/trpc-procedures/image'
 import type { TRPCResponse } from '~/shared/utils/types'
 
