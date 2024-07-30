@@ -34,5 +34,5 @@
       "~s/*": ["./src/server/*"]
     }
   },
-  "include": ["src/server/**/*", "src/shared/**/*.ts", "src/env.ts"]
+  "include": ["src/server/**/*", "src/shared/**/*.ts", "src/env.ts", "src/shared/profile"]
 }

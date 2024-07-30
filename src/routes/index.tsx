@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
 import { logger } from '~c/utils'
-import { Image } from '~c/components/Image'
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -41,7 +40,9 @@ function Index() {
       <p>server render at: {(serverDate / 1000).toFixed(3)}</p>
       <p>client render at: {(firstRenderAt / 1000).toFixed(3)}</p>
 
-      <Image src="141251l.webp" />
+      {Array.from({ length: 50 }).map((_, i) => (
+        <p key={i}>yey</p>
+      ))}
     </div>
   )
 }

@@ -11,6 +11,7 @@ import { isObject } from '~/shared/utils/object'
 import { serverType } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
+import type { Profile } from '~s/db/schema'
 
 const globalForServer = globalThis as unknown as {
   server?: Bun.Server
@@ -65,6 +66,7 @@ if (firstTime) {
 
 export type WebSocketData = {
   id: string
+  profile: Profile
 }
 
 const server = Bun.serve<WebSocketData & BunWSClientCtx>({
@@ -147,10 +149,10 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
     : websocket,
 
   fetch: argv.log
-    ? (request, server) => {
+    ? async (request, server) => {
         const startNs = Bun.nanoseconds()
 
-        const response = httpHandler(request, server)
+        const response = await httpHandler(request, server)
 
         if (response === undefined) {
           return

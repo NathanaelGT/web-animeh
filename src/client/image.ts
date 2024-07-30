@@ -90,7 +90,7 @@ wsClient.request(
   {
     type: 'subscription',
     path: 'images',
-    id: 0,
+    id: 'images' as unknown as number,
     input: '',
     context: {},
     signal: null,

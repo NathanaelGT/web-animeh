@@ -1,12 +1,13 @@
 import { z } from 'zod'
-import { isProduction } from '~s/env' with { type: 'macro' }
+
+export const headerPositions = ['static', 'sticky', 'hybrid'] as const
 
 export const settingsSchema = z.object({
-  //
+  headerPosition: z.enum(headerPositions).catch('hybrid'),
 })
 
 export const defaultSettings = () => {
-  if (isProduction()) {
+  if (import.meta.env.PROD) {
     return settingsSchema.parse({})
   } else {
     try {

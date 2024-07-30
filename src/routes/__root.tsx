@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
-import { createRootRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
+import { Header } from '@/Header'
 
 const TanStackRouterDevtools = import.meta.env.PROD
   ? null
@@ -26,16 +27,13 @@ export const Route = createRootRoute({
     })
 
     return (
-      <>
-        <div className="flex gap-2 p-2">
-          <Link to="/" className="[&.active]:font-bold">
-            Home
-          </Link>
-        </div>
-        <hr />
+      <div className="flex flex-col bg-background">
+        <Header />
+
         <Outlet />
+
         {TanStackRouterDevtools && <TanStackRouterDevtools />}
-      </>
+      </div>
     )
   },
 })

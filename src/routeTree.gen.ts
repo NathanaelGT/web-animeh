@@ -11,14 +11,33 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as PengaturanImport } from './routes/_pengaturan'
 import { Route as IndexImport } from './routes/index'
+import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
+import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
 
 // Create/Update Routes
+
+const PengaturanRoute = PengaturanImport.update({
+  id: '/_pengaturan',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
+
+const PengaturanPengaturanIndexRoute = PengaturanPengaturanIndexImport.update({
+  path: '/pengaturan/',
+  getParentRoute: () => PengaturanRoute,
+} as any)
+
+const PengaturanPengaturanTampilanRoute =
+  PengaturanPengaturanTampilanImport.update({
+    path: '/pengaturan/tampilan',
+    getParentRoute: () => PengaturanRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -31,12 +50,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/_pengaturan': {
+      id: '/_pengaturan'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof PengaturanImport
+      parentRoute: typeof rootRoute
+    }
+    '/_pengaturan/pengaturan/tampilan': {
+      id: '/_pengaturan/pengaturan/tampilan'
+      path: '/pengaturan/tampilan'
+      fullPath: '/pengaturan/tampilan'
+      preLoaderRoute: typeof PengaturanPengaturanTampilanImport
+      parentRoute: typeof PengaturanImport
+    }
+    '/_pengaturan/pengaturan/': {
+      id: '/_pengaturan/pengaturan/'
+      path: '/pengaturan'
+      fullPath: '/pengaturan'
+      preLoaderRoute: typeof PengaturanPengaturanIndexImport
+      parentRoute: typeof PengaturanImport
+    }
   }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({ IndexRoute })
+export const routeTree = rootRoute.addChildren({
+  IndexRoute,
+  PengaturanRoute: PengaturanRoute.addChildren({
+    PengaturanPengaturanTampilanRoute,
+    PengaturanPengaturanIndexRoute,
+  }),
+})
 
 /* prettier-ignore-end */
 
@@ -46,11 +92,27 @@ export const routeTree = rootRoute.addChildren({ IndexRoute })
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/"
+        "/",
+        "/_pengaturan"
       ]
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/_pengaturan": {
+      "filePath": "_pengaturan.tsx",
+      "children": [
+        "/_pengaturan/pengaturan/tampilan",
+        "/_pengaturan/pengaturan/"
+      ]
+    },
+    "/_pengaturan/pengaturan/tampilan": {
+      "filePath": "_pengaturan/pengaturan/tampilan.tsx",
+      "parent": "/_pengaturan"
+    },
+    "/_pengaturan/pengaturan/": {
+      "filePath": "_pengaturan/pengaturan/index.tsx",
+      "parent": "/_pengaturan"
     }
   }
 }
