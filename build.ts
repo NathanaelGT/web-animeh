@@ -41,10 +41,7 @@ await Promise.all([
               (async () => {
                 const jsPath = path.join('./dist/public', jsRelPath)
 
-                const js = (await fs.readFile(jsPath, { encoding: 'utf-8' }))
-                  .trim()
-                  .replace(/\r?\n/g, '\\n')
-                  .replaceAll('``', '""')
+                const js = (await fs.readFile(jsPath, { encoding: 'utf-8' })).trim()
 
                 indexHtml = indexHtml.split(identifier).join(`<script type="module">${js}</script>`)
 
