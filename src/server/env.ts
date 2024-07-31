@@ -1,9 +1,14 @@
-import { env } from '~/env'
+import z from 'zod'
 
-export const mode = () => env.MODE
+const _mode = z
+  .enum(['development', 'test', 'production'])
+  .default('production')
+  .parse(process.env.MODE)
 
-export const isDevelopment = () => env.MODE === 'development'
+export const mode = () => _mode
 
-export const isTest = () => env.MODE === 'test'
+export const isDevelopment = () => _mode === 'development'
 
-export const isProduction = () => env.MODE === 'production'
+export const isTest = () => _mode === 'test'
+
+export const isProduction = () => _mode === 'production'

@@ -1,5 +1,4 @@
 import { createEnv } from '@t3-oss/env-core'
-import { z } from 'zod'
 
 export const env = createEnv({
   shared: {
@@ -7,7 +6,7 @@ export const env = createEnv({
   },
 
   server: {
-    MODE: z.enum(['development', 'test', 'production']).default('production'),
+    //
   },
 
   client: {
