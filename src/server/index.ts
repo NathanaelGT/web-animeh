@@ -8,6 +8,7 @@ import { formatNs } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
 import { format } from '~/shared/utils/date'
 import { isObject } from '~/shared/utils/object'
+import { seed } from '~s/anime/seed'
 import { serverType } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
@@ -246,3 +247,5 @@ if (firstTime) {
 if (!argv.log) {
   log('server', 'Silent Mode')
 }
+
+seed()

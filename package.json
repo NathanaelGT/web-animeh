@@ -33,9 +33,11 @@
     "lucide-react": "^0.417.0",
     "mime": "^4.0.4",
     "mitt": "^3.0.1",
+    "p-limit": "^6.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.52.1",
+    "redaxios": "^0.5.1",
     "superjson": "^2.2.1",
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
@@ -43,6 +45,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@libsql/client": "^0.8.0",
     "@tanstack/router-cli": "^1.37.0",
     "@tanstack/router-devtools": "^1.40.0",
     "@tanstack/router-plugin": "^1.39.13",
