@@ -10,8 +10,6 @@ import { profiles } from '~s/db/schema'
 import { defaultSettings, parse } from '~/shared/profile/settings'
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { WebSocketData } from '~s/index'
-import { formatNs } from './utils/time'
-import { logger } from './utils/logger'
 
 let indexHtml: Buffer
 
@@ -47,7 +45,7 @@ export const httpHandler = async (
     let profile = await db.query.profiles.findFirst({
       where(profiles, { eq }) {
         // baru pertama kali, belum ada profil yang dipilih
-        if (profileId === '') {
+        if (!profileId) {
           return undefined
         }
 
