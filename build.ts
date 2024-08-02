@@ -16,7 +16,7 @@ log(
   `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`,
 )
 
-await $`rm -rf ./dist && mkdir -p ./dist/drizzle`.quiet().catch(handleError)
+await $`rm -rf ./dist && mkdir ./dist`.quiet().catch(handleError)
 
 let appVersion = ''
 
@@ -182,7 +182,28 @@ await Promise.all([
       })
     }),
 
-  $`cp -r ./drizzle ./dist`.quiet(),
+  fs.readdir('./drizzle', { recursive: true, withFileTypes: true }).then(async dirents => {
+    const prefixLength = ('drizzle' + path.sep).length
+
+    const promises = dirents
+      .map(dirent => {
+        const filePath = (dirent.parentPath + path.sep + dirent.name).slice(prefixLength)
+
+        if (
+          (filePath.startsWith('meta') && filePath.endsWith('_snapshot.json')) ||
+          dirent.isDirectory()
+        ) {
+          return
+        }
+
+        return fs.cp(path.join('./drizzle', filePath), path.join('./dist/db', filePath), {
+          recursive: true,
+        })
+      })
+      .filter(promise => promise !== undefined)
+
+    return Promise.all(promises)
+  }),
 ]).catch(handleError)
 
 type File = {
@@ -245,6 +266,8 @@ async function handleError(e: any) {
           : 'An error occurred'
 
   log(`\n\x1b[31m\x1b[7mERROR\x1b[0m\x1b[31m\x1b[0m ${message}\x1b[0m\n`)
+
+  console.error(e)
 
   process.exit(1)
 }
