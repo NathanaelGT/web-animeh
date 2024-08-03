@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "223cbb02-cbe9-4505-b0b0-67360dbaf4b1",
-  "prevId": "4f2d0e5e-31c3-4cfe-9ff1-61df460c1d20",
+  "id": "17f63c1e-c0dc-4192-8c52-e6b27977333b",
+  "prevId": "223cbb02-cbe9-4505-b0b0-67360dbaf4b1",
   "tables": {
     "anime": {
       "name": "anime",
@@ -33,6 +33,20 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "japanese_title": {
+          "name": "japanese_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "english_title": {
+          "name": "english_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "synopsis": {
@@ -166,6 +180,95 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "anime_to_anime_genres": {
+      "name": "anime_to_anime_genres",
+      "columns": {
+        "anime_id": {
+          "name": "anime_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "genre_id": {
+          "name": "genre_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anime_to_anime_genres_anime_id_anime_id_fk": {
+          "name": "anime_to_anime_genres_anime_id_anime_id_fk",
+          "tableFrom": "anime_to_anime_genres",
+          "tableTo": "anime",
+          "columnsFrom": [
+            "anime_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "anime_to_anime_genres_genre_id_genres_id_fk": {
+          "name": "anime_to_anime_genres_genre_id_genres_id_fk",
+          "tableFrom": "anime_to_anime_genres",
+          "tableTo": "genres",
+          "columnsFrom": [
+            "genre_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anime_to_anime_genres_anime_id_genre_id_pk": {
+          "columns": [
+            "anime_id",
+            "genre_id"
+          ],
+          "name": "anime_to_anime_genres_anime_id_genre_id_pk"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "genres": {
+      "name": "genres",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "genres_name_unique": {
+          "name": "genres_name_unique",
+          "columns": [
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
