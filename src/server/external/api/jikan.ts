@@ -1,6 +1,6 @@
 import { JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
 import PQueue from 'p-queue'
-import axios from 'redaxios'
+import axios from 'axios'
 
 // TODO: coba lebih manfaatkan rate limitnya jikan
 export const jikanQueue = new PQueue({
