@@ -32,6 +32,15 @@ const config: DrizzleConfig<typeof schema> = {
   schema,
 }
 
+if (!isProduction()) {
+  config.logger = {
+    logQuery(query, params) {
+      // @ts-ignore internal query logging
+      logger.__internal__query(query, { params })
+    },
+  }
+}
+
 export const db = drizzle(sqlite, config)
 
 if (isProduction()) {
@@ -43,12 +52,5 @@ if (isProduction()) {
     })
 
     fs.promises.rmdir(migrationsFolder, { recursive: true })
-  }
-} else {
-  config.logger = {
-    logQuery(query, params) {
-      // @ts-ignore internal query logging
-      logger.__internal__query(query, { params })
-    },
   }
 }

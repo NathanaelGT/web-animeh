@@ -177,7 +177,10 @@ if (!isProduction()) {
 
 if (firstTime) {
   process.on('uncaughtException', error => {
-    logger.error('Uncaught Exception: ' + error.message, { error })
+    logger.error('Uncaught Exception: ' + error.message, {
+      error,
+      stacktraces: error.stack?.split('\n'),
+    })
 
     if (isProduction()) {
       process.exit(1)
@@ -185,14 +188,18 @@ if (firstTime) {
   })
 
   process.on('unhandledRejection', reason => {
+    const context: NonNullable<Parameters<typeof logger.error>[1]> = { reason }
+
     let message = 'Unhandled Rejection'
     if (reason instanceof Error) {
+      context.stacktraces = reason.stack?.split('\n')
+
       message += ': ' + reason.message
     } else if (!isProduction() && reason instanceof BuildMessage) {
       message += ': ' + reason.name + ': ' + reason.message
     }
 
-    logger.error(message, { reason })
+    logger.error(message, context)
 
     if (isProduction()) {
       process.exit(1)

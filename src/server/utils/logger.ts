@@ -39,12 +39,10 @@ type Level = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'
 type Context = Record<string, any> & {
   elapsedNs?: number
   client?: WebSocketData
-}
-type InternalContext = Context & {
   stacktraces?: string[]
 }
 
-const writeToConsole = (date: string, level: Level, message: string, context: InternalContext) => {
+const writeToConsole = (date: string, level: Level, message: string, context: Context) => {
   if (!argv.log && level !== 'ERROR') {
     return
   }
@@ -82,7 +80,7 @@ const writeToFile = async (
   date: string,
   level: Level,
   message: string,
-  context: InternalContext,
+  context: Context,
   logPath: string,
   stringify: (obj: Record<string, unknown>) => string,
 ) => {
@@ -109,15 +107,13 @@ const log = (
   fileLogPath = logPath,
   stringifyFn = stringify,
 ) => {
-  const stackTraces = new Error().stack
-    ?.split('\n')
-    .slice(3)
-    .filter(caller => {
-      if (isProduction()) {
-        return !caller.includes('moduleEvaluation')
+  const stackTraces = (context.stacktraces ?? new Error().stack?.split('\n'))
+    ?.filter((caller, index) => {
+      if ((!context.stacktraces && index < 3) || caller.includes('moduleEvaluation')) {
+        return false
       }
 
-      return !caller.includes('moduleEvaluation') && !caller.includes('node_modules')
+      return isProduction() ? true : !caller.includes('node_modules')
     })
     .map(caller => {
       caller = caller.slice('    at '.length).replaceAll(basePath, '').replaceAll(path.sep, '/')
@@ -128,6 +124,7 @@ const log = (
 
       return caller.replace(/([a-zA-Z0-9_]+) \((.*)\)/, '$1@$2')
     })
+    .filter(caller => caller && !caller.endsWith('@native'))
 
   if (stackTraces) {
     if (stackTraces.at(-1)?.startsWith('processTicksAndRejections')) {
