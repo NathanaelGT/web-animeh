@@ -4,5 +4,6 @@
   "printWidth": 100,
   "arrowParens": "avoid",
   "trailingComma": "all",
+  "quoteProps": "consistent",
   "plugins": ["prettier-plugin-tailwindcss"]
 }
