@@ -142,7 +142,7 @@ await Promise.all([
     .then(async message => {
       return [
         message,
-        await $`./node_modules/.bin/esbuild --bundle --minify --format=esm --platform=node --external:bun:sqlite --allow-overwrite ./dist/index.js`.text(),
+        await $`./node_modules/.bin/esbuild --bundle --minify --format=esm --platform=node --external:bun:sqlite --allow-overwrite --legal-comments=none ./dist/index.js`.text(),
       ] as const
     })
     .then(async ([message, minified]) => {
