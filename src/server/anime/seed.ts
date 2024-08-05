@@ -8,6 +8,7 @@ import {
   animeToStudios,
   studios,
   animeSynonyms,
+  studioSynonyms,
 } from '~s/db/schema'
 import { basePath } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
@@ -62,14 +63,6 @@ export const populate = async () => {
     const [, hours, minutes, seconds] = duration.toLowerCase().match(parseKuramanimeDurationRegex)!
 
     return Number(hours || 0) * 3600 + Number(minutes || 0) * 60 + Number(seconds || 0)
-  }
-
-  const normalizeKuramanimeRating = (rating: string | null) => {
-    if (rating === 'G - Segala Usia') {
-      return 'G - Semua Usia'
-    }
-
-    return rating
   }
 
   const imageDirPath = path.join(basePath, 'images/')
@@ -131,7 +124,7 @@ export const populate = async () => {
         airedFrom: parseKuramanimeDate(animeData.aired_from),
         airedTo: animeData.aired_to ? parseKuramanimeDate(animeData.aired_to) : null,
         score: animeData.score,
-        rating: normalizeKuramanimeRating(animeData.rating),
+        rating: animeData.rating?.slice(0, animeData.rating.indexOf(' ')),
         duration,
         type: animeData.type,
         imageUrl: imageFetchUrl,
@@ -180,7 +173,7 @@ export const populate = async () => {
             data.demographics,
           ].flatMap(genreList => {
             return genreList.map(genre => ({
-              animeId: animeMalId,
+              animeId: animeData.id,
               genreId: genre.mal_id,
             }))
           })
@@ -189,17 +182,32 @@ export const populate = async () => {
             db.insert(animeToGenres).values(genreList).execute()
           }
 
+          const existingCombination = new Set<string>()
           const studioList: (typeof animeToStudios.$inferInsert)[] = (
             [
               [data.studios, 'studio'],
               [data.producers, 'producer'],
             ] as const
           ).flatMap(([studioList, type]) => {
-            return studioList.map(studio => ({
-              animeId: animeMalId,
-              studioId: studio.mal_id,
-              type,
-            }))
+            const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
+
+            for (const studio of studioList) {
+              // entah kenapa ada beberapa yang duplikat
+              const key = animeMalId + type + studio.mal_id
+              if (existingCombination.has(key)) {
+                continue
+              }
+
+              existingCombination.add(key)
+
+              filteredStudioList.push({
+                animeId: animeData.id,
+                studioId: studio.mal_id,
+                type,
+              })
+            }
+
+            return filteredStudioList
           })
 
           if (studioList.length) {
@@ -226,25 +234,72 @@ export const populate = async () => {
     }
   })
 
-  const fetchStudio = async (page: number) => {
-    const producers = await producerClient.getProducers({ page })
+  const registeredStudios = new Set<number>()
 
-    if (producers.pagination.has_next_page) {
-      // https://jikan.docs.apiary.io/#introduction/information/rate-limiting
-      setTimeout(() => {
-        fetchStudio(page + 1)
-      }, 4000)
-    }
+  const fetchStudio = (page: number) => {
+    jikanQueue.add(
+      async () => {
+        const producers = await producerClient.getProducers({
+          page,
+          order_by: 'count',
+          sort: 'desc',
+        })
 
-    await db.insert(studios).values(
-      producers.data.map(producer => {
-        return {
-          id: producer.mal_id,
-          name: producer.titles[0]!.title,
-          imageUrl: producer.images.jpg.image_url,
-          establishedAt: producer.established ? new Date(producer.established) : null,
-        } satisfies typeof studios.$inferInsert
-      }),
+        if (producers.pagination.has_next_page) {
+          // https://jikan.docs.apiary.io/#introduction/information/rate-limiting
+          setTimeout(() => {
+            fetchStudio(page + 1)
+          }, 4000)
+        }
+
+        type Synonym = (typeof producers.data)[number]['titles'][number]
+        const synonymsMap = new Map<number, Synonym[]>()
+
+        const studioList: (typeof studios.$inferInsert)[] = []
+        for (const producer of producers.data) {
+          // ada data duplikat dari jikan
+          if (registeredStudios.has(producer.mal_id)) {
+            continue
+          }
+
+          registeredStudios.add(producer.mal_id)
+
+          const synonyms = producer.titles.slice(1)
+          if (synonyms.length) {
+            synonymsMap.set(producer.mal_id, synonyms)
+          }
+
+          const imageUrl = producer.images.jpg.image_url
+
+          studioList.push({
+            id: producer.mal_id,
+            name: producer.titles[0]!.title,
+            imageUrl:
+              imageUrl === 'https://cdn.myanimelist.net/images/company_no_picture.png'
+                ? null
+                : imageUrl,
+            establishedAt: producer.established ? new Date(producer.established) : null,
+          })
+        }
+
+        db.insert(studios).values(studioList).execute()
+
+        const synonymList: (typeof studioSynonyms.$inferInsert)[] = []
+        for (const [producerId, synonyms] of synonymsMap) {
+          for (const { title, type } of synonyms) {
+            synonymList.push({
+              studioId: producerId,
+              synonym: title,
+              type,
+            })
+          }
+        }
+
+        if (synonymList.length) {
+          db.insert(studioSynonyms).values(synonymList).execute()
+        }
+      },
+      { priority: 1 },
     )
   }
 
