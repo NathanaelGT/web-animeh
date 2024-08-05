@@ -46,7 +46,7 @@ export const update = async (
     airedFrom: new Date(jikanAnimeData.aired.from),
     airedTo: jikanAnimeData.aired.to ? new Date(jikanAnimeData.aired.to) : null,
     score: jikanAnimeData.score,
-    rating: sql`coalesce(${anime.rating}, ${jikanAnimeData.rating})`,
+    rating: jikanAnimeData.rating.slice(0, jikanAnimeData.rating.indexOf(' ')),
     duration: sql`coalesce(${anime.duration}, ${parseMalDuration(jikanAnimeData.duration)})`,
   }
 
@@ -74,4 +74,6 @@ export const update = async (
   promises.push(db.update(anime).set(updateData).where(eq(anime.id, localAnimeData.id)).execute())
 
   await Promise.all(promises)
+
+  return updateData
 }
