@@ -1,7 +1,11 @@
-import { useState } from 'react'
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
-import { logger } from '~c/utils'
+import { SimpleTooltip } from '@/ui/tooltip'
+import { AnimePoster } from '@/Anime/Poster'
+import { AnimeType } from '@/Anime/Type'
+import { AnimeRating } from '@/Anime/Rating'
+import { AnimeDuration } from '@/Anime/Duration'
+import { AnimeEpisode } from '@/Anime/Episode'
 
 export const Route = createFileRoute('/')({
   component: Index,
@@ -9,40 +13,40 @@ export const Route = createFileRoute('/')({
 })
 
 function Index() {
-  const { serverDate } = Route.useLoaderData()
-  const [firstRenderAt] = useState(Date.now)
-  const router = useRouter()
+  const animeList = Route.useLoaderData()
 
   return (
-    <div>
-      <div className="m-2 flex flex-col gap-2">
-        <div>
-          <button
-            onClick={() => router.invalidate()}
-            className="rounded border border-slate-700 bg-slate-600 px-2 py-1 text-slate-100"
-          >
-            Refresh
-          </button>
+    <main className="grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6 px-12 py-10">
+      {animeList.map(animeData => (
+        <div key={animeData.id} className="mx-auto max-w-[162px]">
+          <AnimePoster small asLink anime={animeData}>
+            {animeData.totalEpisodes && (
+              <SimpleTooltip title={animeData.totalEpisodes + ' Episode'}>
+                <span className="absolute bottom-2 left-2 rounded-md bg-slate-600/75 px-1 text-primary-foreground">
+                  {animeData.totalEpisodes}
+                </span>
+              </SimpleTooltip>
+            )}
+          </AnimePoster>
+
+          <SimpleTooltip title={animeData.title}>
+            <Link
+              to="/anime/$id"
+              params={{ id: animeData.id.toString() }}
+              className="mt-1 block truncate text-sm font-bold"
+            >
+              {animeData.title}
+            </Link>
+          </SimpleTooltip>
+
+          <div className="flex justify-between text-xs text-slate-500 [&>*]:bg-transparent [&>*]:p-0">
+            <AnimeType type={animeData.type} />
+            <AnimeRating rating={animeData.rating} />
+            <AnimeDuration duration={animeData.duration} />
+            <AnimeEpisode episode={animeData.totalEpisodes} />
+          </div>
         </div>
-
-        <div>
-          <button
-            onClick={() => {
-              logger.info('hello world')
-            }}
-            className="rounded border border-slate-700 bg-slate-600 px-2 py-1 text-slate-100"
-          >
-            Log
-          </button>
-        </div>
-      </div>
-
-      <p>server render at: {(serverDate / 1000).toFixed(3)}</p>
-      <p>client render at: {(firstRenderAt / 1000).toFixed(3)}</p>
-
-      {Array.from({ length: 50 }).map((_, i) => (
-        <p key={i}>yey</p>
       ))}
-    </div>
+    </main>
   )
 }

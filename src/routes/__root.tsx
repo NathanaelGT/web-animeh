@@ -27,7 +27,7 @@ export const Route = createRootRoute({
     })
 
     return (
-      <div className="flex flex-col bg-background">
+      <div className="flex min-h-screen flex-col">
         <Header />
 
         <Outlet />

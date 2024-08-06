@@ -32,7 +32,7 @@ const score = customType<{ data: number }>({
 })
 
 type Settings = z.infer<typeof settingsSchema>
-type AnimeType = 'Movie' | 'TV' | 'ONA' | 'Special' | 'TV Special' | 'OVA' | (string & {})
+export type AnimeType = 'Movie' | 'TV' | 'ONA' | 'Special' | 'TV Special' | 'OVA' | (string & {})
 
 export const profiles = sqliteTable('profiles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
