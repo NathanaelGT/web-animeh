@@ -62,7 +62,9 @@ export function Header() {
     <header ref={headerRef} className={`${className} z-50 border-b bg-background`}>
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
-          <Link to="/">Web Animeh</Link>
+          <Link to="/" preloadDelay={50}>
+            Web Animeh
+          </Link>
         </div>
 
         <div className="flex items-center space-x-3 lg:space-x-4">

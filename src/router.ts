@@ -5,7 +5,7 @@ export const createRouter = () => {
   return createTanstackRouter({
     routeTree,
     defaultPreload: 'intent',
-    // defaultPreloadDelay: 60_000,
+    defaultPreloadDelay: 60_000,
     defaultPreloadStaleTime: 10_000,
     defaultStaleTime: Infinity,
     defaultGcTime: 0,
