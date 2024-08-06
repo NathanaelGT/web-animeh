@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute, Link, Outlet, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { cn } from '~c/utils'
 import { kebabCaseToTitleCase } from '~/shared/utils/string'
 import { Separator } from '@/ui/separator'
@@ -22,6 +22,10 @@ function PengaturanLayout() {
       })
   })
 
+  const currentPath = useRouterState({
+    select: state => state.location.pathname,
+  })
+
   return (
     <div className="space-y-6 p-10 pb-16">
       <div className="space-y-0.5">
@@ -37,7 +41,7 @@ function PengaturanLayout() {
                 to={page.path}
                 className={cn(
                   buttonVariants({ variant: 'ghost' }),
-                  router.latestLocation.pathname === page.path
+                  currentPath === page.path
                     ? 'bg-muted hover:bg-muted'
                     : 'hover:bg-transparent hover:underline',
                   'justify-start',
