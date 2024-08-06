@@ -79,13 +79,13 @@ export function ProfileSwitcher() {
             aria-expanded={isOpen}
             aria-label="Select a team"
             onMouseDown={fetchProfiles}
-            className="w-[200px] justify-between"
+            className="justify-between sm:w-48"
           >
             <span className="overflow-hidden">{currentProfileName ?? 'Loading'}</span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-0">
+        <PopoverContent className="p-0 sm:w-48">
           <Command>
             <CommandList>
               <CommandGroup>

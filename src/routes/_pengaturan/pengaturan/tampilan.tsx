@@ -30,7 +30,7 @@ function PengaturanTampilan() {
               variant="outline"
               role="combobox"
               className={cn(
-                'w-[200px] justify-between',
+                'w-48 justify-between',
                 settings.headerPosition && 'text-muted-foreground',
               )}
             >
@@ -38,7 +38,7 @@ function PengaturanTampilan() {
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-0">
+          <PopoverContent className="w-48 p-0">
             <Command>
               <CommandList>
                 <CommandGroup>
