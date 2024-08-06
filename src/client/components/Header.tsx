@@ -52,17 +52,17 @@ export function Header() {
 
   let className = ''
   if (headerPosition !== 'static') {
-    className = 'sticky top-0 '
+    className = 'sticky top-0'
   }
   if (isHybrid) {
-    className += 'transition-transform '
+    className += ' transition-transform'
   }
 
   return (
-    <header ref={headerRef} className={`${className}border-b bg-background`}>
+    <header ref={headerRef} className={`${className} z-50 border-b bg-background`}>
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
-          <Link to="/">Home</Link>
+          <Link to="/">Web Animeh</Link>
         </div>
 
         <div className="flex items-center space-x-3 lg:space-x-4">
