@@ -3,8 +3,11 @@ import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
 import { clientProfileSettingsStore } from '~/client/stores'
+import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
 import { Button } from '@/ui/button'
+
+export const HYBRID_HEADER_CLASS_ON_HIDDEN = 'translate-y-[calc(-100%+1px)]'
 
 export function Header() {
   const headerPosition = useStore(clientProfileSettingsStore, store => store.headerPosition)
@@ -27,15 +30,20 @@ export function Header() {
         return
       }
 
+      if (header.classList.contains(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)) {
+        header.classList.remove(HYBRID_HEADER_CLASS_ON_HIDDEN)
+
+        return
+      }
+
       const currentY = getWindowY()
       const top = latestY < currentY ? 0 : header.offsetHeight
 
       if (headerTop !== top) {
-        const className = 'translate-y-[calc(-100%+1px)]'
         if (top === 0) {
-          header.classList.remove(className)
+          header.classList.remove(HYBRID_HEADER_CLASS_ON_HIDDEN)
         } else {
-          header.classList.add(className)
+          header.classList.add(HYBRID_HEADER_CLASS_ON_HIDDEN)
         }
       }
 
@@ -68,6 +76,8 @@ export function Header() {
         </div>
 
         <div className="flex items-center space-x-3 lg:space-x-4">
+          <Search headerRef={headerRef} />
+
           <ProfileSwitcher />
 
           <Link to="/pengaturan">
