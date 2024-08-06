@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as PengaturanImport } from './routes/_pengaturan'
 import { Route as IndexImport } from './routes/index'
+import { Route as AnimeIdImport } from './routes/anime/$id'
 import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
 
@@ -25,6 +26,11 @@ const PengaturanRoute = PengaturanImport.update({
 
 const IndexRoute = IndexImport.update({
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AnimeIdRoute = AnimeIdImport.update({
+  path: '/anime/$id',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -57,6 +63,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PengaturanImport
       parentRoute: typeof rootRoute
     }
+    '/anime/$id': {
+      id: '/anime/$id'
+      path: '/anime/$id'
+      fullPath: '/anime/$id'
+      preLoaderRoute: typeof AnimeIdImport
+      parentRoute: typeof rootRoute
+    }
     '/_pengaturan/pengaturan/tampilan': {
       id: '/_pengaturan/pengaturan/tampilan'
       path: '/pengaturan/tampilan'
@@ -82,6 +95,7 @@ export const routeTree = rootRoute.addChildren({
     PengaturanPengaturanTampilanRoute,
     PengaturanPengaturanIndexRoute,
   }),
+  AnimeIdRoute,
 })
 
 /* prettier-ignore-end */
@@ -93,7 +107,8 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_pengaturan"
+        "/_pengaturan",
+        "/anime/$id"
       ]
     },
     "/": {
@@ -105,6 +120,9 @@ export const routeTree = rootRoute.addChildren({
         "/_pengaturan/pengaturan/tampilan",
         "/_pengaturan/pengaturan/"
       ]
+    },
+    "/anime/$id": {
+      "filePath": "anime/$id.tsx"
     },
     "/_pengaturan/pengaturan/tampilan": {
       "filePath": "_pengaturan/pengaturan/tampilan.tsx",

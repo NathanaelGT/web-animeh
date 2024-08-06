@@ -4,6 +4,7 @@ import type {
   AnyRouter,
   CreateRouterOptions,
 } from '@trpc/server/unstable-core-do-not-import'
+import z from 'zod'
 import { procedure, router } from '~s/trpc'
 import { jikanClient } from '~s/external/api/jikan'
 import { omit } from '~/shared/utils/object'
@@ -59,6 +60,71 @@ export const RouteRouter = router({
     })
 
     return animeListResponse
+  }),
+
+  '/anime/$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
+    const animeData = await ctx.db.query.anime.findFirst({
+      where: (anime, { eq }) => eq(anime.id, input),
+      columns: {
+        title: true,
+        japaneseTitle: true,
+        englishTitle: true,
+        synopsis: true,
+        totalEpisodes: true,
+        airedFrom: true,
+        airedTo: true,
+        score: true,
+        rating: true,
+        duration: true,
+        type: true,
+        imageExtension: true,
+      },
+      with: {
+        synonyms: {
+          columns: {
+            synonym: true,
+          },
+        },
+        animeToGenres: {
+          columns: {},
+          with: {
+            genre: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
+        animeToStudios: {
+          columns: {
+            type: true,
+          },
+          with: {
+            studio: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!animeData) {
+      return animeData
+    }
+
+    ctx.loadImage(input + '.' + animeData.imageExtension)
+
+    return {
+      ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios'),
+      synonyms: animeData.synonyms.map(({ synonym }) => synonym),
+      genres: animeData.animeToGenres.map(({ genre }) => genre.name),
+      studios: animeData.animeToStudios.map(({ studio, type }) => ({
+        name: studio?.name || null,
+        type,
+      })),
+    }
   }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never
