@@ -136,7 +136,7 @@ export function Search({ headerRef }: Props) {
                 <div key={result.id} className="flex gap-3">
                   <Link to="/anime/$id" params={{ id: result.id.toString() }}>
                     <Image
-                      src={result.id + '.' + result.imageExtension}
+                      src={result.id}
                       className="max-h-[89px] max-w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
                     />
                   </Link>

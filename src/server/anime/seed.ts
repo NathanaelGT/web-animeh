@@ -67,7 +67,7 @@ export const populate = async () => {
 
   const imageDirPath = path.join(basePath, 'images/')
 
-  const imageResponsePromiseMap = new Map<string, Promise<Response>>()
+  const imageResponsePromiseMap = new Map<string, Promise<[string, Response]>>()
 
   let id = 0
 
@@ -93,6 +93,11 @@ export const populate = async () => {
       }
 
       const slicedMalUrl = animeData.mal_url.slice('https://myanimelist.net/anime/'.length)
+      const malId = Number(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/')))
+      if (isNaN(malId)) {
+        continue
+      }
+
       const slicedAnilistUrl = animeData.anilist_url?.slice('https://anilist.co/anime/'.length)
 
       const imageUrl = animeData.image_portrait_url
@@ -100,10 +105,11 @@ export const populate = async () => {
         imageUrl.startsWith('https://cdn.myanimelist.net') && imageUrl.endsWith('l.jpg')
           ? imageUrl.slice(0, -5) + '.webp'
           : imageUrl
+      const ext = extension(imageFetchUrl)
 
       imageResponsePromiseMap.set(
         imageFetchUrl,
-        limitRequest(() => fetch(imageFetchUrl)),
+        limitRequest(async () => [ext, await fetch(imageFetchUrl)]),
       )
 
       ++id
@@ -116,7 +122,7 @@ export const populate = async () => {
 
       animeDataList.push({
         id,
-        malId: parseNumber(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/'))),
+        malId,
         anilistId: parseNumber(slicedAnilistUrl),
         title: animeData.title,
         synopsis: animeData.synopsis,
@@ -128,7 +134,7 @@ export const populate = async () => {
         duration,
         type: animeData.type,
         imageUrl: imageFetchUrl,
-        imageExtension: extension(imageFetchUrl),
+        imageExtension: ext,
         updatedAt: now,
       })
     }
@@ -148,85 +154,79 @@ export const populate = async () => {
     const hasImages = new Set<number>()
 
     for (const animeData of insertedAnimeList) {
-      const { malId: animeMalId } = animeData
+      const animeMalId = animeData.malId
 
-      if (animeMalId) {
-        jikanQueue.add(async () => {
-          const { data } = await jikanClient.anime.getAnimeFullById(animeMalId)
+      jikanQueue.add(async () => {
+        const { data } = await jikanClient.anime.getAnimeFullById(animeMalId)
 
-          const synonymList = data.titles.slice(1).map(({ title, type }) => {
-            return {
-              animeId: animeMalId,
-              synonym: title,
-              type,
-            } satisfies typeof animeSynonyms.$inferInsert
-          })
+        const synonymList = data.titles.slice(1).map(({ title, type }) => {
+          return {
+            animeId: animeMalId,
+            synonym: title,
+            type,
+          } satisfies typeof animeSynonyms.$inferInsert
+        })
 
-          if (synonymList.length) {
-            db.insert(animeSynonyms).values(synonymList).execute()
-          }
+        if (synonymList.length) {
+          db.insert(animeSynonyms).values(synonymList).execute()
+        }
 
-          const genreList: (typeof animeToGenres.$inferInsert)[] = [
-            data.genres,
-            data.explicit_genres,
-            data.themes,
-            data.demographics,
-          ].flatMap(genreList => {
-            return genreList.map(genre => ({
-              animeId: animeData.id,
-              genreId: genre.mal_id,
-            }))
-          })
+        const genreList: (typeof animeToGenres.$inferInsert)[] = [
+          data.genres,
+          data.explicit_genres,
+          data.themes,
+          data.demographics,
+        ].flatMap(genreList => {
+          return genreList.map(genre => ({
+            animeId: animeData.id,
+            genreId: genre.mal_id,
+          }))
+        })
 
-          if (genreList.length) {
-            db.insert(animeToGenres).values(genreList).execute()
-          }
+        if (genreList.length) {
+          db.insert(animeToGenres).values(genreList).execute()
+        }
 
-          const existingCombination = new Set<string>()
-          const studioList: (typeof animeToStudios.$inferInsert)[] = (
-            [
-              [data.studios, 'studio'],
-              [data.producers, 'producer'],
-            ] as const
-          ).flatMap(([studioList, type]) => {
-            const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
+        const existingCombination = new Set<string>()
+        const studioList: (typeof animeToStudios.$inferInsert)[] = (
+          [
+            [data.studios, 'studio'],
+            [data.producers, 'producer'],
+          ] as const
+        ).flatMap(([studioList, type]) => {
+          const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
 
-            for (const studio of studioList) {
-              // entah kenapa ada beberapa yang duplikat
-              const key = animeMalId + type + studio.mal_id
-              if (existingCombination.has(key)) {
-                continue
-              }
-
-              existingCombination.add(key)
-
-              filteredStudioList.push({
-                animeId: animeData.id,
-                studioId: studio.mal_id,
-                type,
-              })
+          for (const studio of studioList) {
+            // entah kenapa ada beberapa yang duplikat
+            const key = animeMalId + type + studio.mal_id
+            if (existingCombination.has(key)) {
+              continue
             }
 
-            return filteredStudioList
-          })
+            existingCombination.add(key)
 
-          if (studioList.length) {
-            db.insert(animeToStudios).values(studioList).execute()
+            filteredStudioList.push({
+              animeId: animeData.id,
+              studioId: studio.mal_id,
+              type,
+            })
           }
 
-          update(data, animeData, {
-            updateImage:
-              !hasImages.has(animeMalId) || extension(animeData.imageUrl ?? '') !== 'webp',
-          })
+          return filteredStudioList
         })
-      }
 
-      imageResponsePromiseMap.get(animeData.imageUrl!)?.then(response => {
+        if (studioList.length) {
+          db.insert(animeToStudios).values(studioList).execute()
+        }
+
+        update(animeData.id, data, {
+          updateImage: !hasImages.has(animeMalId) || extension(animeData.imageUrl ?? '') !== 'webp',
+        })
+      })
+
+      imageResponsePromiseMap.get(animeData.imageUrl!)?.then(([ext, response]) => {
         if (response.ok || response.status === 304) {
-          const ext = extension(response.url)
-          const posterPath = imageDirPath + animeData.id + '.' + ext
-
-          Bun.write(posterPath, response)
+          Bun.write(imageDirPath + animeData.id + '.' + ext, response)
 
           hasImages.add(animeData.id)
         }

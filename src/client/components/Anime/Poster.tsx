@@ -24,7 +24,7 @@ type Props = PropsWithChildren<{
 export function AnimePoster({ small, asLink, anime, children }: Props) {
   const poster = (
     <Image
-      src={anime.id + '.' + anime.imageExtension}
+      src={anime.id}
       className={
         (small ? 'max-h-[229px] max-w-[162px]' : 'max-h-[318px] max-w-[225px]') +
         ' rounded-md object-cover shadow outline outline-1 outline-slate-600/20'

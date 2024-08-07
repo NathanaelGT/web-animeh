@@ -51,10 +51,7 @@ function AnimeId() {
   return (
     <>
       <div className="fixed -z-50 h-auto overflow-hidden">
-        <Image
-          src={params.id + '.' + animeData.imageExtension}
-          className="h-screen w-screen opacity-40 blur-xl"
-        />
+        <Image src={params.id} className="h-screen w-screen opacity-40 blur-xl" />
       </div>
       <main className="grid flex-1 gap-6 px-12 py-10 [grid-template-areas:'poster''main''info'] sm:grid-cols-[225px_1fr] sm:[grid-template-areas:'poster_main''info_main'] lg:grid-cols-[225px_1fr_15rem] lg:[grid-template-areas:'poster_main_info'] xl:grid-cols-[225px_1fr_19rem]">
         <div className="flex flex-col items-center gap-3 [grid-area:poster]">
@@ -132,7 +129,9 @@ function AnimeId() {
                   <span className="font-bold">Genre</span>:{' '}
                 </span>
                 {animeData.genres.map(genre => (
-                  <span className="rounded-full border border-primary/40 px-2">{genre}</span>
+                  <span key={genre} className="rounded-full border border-primary/40 px-2">
+                    {genre}
+                  </span>
                 ))}
               </div>
               <Separator className="bg-primary/20" />

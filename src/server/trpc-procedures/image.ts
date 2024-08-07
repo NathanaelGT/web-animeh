@@ -3,7 +3,7 @@ import { procedure } from '~s/trpc'
 import {
   imageEmitterMap,
   pendingImageEmitterMap,
-  type ImageType,
+  type ImageEmitterParam,
   type ImageEmitter,
 } from '~/server/emits/loadImage'
 
@@ -17,7 +17,7 @@ export const ImageSubscriptionProcedure = procedure.subscription(opts => {
     }),
   )
 
-  return observable<ImageType>(emit => {
+  return observable<ImageEmitterParam>(emit => {
     imageEmitterMap.set(opts.ctx.data.id, emit)
 
     activate(emit)

@@ -6,9 +6,7 @@ import type {
 } from '@trpc/server/unstable-core-do-not-import'
 import z from 'zod'
 import { procedure, router } from '~s/trpc'
-import { jikanClient } from '~s/external/api/jikan'
 import { omit } from '~/shared/utils/object'
-import { update } from '~s/anime/update'
 
 export const RouteRouter = router({
   '/': procedure.query(async ({ ctx }) => {
@@ -27,45 +25,18 @@ export const RouteRouter = router({
       },
     })
 
-    type Anime = (typeof animeList)[number]
+    return animeList.map(animeData => {
+      ctx.loadAnimePoster(animeData)
 
-    const posterMap = new Map<string, Anime>()
-    const animeListResponse: Omit<Anime, 'malId'>[] = []
-
-    const handleNoImage = async (animeData: Anime) => {
-      const { malId } = animeData
-      if (malId === null) {
-        return
-      }
-
-      const { data } = await jikanClient.anime.getAnimeFullById(malId)
-
-      const updateData = await update(data, animeData, { updateImage: true })
-
-      ctx.loadImage(animeData.id + '.' + updateData.imageExtension)
-    }
-
-    for (const animeData of animeList) {
-      if (animeData.imageExtension) {
-        posterMap.set(animeData.id + '.' + animeData.imageExtension, animeData)
-      } else {
-        handleNoImage(animeData)
-      }
-
-      animeListResponse.push(omit(animeData, 'malId'))
-    }
-
-    ctx.loadImage(posterMap.keys(), (_, path) => {
-      handleNoImage(posterMap.get(path)!)
+      return omit(animeData, 'malId')
     })
-
-    return animeListResponse
   }),
 
   '/anime/$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
       where: (anime, { eq }) => eq(anime.id, input),
       columns: {
+        malId: true,
         title: true,
         japaneseTitle: true,
         englishTitle: true,
@@ -114,10 +85,14 @@ export const RouteRouter = router({
       return animeData
     }
 
-    ctx.loadImage(input + '.' + animeData.imageExtension)
+    ctx.loadAnimePoster({
+      id: input,
+      malId: animeData.malId,
+      imageExtension: animeData.imageExtension,
+    })
 
     return {
-      ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios'),
+      ...omit(animeData, 'malId', 'synonyms', 'animeToGenres', 'animeToStudios'),
       synonyms: animeData.synonyms.map(({ synonym }) => synonym),
       genres: animeData.animeToGenres.map(({ genre }) => genre.name),
       studios: animeData.animeToStudios.map(({ studio, type }) => ({

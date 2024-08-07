@@ -29,7 +29,7 @@ const decrementActivePath = (path: string, url?: string) => {
 export const useImage = (path: string) => {
   const id = useId()
 
-  const [imageUrl, setImageUrl] = useState<string | undefined>(() => {
+  const getInitialImageUrl = () => {
     const sharedUrl = urlMap.get(path)
     if (sharedUrl) {
       incrementActivePath(path)
@@ -45,9 +45,13 @@ export const useImage = (path: string) => {
 
       return url
     }
-  })
+  }
+
+  const [imageUrl, setImageUrl] = useState<string | undefined>(getInitialImageUrl)
 
   useEffect(() => {
+    setImageUrl(getInitialImageUrl())
+
     if (!urlMap.has(path)) {
       const removeListener = onImageLoad(image => {
         if (image.path !== path) {

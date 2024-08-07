@@ -1,5 +1,4 @@
 import { transformResult } from '@trpc/server/unstable-core-do-not-import'
-import mime from 'mime/lite'
 import SuperJSON from 'superjson'
 import { wsClient } from '~c/trpc'
 import { imageIsLoaded, urlMap } from '~c/hooks/useImage'
@@ -17,7 +16,7 @@ const preloadImage = (url: string) => {
 
 export const getImageFromCache = (path: string) => imageCache.get(path)
 
-export const loadImageFromCache = (path: string) => {
+const loadImageFromCache = (path: string) => {
   if (imageIsLoaded(path)) {
     return
   }
@@ -41,9 +40,7 @@ type ImageLoadListener = (image: { path: string; url: string; blob: Blob }) => v
 const imageLoadListeners = new Set<ImageLoadListener>()
 const imageLoadListenerIdentifiers = new Set<string>()
 
-const cacheImage = async (path: string, base64: string) => {
-  const type = mime.getType(path) ?? 'application/octet-stream'
-
+const cacheImage = async (path: string, base64: string, type = 'image/webp') => {
   const blob = await base64ToBlob(base64, type)
 
   if (blob) {
@@ -111,14 +108,14 @@ wsClient.request(
         return
       }
 
-      const [path, base64] = transformed.result.data as TRPCResponse<
-        typeof ImageSubscriptionProcedure
-      >
+      const images = transformed.result.data as TRPCResponse<typeof ImageSubscriptionProcedure>
 
-      if (base64) {
-        void cacheImage(path, base64)
-      } else {
-        loadImageFromCache(path)
+      for (const image of images) {
+        if (typeof image === 'string') {
+          loadImageFromCache(image)
+        } else {
+          void cacheImage(...image)
+        }
       }
     },
   },

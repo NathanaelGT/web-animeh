@@ -1,13 +1,15 @@
 import { z } from 'zod'
 import { procedure } from '~s/trpc'
+import { omit } from '~/shared/utils/object'
 import { animeSynonyms, animeToGenres, genres } from '~s/db/schema'
 
 export const SearchProcedure = procedure.input(z.string()).mutation(async ({ input, ctx }) => {
   const limit = 4
 
-  const results = await ctx.db.query.anime.findMany({
+  const animeList = await ctx.db.query.anime.findMany({
     columns: {
       id: true,
+      malId: true,
       title: true,
       englishTitle: true,
       airedTo: true,
@@ -53,8 +55,9 @@ export const SearchProcedure = procedure.input(z.string()).mutation(async ({ inp
     },
   })
 
-  const images = results.map(result => result.id + '.' + result.imageExtension)
-  ctx.loadImage(images)
+  return animeList.map(animeData => {
+    ctx.loadAnimePoster(animeData)
 
-  return results
+    return omit(animeData, 'malId')
+  })
 })
