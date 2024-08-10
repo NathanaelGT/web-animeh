@@ -1,4 +1,4 @@
-import { customType, text, integer, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
+import { customType, text, integer, real, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 import type { z } from 'zod'
 import type { settingsSchema } from '~/shared/profile/settings'
@@ -58,6 +58,7 @@ export const anime = sqliteTable('anime', {
   imageUrl: text('image_url'),
   imageExtension: text('image_extension'),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
 })
 
 export const animeSynonyms = sqliteTable('anime_synonyms', {
@@ -129,11 +130,29 @@ export const animeToStudios = sqliteTable(
   }),
 )
 
+export const episodes = sqliteTable(
+  'episodes',
+  {
+    animeId: integer('anime_id').notNull(),
+    number: integer('number').notNull(),
+    title: text('title'),
+    japaneseTitle: text('japanese_title'),
+    romanjiTitle: text('romanji_title'),
+    score: real('score'),
+    is_filler: integer('is_filler', { mode: 'boolean' }),
+    is_recap: integer('is_recap', { mode: 'boolean' }),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.animeId, t.number] }),
+  }),
+)
+
 export const animeRelations = relations(anime, ({ one, many }) => ({
   synonyms: many(animeSynonyms),
   metadata: one(animeMetadata, { fields: [anime.id], references: [animeMetadata.animeId] }),
   animeToGenres: many(animeToGenres),
   animeToStudios: many(animeToStudios),
+  episodes: many(episodes),
 }))
 
 export const animeSynonymsRelations = relations(animeSynonyms, ({ one }) => ({
@@ -165,6 +184,10 @@ export const animeToGenresRelations = relations(animeToGenres, ({ one }) => ({
 export const animeToStudiosRelations = relations(animeToStudios, ({ one }) => ({
   anime: one(anime, { fields: [animeToStudios.animeId], references: [anime.id] }),
   studio: one(studios, { fields: [animeToStudios.studioId], references: [studios.id] }),
+}))
+
+export const episodesRelations = relations(episodes, ({ one }) => ({
+  anime: one(anime, { fields: [episodes.animeId], references: [anime.id] }),
 }))
 
 export interface Profile extends Omit<typeof profiles.$inferSelect, 'settings'> {

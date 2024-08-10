@@ -9,6 +9,8 @@ const Tooltip = TooltipPrimitive.Root
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
+const TooltipArrow = TooltipPrimitive.Arrow
+
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
@@ -42,10 +44,13 @@ function SimpleTooltip({ title, children }: SimpleTooltipProps) {
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>{elementToRender}</TooltipTrigger>
-        <TooltipContent>{title}</TooltipContent>
+        <TooltipContent>
+          {title}
+          <TooltipArrow className="-mt-[1px] fill-popover" />
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, SimpleTooltip }
+export { Tooltip, TooltipTrigger, TooltipArrow, TooltipContent, TooltipProvider, SimpleTooltip }

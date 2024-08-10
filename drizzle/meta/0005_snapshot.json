@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "22130fcb-b55e-49f4-b903-b1eae84bca2b",
-  "prevId": "17f63c1e-c0dc-4192-8c52-e6b27977333b",
+  "id": "4dc840b4-808a-4151-90bb-90ff60b232a3",
+  "prevId": "22130fcb-b55e-49f4-b903-b1eae84bca2b",
   "tables": {
     "anime": {
       "name": "anime",
@@ -348,6 +348,79 @@
             "type"
           ],
           "name": "anime_to_anime_studios_anime_id_studio_id_type_pk"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "episodes": {
+      "name": "episodes",
+      "columns": {
+        "anime_id": {
+          "name": "anime_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "japanese_title": {
+          "name": "japanese_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "romanji_title": {
+          "name": "romanji_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "score": {
+          "name": "score",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_filler": {
+          "name": "is_filler",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_recap": {
+          "name": "is_recap",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "episodes_anime_id_number_pk": {
+          "columns": [
+            "anime_id",
+            "number"
+          ],
+          "name": "episodes_anime_id_number_pk"
         }
       },
       "uniqueConstraints": {}

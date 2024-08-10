@@ -15,5 +15,6 @@ CREATE TABLE `anime` (
 	`type` text NOT NULL,
 	`image_url` text,
 	`image_extension` text,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	`episode_updated_at` integer
 );

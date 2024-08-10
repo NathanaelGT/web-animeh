@@ -16,7 +16,7 @@ export const Route = createRootRoute({
 
     useEffect(() => {
       const handler = () => {
-        void router.invalidate()
+        // void router.invalidate()
       }
 
       window.addEventListener('focus', handler)

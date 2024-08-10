@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
-import { clientProfileNameStore } from '~c/stores'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import { clientProfileNameStore } from '~c/stores'
 import { PlusCircledIcon } from '@radix-ui/react-icons'
 import { cn } from '~c/utils'
 import { Button } from '@/ui/button'

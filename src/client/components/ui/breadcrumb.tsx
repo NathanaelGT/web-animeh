@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Link } from '@tanstack/react-router'
 import { Slot } from '@radix-ui/react-slot'
 import { ChevronRight, MoreHorizontal } from 'lucide-react'
 
@@ -90,6 +91,54 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<'span'
 )
 BreadcrumbEllipsis.displayName = 'BreadcrumbElipssis'
 
+type SimpleBreadcrumbProps = {
+  links: [...React.JSX.Element[], React.JSX.Element | string]
+  viewTransitionPrefix?: string | number
+  itemClassName?: string
+  className?: string
+}
+
+function SimpleBreadcrumb({
+  links,
+  viewTransitionPrefix,
+  itemClassName,
+  className,
+}: SimpleBreadcrumbProps) {
+  const children: React.ReactNode[] = []
+
+  let separatorKey = 0
+
+  const len = links.length
+  for (let index = 0; index < len; index++) {
+    if (index < len - 1) {
+      children.push(
+        <BreadcrumbItem key={index} className={itemClassName}>
+          <BreadcrumbLink asChild>{links[index]}</BreadcrumbLink>
+        </BreadcrumbItem>,
+        <BreadcrumbSeparator
+          key={--separatorKey}
+          style={{ viewTransitionName: `bread-sep-${viewTransitionPrefix}-${index}` }}
+        />,
+      )
+    } else {
+      children.push(
+        <BreadcrumbPage
+          key={index}
+          style={{ viewTransitionName: `bread-${viewTransitionPrefix}-${index}` }}
+        >
+          {links[index]}
+        </BreadcrumbPage>,
+      )
+    }
+  }
+
+  return (
+    <Breadcrumb className={className}>
+      <BreadcrumbList>{children}</BreadcrumbList>
+    </Breadcrumb>
+  )
+}
+
 export {
   Breadcrumb,
   BreadcrumbList,
@@ -98,4 +147,5 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
+  SimpleBreadcrumb,
 }

@@ -137,7 +137,7 @@ export function Search({ headerRef }: Props) {
                   <Link to="/anime/$id" params={{ id: result.id.toString() }}>
                     <Image
                       src={result.id}
-                      className="max-h-[89px] max-w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
+                      className="h-[89px] max-w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
                     />
                   </Link>
 

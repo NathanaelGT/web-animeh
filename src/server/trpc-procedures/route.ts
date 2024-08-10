@@ -5,8 +5,11 @@ import type {
   CreateRouterOptions,
 } from '@trpc/server/unstable-core-do-not-import'
 import z from 'zod'
+import { episodes } from '~s/db/schema'
 import { procedure, router } from '~s/trpc'
+import { isMoreThanOneDay } from '~/server/utils/time'
 import { omit } from '~/shared/utils/object'
+import { updateEpisode } from '~s/anime/episode/update'
 
 export const RouteRouter = router({
   '/': procedure.query(async ({ ctx }) => {
@@ -32,7 +35,7 @@ export const RouteRouter = router({
     })
   }),
 
-  '/anime/$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
+  '/anime/_$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
       where: (anime, { eq }) => eq(anime.id, input),
       columns: {
@@ -49,6 +52,7 @@ export const RouteRouter = router({
         duration: true,
         type: true,
         imageExtension: true,
+        episodeUpdatedAt: true,
       },
       with: {
         synonyms: {
@@ -82,7 +86,7 @@ export const RouteRouter = router({
     })
 
     if (!animeData) {
-      return animeData
+      throw new Error('404')
     }
 
     ctx.loadAnimePoster({
@@ -91,8 +95,19 @@ export const RouteRouter = router({
       imageExtension: animeData.imageExtension,
     })
 
+    if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
+      updateEpisode(animeData)
+    }
+
     return {
-      ...omit(animeData, 'malId', 'synonyms', 'animeToGenres', 'animeToStudios'),
+      ...omit(
+        animeData,
+        'malId',
+        'synonyms',
+        'animeToGenres',
+        'animeToStudios',
+        'episodeUpdatedAt',
+      ),
       synonyms: animeData.synonyms.map(({ synonym }) => synonym),
       genres: animeData.animeToGenres.map(({ genre }) => genre.name),
       studios: animeData.animeToStudios.map(({ studio, type }) => ({
@@ -100,6 +115,32 @@ export const RouteRouter = router({
         type,
       })),
     }
+  }),
+
+  '/anime/_$id/$id/_episode': procedure.input(z.number()).query(async ({ ctx, input }) => {
+    const animeData = await ctx.db.query.anime.findFirst({
+      columns: { malId: true, episodeUpdatedAt: true },
+      where: (anime, { eq }) => eq(anime.id, input),
+    })
+
+    if (!animeData) {
+      throw new Error('404')
+    }
+
+    let episodeList: Omit<typeof episodes.$inferSelect, 'animeId'>[]
+
+    if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
+      episodeList = (await updateEpisode(animeData)).map(episode => omit(episode, 'animeId'))
+    } else {
+      episodeList = await ctx.db.query.episodes.findMany({
+        where: (episodes, { eq }) => eq(episodes.animeId, animeData.malId),
+        columns: {
+          animeId: false,
+        },
+      })
+    }
+
+    return episodeList
   }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never
