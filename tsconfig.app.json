@@ -7,6 +7,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "typeRoots": ["./node_modules/@types", "./types"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -36,6 +37,12 @@
       "@/*": ["./src/client/components/*"]
     }
   },
-  "include": ["./tailwind.config.js", "src/**/*.ts", "src/**/*.tsx", "src/shared/**/*.ts"],
+  "include": [
+    "types/*.d.ts",
+    "./tailwind.config.js",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/shared/**/*.ts"
+  ],
   "exclude": ["src/server/**/*.ts", "src/server/**/*.tsx"]
 }

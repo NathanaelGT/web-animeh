@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { Header } from '@/Header'
+import { Toaster } from '@/ui/toaster'
 
 const TanStackRouterDevtools = import.meta.env.PROD
   ? null
@@ -31,6 +32,8 @@ export const Route = createRootRoute({
         <Header />
 
         <Outlet />
+
+        <Toaster />
 
         {TanStackRouterDevtools && <TanStackRouterDevtools />}
       </div>

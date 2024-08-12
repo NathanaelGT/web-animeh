@@ -70,6 +70,7 @@ export const animeSynonyms = sqliteTable('anime_synonyms', {
   type: text('type').notNull(),
 })
 
+// TODO: hapus id, pake composite key animeId+provider
 export const animeMetadata = sqliteTable('anime_metadata', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   animeId: integer('anime_id')
@@ -77,6 +78,7 @@ export const animeMetadata = sqliteTable('anime_metadata', {
     .references(() => anime.id, { onDelete: 'cascade' }),
   provider: text('provider').notNull(),
   providerId: integer('provider_id').notNull(),
+  providerSlug: text('provider_slug'),
 })
 
 export const genres = sqliteTable('genres', {

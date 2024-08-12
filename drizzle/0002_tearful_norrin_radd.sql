@@ -3,5 +3,6 @@ CREATE TABLE `anime_metadata` (
 	`anime_id` integer NOT NULL,
 	`provider` text NOT NULL,
 	`provider_id` integer NOT NULL,
+	`provider_slug` text,
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );

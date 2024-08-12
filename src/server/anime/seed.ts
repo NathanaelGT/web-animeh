@@ -1,4 +1,5 @@
 import path from 'path'
+import fs from 'fs/promises'
 import { db } from '~s/db'
 import {
   anime,
@@ -10,7 +11,7 @@ import {
   animeSynonyms,
   studioSynonyms,
 } from '~s/db/schema'
-import { basePath } from '~s/utils/path'
+import { basePath, glob } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
 import { fetchAll } from '~s/external/api/kuramanime'
 import { limitRequest } from '~s/external/limit'
@@ -26,6 +27,10 @@ export const seed = async () => {
 }
 
 export const populate = async () => {
+  const imageDirPath = path.join(basePath, 'images/')
+
+  const imageListPromise = glob(imageDirPath, '*')
+
   let populateGenrePromise: Promise<void> | null = jikanQueue.add(async () => {
     const malGenreList = await jikanClient.genres.getAnimeGenres()
 
@@ -65,13 +70,13 @@ export const populate = async () => {
     return Number(hours || 0) * 3600 + Number(minutes || 0) * 60 + Number(seconds || 0)
   }
 
-  const imageDirPath = path.join(basePath, 'images/')
-
   const imageResponsePromiseMap = new Map<string, Promise<[string, Response]>>()
 
   let id = 0
 
   const now = new Date()
+
+  const imageList = new Set(await imageListPromise)
 
   fetchAll(async animeList => {
     const animeDataList: (typeof anime.$inferInsert)[] = []
@@ -107,10 +112,12 @@ export const populate = async () => {
           : imageUrl
       const ext = extension(imageFetchUrl)
 
-      imageResponsePromiseMap.set(
-        imageFetchUrl,
-        limitRequest(async () => [ext, await fetch(imageFetchUrl)]),
-      )
+      if (!imageList.has(animeData.id + '.' + ext)) {
+        imageResponsePromiseMap.set(
+          imageFetchUrl,
+          limitRequest(async () => [ext, await fetch(imageFetchUrl)]),
+        )
+      }
 
       ++id
 
@@ -118,6 +125,7 @@ export const populate = async () => {
         animeId: id,
         provider: 'kuramanime',
         providerId: animeData.id,
+        providerSlug: animeData.slug,
       })
 
       animeDataList.push({

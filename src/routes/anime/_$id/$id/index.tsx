@@ -64,7 +64,13 @@ function AnimeId() {
       />
 
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
-        <AnimePoster anime={{ id: params.id, imageExtension: animeData.imageExtension }} />
+        <AnimePoster
+          anime={{
+            id: Number(params.id),
+            title: animeData.title,
+            imageExtension: animeData.imageExtension,
+          }}
+        />
 
         <div className="grid w-[225px] gap-3">
           <Button asChild className="gap-2 bg-sky-600 text-lg font-bold">

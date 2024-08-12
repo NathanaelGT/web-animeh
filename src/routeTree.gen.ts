@@ -17,6 +17,7 @@ import { Route as PengaturanImport } from './routes/_pengaturan'
 import { Route as IndexImport } from './routes/index'
 import { Route as AnimeIdImport } from './routes/anime/_$id'
 import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
+import { Route as PengaturanPengaturanUnduhanImport } from './routes/_pengaturan/pengaturan/unduhan'
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
 import { Route as AnimeIdIdIndexImport } from './routes/anime/_$id/$id/index'
 import { Route as AnimeIdIdEpisodeImport } from './routes/anime/_$id/$id/_episode'
@@ -58,6 +59,12 @@ const PengaturanPengaturanIndexRoute = PengaturanPengaturanIndexImport.update({
   path: '/pengaturan/',
   getParentRoute: () => PengaturanRoute,
 } as any)
+
+const PengaturanPengaturanUnduhanRoute =
+  PengaturanPengaturanUnduhanImport.update({
+    path: '/pengaturan/unduhan',
+    getParentRoute: () => PengaturanRoute,
+  } as any)
 
 const PengaturanPengaturanTampilanRoute =
   PengaturanPengaturanTampilanImport.update({
@@ -120,6 +127,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PengaturanPengaturanTampilanImport
       parentRoute: typeof PengaturanImport
     }
+    '/_pengaturan/pengaturan/unduhan': {
+      id: '/_pengaturan/pengaturan/unduhan'
+      path: '/pengaturan/unduhan'
+      fullPath: '/pengaturan/unduhan'
+      preLoaderRoute: typeof PengaturanPengaturanUnduhanImport
+      parentRoute: typeof PengaturanImport
+    }
     '/_pengaturan/pengaturan/': {
       id: '/_pengaturan/pengaturan/'
       path: '/pengaturan'
@@ -164,6 +178,7 @@ export const routeTree = rootRoute.addChildren({
   IndexRoute,
   PengaturanRoute: PengaturanRoute.addChildren({
     PengaturanPengaturanTampilanRoute,
+    PengaturanPengaturanUnduhanRoute,
     PengaturanPengaturanIndexRoute,
   }),
   AnimeRoute: AnimeRoute.addChildren({
@@ -198,6 +213,7 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "_pengaturan.tsx",
       "children": [
         "/_pengaturan/pengaturan/tampilan",
+        "/_pengaturan/pengaturan/unduhan",
         "/_pengaturan/pengaturan/"
       ]
     },
@@ -216,6 +232,10 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_pengaturan/pengaturan/tampilan": {
       "filePath": "_pengaturan/pengaturan/tampilan.tsx",
+      "parent": "/_pengaturan"
+    },
+    "/_pengaturan/pengaturan/unduhan": {
+      "filePath": "_pengaturan/pengaturan/unduhan.tsx",
       "parent": "/_pengaturan"
     },
     "/_pengaturan/pengaturan/": {

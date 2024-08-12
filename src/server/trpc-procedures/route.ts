@@ -7,9 +7,11 @@ import type {
 import z from 'zod'
 import { episodes } from '~s/db/schema'
 import { procedure, router } from '~s/trpc'
-import { isMoreThanOneDay } from '~/server/utils/time'
-import { omit } from '~/shared/utils/object'
+import { isMoreThanOneDay } from '~s/utils/time'
+import { logger } from '~s/utils/logger'
 import { updateEpisode } from '~s/anime/episode/update'
+import { downloadEpisode } from '~s/external/api/kuramanime/download'
+import { omit } from '~/shared/utils/object'
 
 export const RouteRouter = router({
   '/': procedure.query(async ({ ctx }) => {
@@ -139,6 +141,32 @@ export const RouteRouter = router({
         },
       })
     }
+
+    ;(async () => {
+      const animeData = await ctx.db.query.anime.findFirst({
+        columns: { title: true },
+        where: (anime, { eq }) => eq(anime.id, input),
+        with: {
+          metadata: {
+            columns: { providerId: true, providerSlug: true },
+          },
+        },
+      })
+
+      if (!animeData) {
+        return
+      } else if (!animeData.metadata.providerSlug) {
+        logger.warn('invalid provider slug', {
+          animeId: input,
+          provider: 'kuramanime',
+          anime: animeData,
+        })
+
+        return
+      }
+
+      await downloadEpisode({ id: input, title: animeData.title }, animeData.metadata, 1)
+    })()
 
     return episodeList
   }),
