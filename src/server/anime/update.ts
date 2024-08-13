@@ -5,7 +5,7 @@ import { basePath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
 import { extension } from '~/shared/utils/file'
-import { jikanClient } from '~s/external/api/jikan'
+import { jikanQueue, jikanClient } from '~s/external/api/jikan'
 import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
 import type { Anime as JikanAnime } from '@tutkli/jikan-ts'
 
@@ -91,7 +91,10 @@ export const fetchAndUpdate = async <TConfig extends UpdateConfig>(
   localAnime: Pick<Anime, 'id'>,
   config: TConfig = {} as TConfig,
 ) => {
-  const { data } = await jikanClient.anime.getAnimeFullById(localAnime.id)
+  const { data } = await jikanQueue.add(() => jikanClient.anime.getAnimeFullById(localAnime.id), {
+    throwOnTimeout: true,
+    priority: 2,
+  })
 
   return await update(localAnime.id, data, config)
 }
