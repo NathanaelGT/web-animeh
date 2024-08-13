@@ -67,13 +67,21 @@ function EpisodeLayout() {
     pageList[0] ? pageList[0][0] + ' - ' + pageList[0][1] : '',
   )
 
+  // pada saat transisi kehalaman lain, path engga bisa diandalin, jadi mesti nyimpan value sebelumnya
+  const previousEpisodeRef = useRef<number>(1)
   const currentEpisode = useRouterState({
-    select: state => {
+    select(state) {
       const { pathname } = state.location
 
-      return Number(pathname.slice(pathname.lastIndexOf('/') + 1))
+      const indexOfEpisode = pathname.lastIndexOf('episode/')
+      if (indexOfEpisode > 0) {
+        return Number(pathname.slice(indexOfEpisode + 'episode/'.length))
+      }
+
+      return previousEpisodeRef.current
     },
   })
+  previousEpisodeRef.current = currentEpisode
 
   const compactMode = displayMode === 'Auto' ? episodeCount > 50 : displayMode === 'Padat'
 
@@ -233,7 +241,7 @@ function EpisodeLayout() {
             <EpisodeSelector
               key={params.id + '|' + currentPage}
               animeId={params.id}
-              currentEpisode={currentEpisode}
+              currentEpisode={currentEpisode ?? 1}
               episodeList={currentPageEpisodeList}
               compactMode={compactMode}
             />
