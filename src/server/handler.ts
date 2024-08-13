@@ -6,6 +6,7 @@ import { createTRPCContext } from '~s/trpc'
 import { TRPCRouter } from '~s/router'
 // import { safePath } from '~s/utils/path'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
+import { handleVideoRequest } from '~s/http-handler/video'
 import { isProduction } from '~s/env' with { type: 'macro' }
 
 let indexHtml: Buffer
@@ -33,9 +34,12 @@ export const httpHandler = async (
     }
   }
 
-  if (!isProduction()) {
-    const target = request.url.slice(server.url.origin.length)
+  const target = request.url.slice(server.url.origin.length)
+  if (target.startsWith('/videos')) {
+    return handleVideoRequest(request, target)
+  }
 
+  if (!isProduction()) {
     return Response.redirect(`http://localhost:8888${target}`, 302)
   }
 

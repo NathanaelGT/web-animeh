@@ -1,9 +1,10 @@
-import { useContext, useState, useMemo, useRef } from 'react'
+import { useContext, useState, useMemo, useRef, useEffect } from 'react'
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
+import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
-import { clientProfileSettingsStore } from '~c/stores'
-import { AnimeDataContext, EpisodeListContext } from '~c/context'
+import { clientProfileSettingsStore, episodeListStore, type EpisodeList } from '~c/stores'
+import { AnimeDataContext } from '~c/context'
 import { searchEpisode } from '~/shared/utils/episode'
 import { sleep } from '~/shared/utils/time'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
@@ -35,7 +36,7 @@ function EpisodeLayout() {
   const [sortLatest, setSortLatest] = useState(episodeFilter.sortLatest)
   const [hideFiller, setHideFiller] = useState(episodeFilter.hideFiller)
   const [hideRecap, setHideRecap] = useState(episodeFilter.hideRecap)
-  const episodeList = Route.useLoaderData()
+  const episodeList = Route.useLoaderData() as EpisodeList
 
   const episodeCount = episodeList.length
   const pageCount = Math.ceil(episodeCount / perPage)
@@ -188,6 +189,21 @@ function EpisodeLayout() {
     })
   }
 
+  api.anime.episodes.useSubscription(Number(params.id), {
+    onData(data) {
+      for (let i = 0; i < episodeCount; i++) {
+        episodeList[i] = {
+          ...episodeList[i]!,
+          downloadStatus: data[episodeList[i]!.number] ?? false,
+        }
+      }
+
+      episodeListStore.setState(() => [...episodeList])
+    },
+  })
+
+  episodeListStore.setState(() => episodeList)
+
   return (
     <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
@@ -248,9 +264,7 @@ function EpisodeLayout() {
           </div>
         </aside>
 
-        <EpisodeListContext.Provider value={episodeList}>
-          <Outlet />
-        </EpisodeListContext.Provider>
+        <Outlet />
       </div>
     </div>
   )

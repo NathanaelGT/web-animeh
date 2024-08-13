@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
+import { DownloadProgress } from '@/ui/custom/download-progress'
 import { Progress } from '@/ui/progress'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan')({
@@ -31,25 +32,9 @@ function PengaturanUnduhan() {
             cb={([name, text]) => (
               <div key={name}>
                 <p>{name}</p>
-                <p className="flex whitespace-pre">
-                  {text.match(/\d+|\D+/g)?.map((chars, index) => {
-                    const asciiCode = chars.codePointAt(0)!
-                    // untuk angka, diset widthnya 1ch biar engga gerak"
-                    if (asciiCode >= 48 && asciiCode <= 57) {
-                      return (
-                        <span
-                          key={index}
-                          style={{ width: chars.length + 'ch' }}
-                          className="inline-block"
-                        >
-                          {chars}
-                        </span>
-                      )
-                    }
 
-                    return <span key={index}>{chars}</span>
-                  })}
-                </p>
+                <DownloadProgress text={text} />
+
                 {text.endsWith('%)') && (
                   <Progress value={Number(text.slice(text.indexOf('(') + 1, -2))} />
                 )}
