@@ -10,7 +10,6 @@ import { procedure, router } from '~s/trpc'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
 import { updateEpisode } from '~s/anime/episode/update'
-import { downloadEpisode } from '~s/external/api/kuramanime/download'
 import { omit } from '~/shared/utils/object'
 
 export const RouteRouter = router({
@@ -164,8 +163,6 @@ export const RouteRouter = router({
 
         return
       }
-
-      await downloadEpisode({ id: input, title: animeData.title }, animeData.metadata, 1)
     })()
 
     return episodeList
