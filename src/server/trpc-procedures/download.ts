@@ -1,6 +1,10 @@
 import { observable } from '@trpc/server/observable'
 import { procedure, router } from '~s/trpc'
-import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
+import {
+  downloadProgress,
+  downloadProgressSnapshot,
+  type DownloadProgressData,
+} from '~s/external/download/progress'
 
 export const DownloadRouter = router({
   list: procedure.subscription(async () => {
@@ -9,7 +13,7 @@ export const DownloadRouter = router({
     return observable<DownloadList>(emit => {
       const downloadList: DownloadList = {}
 
-      const handleUpdate = (data: { text: string; done?: boolean }, name: string) => {
+      const handleUpdate = (data: DownloadProgressData, name: string) => {
         if (data.text) {
           downloadList[name] = data.text
         }
@@ -27,11 +31,17 @@ export const DownloadRouter = router({
 
       emit.next(downloadList)
 
-      downloadProgress.on('*', (name, data) => {
+      const downloadProgressHandler = (name: string, data: DownloadProgressData) => {
         handleUpdate(data, name)
 
         emit.next(downloadList)
-      })
+      }
+
+      downloadProgress.on('*', downloadProgressHandler)
+
+      return () => {
+        downloadProgress.off('*', downloadProgressHandler)
+      }
     })
   }),
 })

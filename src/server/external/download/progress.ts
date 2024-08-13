@@ -1,8 +1,13 @@
 import mitt from 'mitt'
 
-export const downloadProgress = mitt<Record<string, { text: string; done?: boolean }>>()
+export type DownloadProgressData = {
+  text: string
+  done?: boolean
+}
 
-export const downloadProgressSnapshot = new Map<string, { text: string; done?: boolean }>()
+export const downloadProgress = mitt<Record<string, DownloadProgressData>>()
+
+export const downloadProgressSnapshot = new Map<string, DownloadProgressData>()
 
 downloadProgress.on('*', (key, data) => {
   if (data.done) {
