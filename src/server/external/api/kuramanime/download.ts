@@ -45,8 +45,8 @@ export const downloadEpisode = async (
   onFinish?: () => void,
 ): Promise<string | null> => {
   const animePath = videosDirPath + localAnime.id
-  const fileName = episodeNumber.toString().padStart(2, '0') + '.mp4'
-  const tempFilePath = path.join(animePath, '_' + fileName)
+  const fileName = episodeNumber.toString().padStart(2, '0')
+  const tempFilePath = path.join(animePath, fileName + '_.mp4')
   const file = Bun.file(tempFilePath)
 
   if (await file.exists()) {
@@ -156,7 +156,7 @@ export const downloadEpisode = async (
 
     downloadProgress.emit(emitKey, { text: `Mengoptimalisasi video` })
 
-    const filePath = path.join(animePath, fileName)
+    const filePath = path.join(animePath, fileName + '.mp4')
 
     await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
 
