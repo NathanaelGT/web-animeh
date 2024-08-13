@@ -63,7 +63,7 @@ const animeSchema = z.object({
   members: z.number().nullable(),
   full_alt_titles: z.string(),
   latest_comment_at: z.string().nullable(),
-  base_rank: z.number(),
+  base_rank: z.number().nullable(),
   is_movie: z.number().nullable(),
   country_code: z.string(),
   latest_comment_id: z.number().nullable(),

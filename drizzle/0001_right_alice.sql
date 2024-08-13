@@ -1,5 +1,5 @@
 CREATE TABLE `anime` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`id` integer PRIMARY KEY NOT NULL,
 	`mal_id` integer,
 	`anilist_id` integer,
 	`title` text NOT NULL,

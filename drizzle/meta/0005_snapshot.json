@@ -12,13 +12,6 @@
           "type": "integer",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": true
-        },
-        "mal_id": {
-          "name": "mal_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
           "autoincrement": false
         },
         "anilist_id": {

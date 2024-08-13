@@ -1,5 +1,4 @@
 import path from 'path'
-import fs from 'fs/promises'
 import { db } from '~s/db'
 import {
   anime,
@@ -72,11 +71,10 @@ export const populate = async () => {
 
   const imageResponsePromiseMap = new Map<string, Promise<[string, Response]>>()
 
-  let id = 0
-
   const now = new Date()
 
   const imageList = new Set(await imageListPromise)
+  const storedAnimeList = new Set<number>()
 
   fetchAll(async animeList => {
     const animeDataList: (typeof anime.$inferInsert)[] = []
@@ -98,10 +96,23 @@ export const populate = async () => {
       }
 
       const slicedMalUrl = animeData.mal_url.slice('https://myanimelist.net/anime/'.length)
-      const malId = Number(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/')))
-      if (isNaN(malId)) {
+      const id = Number(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/')))
+      if (isNaN(id)) {
         continue
       }
+
+      animeMetadataList.push({
+        animeId: id,
+        provider: 'kuramanime',
+        providerId: animeData.id,
+        providerSlug: animeData.slug,
+      })
+
+      // kadang ada yang duplikat, misalnya untuk versi uncensored
+      if (storedAnimeList.has(id)) {
+        continue
+      }
+      storedAnimeList.add(id)
 
       const slicedAnilistUrl = animeData.anilist_url?.slice('https://anilist.co/anime/'.length)
 
@@ -119,18 +130,8 @@ export const populate = async () => {
         )
       }
 
-      ++id
-
-      animeMetadataList.push({
-        animeId: id,
-        provider: 'kuramanime',
-        providerId: animeData.id,
-        providerSlug: animeData.slug,
-      })
-
       animeDataList.push({
         id,
-        malId,
         anilistId: parseNumber(slicedAnilistUrl),
         title: animeData.title,
         synopsis: animeData.synopsis,
@@ -150,7 +151,7 @@ export const populate = async () => {
     const insertedAnimeList = await db
       .insert(anime)
       .values(animeDataList)
-      .returning({ id: anime.id, malId: anime.malId, imageUrl: anime.imageUrl })
+      .returning({ id: anime.id, imageUrl: anime.imageUrl })
 
     db.insert(animeMetadata).values(animeMetadataList).execute()
 
@@ -162,14 +163,12 @@ export const populate = async () => {
     const hasImages = new Set<number>()
 
     for (const animeData of insertedAnimeList) {
-      const animeMalId = animeData.malId
-
       jikanQueue.add(async () => {
-        const { data } = await jikanClient.anime.getAnimeFullById(animeMalId)
+        const { data } = await jikanClient.anime.getAnimeFullById(animeData.id)
 
         const synonymList = data.titles.slice(1).map(({ title, type }) => {
           return {
-            animeId: animeMalId,
+            animeId: animeData.id,
             synonym: title,
             type,
           } satisfies typeof animeSynonyms.$inferInsert
@@ -206,7 +205,7 @@ export const populate = async () => {
 
           for (const studio of studioList) {
             // entah kenapa ada beberapa yang duplikat
-            const key = animeMalId + type + studio.mal_id
+            const key = animeData.id + type + studio.mal_id
             if (existingCombination.has(key)) {
               continue
             }
@@ -228,7 +227,8 @@ export const populate = async () => {
         }
 
         update(animeData.id, data, {
-          updateImage: !hasImages.has(animeMalId) || extension(animeData.imageUrl ?? '') !== 'webp',
+          updateImage:
+            !hasImages.has(animeData.id) || extension(animeData.imageUrl ?? '') !== 'webp',
         })
       })
 

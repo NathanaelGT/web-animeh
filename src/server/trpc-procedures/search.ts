@@ -9,7 +9,6 @@ export const SearchProcedure = procedure.input(z.string()).mutation(async ({ inp
   const animeList = await ctx.db.query.anime.findMany({
     columns: {
       id: true,
-      malId: true,
       title: true,
       englishTitle: true,
       airedTo: true,
@@ -28,7 +27,7 @@ export const SearchProcedure = procedure.input(z.string()).mutation(async ({ inp
         like(anime.japaneseTitle, `%${input}%`),
         like(anime.synopsis, `%${input}%`),
         inArray(
-          anime.malId,
+          anime.id,
           ctx.db
             .selectDistinct({ id: animeSynonyms.animeId })
             .from(animeSynonyms)
@@ -55,9 +54,9 @@ export const SearchProcedure = procedure.input(z.string()).mutation(async ({ inp
     },
   })
 
-  return animeList.map(animeData => {
+  for (const animeData of animeList) {
     ctx.loadAnimePoster(animeData)
+  }
 
-    return omit(animeData, 'malId')
-  })
+  return animeList
 })

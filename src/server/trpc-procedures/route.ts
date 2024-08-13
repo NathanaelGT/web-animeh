@@ -19,7 +19,6 @@ export const RouteRouter = router({
       orderBy: (anime, { desc }) => [desc(anime.airedFrom), desc(anime.airedTo)],
       columns: {
         id: true,
-        malId: true,
         title: true,
         type: true,
         rating: true,
@@ -29,18 +28,17 @@ export const RouteRouter = router({
       },
     })
 
-    return animeList.map(animeData => {
+    for (const animeData of animeList) {
       ctx.loadAnimePoster(animeData)
+    }
 
-      return omit(animeData, 'malId')
-    })
+    return animeList
   }),
 
   '/anime/_$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
       where: (anime, { eq }) => eq(anime.id, input),
       columns: {
-        malId: true,
         title: true,
         japaneseTitle: true,
         englishTitle: true,
@@ -92,23 +90,15 @@ export const RouteRouter = router({
 
     ctx.loadAnimePoster({
       id: input,
-      malId: animeData.malId,
       imageExtension: animeData.imageExtension,
     })
 
     if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-      updateEpisode(animeData)
+      updateEpisode({ id: input })
     }
 
     return {
-      ...omit(
-        animeData,
-        'malId',
-        'synonyms',
-        'animeToGenres',
-        'animeToStudios',
-        'episodeUpdatedAt',
-      ),
+      ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
       synonyms: animeData.synonyms.map(({ synonym }) => synonym),
       genres: animeData.animeToGenres.map(({ genre }) => genre.name),
       studios: animeData.animeToStudios.map(({ studio, type }) => ({
@@ -120,7 +110,7 @@ export const RouteRouter = router({
 
   '/anime/_$id/$id/_episode': procedure.input(z.number()).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
-      columns: { malId: true, episodeUpdatedAt: true },
+      columns: { episodeUpdatedAt: true },
       where: (anime, { eq }) => eq(anime.id, input),
     })
 
@@ -131,10 +121,10 @@ export const RouteRouter = router({
     let episodeList: Omit<typeof episodes.$inferSelect, 'animeId'>[]
 
     if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-      episodeList = (await updateEpisode(animeData)).map(episode => omit(episode, 'animeId'))
+      episodeList = (await updateEpisode({ id: input })).map(episode => omit(episode, 'animeId'))
     } else {
       episodeList = await ctx.db.query.episodes.findMany({
-        where: (episodes, { eq }) => eq(episodes.animeId, animeData.malId),
+        where: (episodes, { eq }) => eq(episodes.animeId, input),
         columns: {
           animeId: false,
         },

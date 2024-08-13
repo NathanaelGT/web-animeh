@@ -1,5 +1,4 @@
 import z from 'zod'
-import { anime } from '~s/db/schema'
 import { procedure, router } from '~s/trpc'
 import { videosDirPath, glob } from '~s/utils/path'
 import { downloadEpisode } from '~s/external/api/kuramanime/download'
@@ -11,7 +10,7 @@ export const PosterRouter = router({
     const downloadedEpisodeListPromise = glob(videosDirPath + input, '*.mp4')
 
     const animeData = await ctx.db.query.anime.findFirst({
-      columns: { malId: true, episodeUpdatedAt: true },
+      columns: { id: true, episodeUpdatedAt: true },
       where: (anime, { eq }) => eq(anime.id, input),
     })
 
@@ -24,16 +23,7 @@ export const PosterRouter = router({
         ? updateEpisode(animeData)
         : ctx.db.query.episodes.findMany({
             columns: { number: true },
-            where(episodes, { eq }) {
-              return eq(
-                episodes.animeId,
-                ctx.db
-                  .select({ malId: anime.malId })
-                  .from(anime)
-                  .where(eq(anime.id, input))
-                  .limit(1),
-              )
-            },
+            where: (episodes, { eq }) => eq(episodes.animeId, input),
           }),
 
       downloadedEpisodeListPromise,

@@ -4,15 +4,12 @@ import { buildConflictUpdateColumns } from '~s/utils/db'
 import { anime, episodes } from '~s/db/schema'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 
-export const updateEpisode = async (animeData: Pick<typeof anime.$inferSelect, 'malId'>) => {
-  db.update(anime)
-    .set({ episodeUpdatedAt: new Date() })
-    .where(eq(anime.malId, animeData.malId))
-    .execute()
+export const updateEpisode = async (animeData: Pick<typeof anime.$inferSelect, 'id'>) => {
+  db.update(anime).set({ episodeUpdatedAt: new Date() }).where(eq(anime.id, animeData.id)).execute()
 
   const walk = async (page: number) => {
     const result = await jikanQueue.add(
-      () => jikanClient.anime.getAnimeEpisodes(animeData.malId, page),
+      () => jikanClient.anime.getAnimeEpisodes(animeData.id, page),
       { throwOnTimeout: true, priority: page === 1 ? 2 : 1 },
     )
 
@@ -26,7 +23,7 @@ export const updateEpisode = async (animeData: Pick<typeof anime.$inferSelect, '
 
     const episodeList = result.data.map(episode => {
       return {
-        animeId: animeData.malId,
+        animeId: animeData.id,
         number: episode.mal_id,
         title: episode.title,
         japaneseTitle: episode.title_japanese,

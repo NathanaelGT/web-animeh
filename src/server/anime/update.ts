@@ -88,10 +88,10 @@ export const update = async <TConfig extends UpdateConfig>(
 }
 
 export const fetchAndUpdate = async <TConfig extends UpdateConfig>(
-  localAnime: Pick<Anime, 'id' | 'malId'>,
+  localAnime: Pick<Anime, 'id'>,
   config: TConfig = {} as TConfig,
 ) => {
-  const { data } = await jikanClient.anime.getAnimeFullById(localAnime.malId)
+  const { data } = await jikanClient.anime.getAnimeFullById(localAnime.id)
 
   return await update(localAnime.id, data, config)
 }

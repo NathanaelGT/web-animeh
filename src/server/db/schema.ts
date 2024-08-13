@@ -41,8 +41,7 @@ export const profiles = sqliteTable('profiles', {
 })
 
 export const anime = sqliteTable('anime', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  malId: integer('mal_id').notNull(),
+  id: integer('id').primaryKey(),
   anilistId: integer('anilist_id'),
   title: text('title').notNull(),
   japaneseTitle: text('japanese_title'),
