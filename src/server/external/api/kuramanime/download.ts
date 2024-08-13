@@ -45,7 +45,9 @@ export const downloadEpisode = async (
   onFinish?: () => void,
 ): Promise<string | null> => {
   const animePath = videosDirPath + localAnime.id
-  const file = Bun.file(path.join(animePath, episodeNumber.toString().padStart(2, '0') + '.mp4'))
+  const fileName = episodeNumber.toString().padStart(2, '0') + '.mp4'
+  const tempFilePath = path.join(animePath, '_' + fileName)
+  const file = Bun.file(tempFilePath)
 
   if (await file.exists()) {
     return null
@@ -121,7 +123,7 @@ export const downloadEpisode = async (
       }
 
       skip = true
-      let text = formatBytes(receivedLength)
+      let text = 'Mengunduh: ' + formatBytes(receivedLength)
 
       if (contentLength) {
         text +=
@@ -146,12 +148,21 @@ export const downloadEpisode = async (
 
     clearInterval(intervalId)
 
+    downloadProgress.emit(emitKey, {
+      text: `Mengunduh: ${formattedContentLength} / ${formattedContentLength} (100%)`,
+    })
+
     await writer.end()
 
-    downloadProgress.emit(emitKey, {
-      text: `${formattedContentLength} / ${formattedContentLength} (100%)`,
-      done: true,
-    })
+    downloadProgress.emit(emitKey, { text: `Mengoptimalisasi video` })
+
+    const filePath = path.join(animePath, fileName)
+
+    await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
+
+    downloadProgress.emit(emitKey, { text: `Video selesai diunduh`, done: true })
+
+    await fs.rm(tempFilePath)
 
     onFinish?.()
   })()

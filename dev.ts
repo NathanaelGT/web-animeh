@@ -34,6 +34,7 @@ const server = Bun.spawn(['bun', '--hot', './src/server/index.ts', ...Bun.argv.s
   env: {
     MODE: 'development',
     BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: '1',
+    ...process.env,
   },
   ipc(message) {
     if (message === 'ready') {
@@ -73,11 +74,18 @@ const log = (level: Level, message: string, elapsed: number | null = null) => {
 
 const textDecoder = new TextDecoder()
 
-;[client, server].forEach(cp => {
+const childProcesses = [client, server]
+childProcesses.forEach(cp => {
   const type = cp === client ? 'client' : 'server'
 
   cp.exited.then(code => {
     process.stderr.write(logMessage(type, `Process exited with code ${code}`))
+
+    childProcesses.forEach(otherCp => {
+      if (otherCp !== cp) {
+        cp.kill()
+      }
+    })
 
     process.exit(code)
   })

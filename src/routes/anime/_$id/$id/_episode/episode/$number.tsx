@@ -35,7 +35,6 @@ function EpisodeNumber() {
       <div className="flex aspect-video bg-slate-200">
         {typeof status === 'string' ? (
           <div className="m-auto text-center">
-            <p>Sedang Mengunduh</p>
             <DownloadProgress text={message} />
           </div>
         ) : status ? (
