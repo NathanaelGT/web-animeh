@@ -109,7 +109,7 @@ export const downloadEpisode = async (
 
   await mkDirPromise
 
-  const writer = file.writer()
+  const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
 
   ;(async () => {
     let skip = false
@@ -140,14 +140,14 @@ export const downloadEpisode = async (
 
     for await (const data of stream) {
       writer.write(data)
-      writer.flush()
 
       emitProgress(data)
     }
 
+    clearInterval(intervalId)
+
     await writer.end()
 
-    clearInterval(intervalId)
     downloadProgress.emit(emitKey, {
       text: `${formattedContentLength} / ${formattedContentLength} (100%)`,
       done: true,
