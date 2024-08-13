@@ -148,7 +148,10 @@ export const downloadEpisode = async (
     await writer.end()
 
     clearInterval(intervalId)
-    downloadProgress.emit(emitKey, { text: '', done: true })
+    downloadProgress.emit(emitKey, {
+      text: `${formattedContentLength} / ${formattedContentLength} (100%)`,
+      done: true,
+    })
 
     onFinish?.()
   })()

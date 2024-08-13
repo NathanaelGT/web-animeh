@@ -14,16 +14,14 @@ export const DownloadRouter = router({
       const downloadList: DownloadList = {}
 
       const handleUpdate = (data: DownloadProgressData, name: string) => {
-        if (data.text) {
-          downloadList[name] = data.text
-        }
+        downloadList[name] = data.text
 
         if (data.done) {
           setTimeout(() => {
             delete downloadList[name]
 
             emit.next(downloadList)
-          }, 100)
+          }, 250)
         }
       }
 
