@@ -11,10 +11,10 @@ process.on('unhandledRejection', handleError)
 
 const maxWidth = 90
 
-log(
-  '\x1b[1A\x1b[0G' + ' '.repeat(Math.min(30, Math.max(process.stdout.columns, maxWidth))),
-  `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`,
-)
+process.stdout.write('\x1b[1A\x1b[0G')
+process.stdout.clearLine(0)
+
+log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`)
 
 await $`rm -rf ./dist && mkdir ./dist`.quiet().catch(handleError)
 

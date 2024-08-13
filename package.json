@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "bun run dev.ts",
     "build": "bun run build.ts",
+    "preview": "bun run build.ts && bun ./dist --log",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio"
