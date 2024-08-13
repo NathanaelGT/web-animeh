@@ -112,7 +112,11 @@ function SimpleBreadcrumb({
   for (let index = 0; index < len; index++) {
     if (index < len - 1) {
       children.push(
-        <BreadcrumbItem key={index} className={itemClassName}>
+        <BreadcrumbItem
+          key={index}
+          style={{ viewTransitionName: `bread-${viewTransitionPrefix}-${index}` }}
+          className={itemClassName}
+        >
           <BreadcrumbLink asChild>{links[index]}</BreadcrumbLink>
         </BreadcrumbItem>,
         <BreadcrumbSeparator

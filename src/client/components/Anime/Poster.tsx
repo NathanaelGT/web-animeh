@@ -38,6 +38,7 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
   const poster = (
     <Image
       src={anime.id}
+      style={{ viewTransitionName: `anime-poster-${anime.id}` }}
       className={
         (small ? 'h-[229px] max-w-[162px]' : 'h-[318px] max-w-[225px]') +
         ' rounded-md object-cover shadow outline outline-1 outline-slate-600/20'
