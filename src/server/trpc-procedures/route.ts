@@ -13,10 +13,13 @@ import { updateEpisode } from '~s/anime/episode/update'
 import { omit } from '~/shared/utils/object'
 
 export const RouteRouter = router({
-  '/': procedure.query(async ({ ctx }) => {
+  '/': procedure.input(z.object({ cursor: z.number().nullish() })).query(async ({ ctx, input }) => {
+    const perPage = 48
+
     const animeList = await ctx.db.query.anime.findMany({
-      limit: 48,
-      orderBy: (anime, { desc }) => [desc(anime.airedFrom), desc(anime.airedTo)],
+      limit: perPage,
+      orderBy: (anime, { desc }) => [desc(anime.id)],
+      where: input.cursor ? (anime, { lt }) => lt(anime.id, input.cursor!) : undefined,
       columns: {
         id: true,
         title: true,
