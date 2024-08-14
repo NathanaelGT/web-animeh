@@ -3,7 +3,7 @@ import { relations } from 'drizzle-orm'
 import type { z } from 'zod'
 import type { settingsSchema } from '~/shared/profile/settings'
 
-const aired = customType<{ data: Date }>({
+const dateDiv100 = customType<{ data: Date }>({
   dataType() {
     return 'integer'
   },
@@ -48,8 +48,8 @@ export const anime = sqliteTable('anime', {
   englishTitle: text('english_title'),
   synopsis: text('synopsis'),
   totalEpisodes: integer('total_episodes'),
-  airedFrom: aired('aired_from'),
-  airedTo: aired('aired_to'),
+  airedFrom: dateDiv100('aired_from'),
+  airedTo: dateDiv100('aired_to'),
   score: score('score'),
   rating: text('rating'),
   duration: integer('duration'),
@@ -105,7 +105,7 @@ export const studios = sqliteTable('studios', {
   name: text('name').notNull(),
   about: text('about'),
   imageUrl: text('image_url'),
-  establishedAt: integer('established_at', { mode: 'timestamp' }),
+  establishedAt: dateDiv100('established_at'),
 })
 
 export const studioSynonyms = sqliteTable('studio_synonyms', {
