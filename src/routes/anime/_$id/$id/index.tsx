@@ -76,7 +76,7 @@ function AnimeId() {
         />
 
         <div className="grid w-[225px] gap-3">
-          <Button asChild className="gap-2 bg-sky-600 text-lg font-bold">
+          <Button asChild variant="sky" className="gap-2 text-lg font-bold">
             <Link to="/anime/$id/episode/$number" params={{ id: params.id, number: '1' }}>
               <Play />
               Nonton
