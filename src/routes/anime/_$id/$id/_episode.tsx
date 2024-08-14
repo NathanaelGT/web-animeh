@@ -248,7 +248,7 @@ function EpisodeLayout() {
           <div
             ref={episodeListRef}
             className={
-              'justify-items-center scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
+              'h-fit justify-items-center scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
               (compactMode
                 ? 'grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2 overflow-y-scroll p-2 text-xs md:grid-cols-5'
                 : 'overflow-y-auto text-sm')
