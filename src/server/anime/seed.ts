@@ -208,6 +208,7 @@ export const populate = async () => {
           [
             [data.studios, 'studio'],
             [data.producers, 'producer'],
+            [data.licensors, 'licensor'],
           ] as const
         ).flatMap(([studioList, type]) => {
           const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []

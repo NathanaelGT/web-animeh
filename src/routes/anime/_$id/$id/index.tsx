@@ -27,14 +27,17 @@ function AnimeId() {
 
   const studios: string[] = []
   const producers: string[] = []
+  const licensors: string[] = []
 
   for (const studio of animeData.studios) {
     const name = studio.name ?? `<span class="text-slate-400 ${SHADOW}">Loading</span>`
 
     if (studio.type === 'studio') {
       studios.push(name)
-    } else {
+    } else if (studio.type === 'producer') {
       producers.push(name)
+    } else {
+      licensors.push(name)
     }
   }
 
@@ -156,6 +159,12 @@ function AnimeId() {
           <div>
             <span className="font-bold">Produser</span>:{' '}
             <span dangerouslySetInnerHTML={{ __html: producers.join(', ') }} />
+          </div>
+        )}
+        {licensors.length > 0 && (
+          <div>
+            <span className="font-bold">Lisensor</span>:{' '}
+            <span dangerouslySetInnerHTML={{ __html: licensors.join(', ') }} />
           </div>
         )}
       </div>

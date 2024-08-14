@@ -124,7 +124,7 @@ export const animeToStudios = sqliteTable(
       .notNull()
       .references(() => anime.id, { onDelete: 'cascade' }),
     studioId: integer('studio_id').notNull(),
-    type: text('type', { enum: ['studio', 'producer'] }).notNull(),
+    type: text('type', { enum: ['studio', 'producer', 'licensor'] }).notNull(),
   },
   t => ({
     pk: primaryKey({ columns: [t.animeId, t.studioId, t.type] }),
