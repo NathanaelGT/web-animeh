@@ -47,19 +47,20 @@ export const PosterRouter = router({
         with: {
           metadata: {
             columns: { providerId: true, providerSlug: true },
+            limit: 1,
           },
         },
       })
 
       if (!animeData) {
         throw new Error('404')
-      } else if (!animeData.metadata.providerSlug) {
+      } else if (!animeData.metadata[0]?.providerSlug) {
         throw new Error('invalid provider slug')
       }
 
       return await downloadEpisode(
         { id: input.animeId, title: animeData.title },
-        animeData.metadata,
+        animeData.metadata[0],
         input.episodeNumber,
       )
     }),

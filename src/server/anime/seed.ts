@@ -74,7 +74,7 @@ export const populate = async () => {
   const now = new Date()
 
   const imageList = new Set(await imageListPromise)
-  const storedAnimeList = new Set<number>()
+  const storedAnimeList = new Map<number, string>()
 
   fetchAll(async animeList => {
     const animeDataList: (typeof anime.$inferInsert)[] = []
@@ -101,18 +101,33 @@ export const populate = async () => {
         continue
       }
 
+      const storedTitle = storedAnimeList.get(id)
+      const createProviderData = () => {
+        if (!storedTitle) {
+          return null
+        }
+
+        const extra = animeData.title.slice(storedTitle.length).trim()
+
+        if (extra.startsWith('(') && extra.endsWith(')')) {
+          return extra.slice(1, -1)
+        }
+        return extra
+      }
+
       animeMetadataList.push({
         animeId: id,
         provider: 'kuramanime',
         providerId: animeData.id,
         providerSlug: animeData.slug,
+        providerData: createProviderData(),
       })
 
       // kadang ada yang duplikat, misalnya untuk versi uncensored
-      if (storedAnimeList.has(id)) {
+      if (storedTitle) {
         continue
       }
-      storedAnimeList.add(id)
+      storedAnimeList.set(id, animeData.title)
 
       const slicedAnilistUrl = animeData.anilist_url?.slice('https://anilist.co/anime/'.length)
 
