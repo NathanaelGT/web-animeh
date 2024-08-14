@@ -166,13 +166,22 @@ export const populate = async () => {
       jikanQueue.add(async () => {
         const { data } = await jikanClient.anime.getAnimeFullById(animeData.id)
 
-        const synonymList = data.titles.slice(1).map(({ title, type }) => {
-          return {
+        // ada beberapa sinonim yang duplikat, judulnya sama persis, cuma beda "type"
+        const synonymList: (typeof animeSynonyms.$inferInsert)[] = []
+        const existingSynonyms = new Set<string>([data.titles[0]!.title])
+        for (let i = 1; i < data.titles.length; i++) {
+          const { title, type } = data.titles[i]!
+          if (existingSynonyms.has(title)) {
+            continue
+          }
+
+          existingSynonyms.add(title)
+          synonymList.push({
             animeId: animeData.id,
             synonym: title,
             type,
-          } satisfies typeof animeSynonyms.$inferInsert
-        })
+          })
+        }
 
         if (synonymList.length) {
           db.insert(animeSynonyms).values(synonymList).execute()
