@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { Link } from '@tanstack/react-router'
 import { Image } from '@/Image'
 import { SimpleTooltip } from '@/ui/tooltip'
@@ -18,8 +19,13 @@ type Props = {
 
 export const HEADER_CLASS_ON_SEARCH_INPUT_FOCUS = '_focus'
 
+const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+  dateStyle: 'long',
+})
+
 export function Search({ headerRef }: Props) {
   const searchRef = useRef<HTMLInputElement | null>(null)
+  const arrowOffsetRef = useRef(0)
 
   const search = api.search.useMutation()
   const [searchResults, setSearchResults] = useState<TRPCResponse<typeof SearchProcedure> | null>(
@@ -79,50 +85,182 @@ export function Search({ headerRef }: Props) {
   }, [])
 
   const onInputHandler = (event: React.FormEvent<HTMLInputElement>) => {
+    arrowOffsetRef.current = 0
+
     const { value } = event.currentTarget
 
     if (value) {
-      search.mutate(value, {
-        onSuccess: setSearchResults,
-      })
+      search.mutate(
+        {
+          query: value,
+          offset: 0,
+        },
+        {
+          onSuccess: setSearchResults,
+        },
+      )
     } else {
       setSearchResults(null)
     }
   }
 
-  const onFocusHandler = () => {
+  const onInputFocusHandler = () => {
+    const searchEl = searchRef.current
+    if (!searchEl) {
+      return
+    }
+
+    searchEl.parentElement?.classList.add('md:w-64', 'lg:w-96')
+
     setTimeout(() => {
-      const suggestionEl = searchRef.current?.nextElementSibling
-      if (!suggestionEl) {
+      const suggestionWrapperEl = searchEl.nextElementSibling
+      if (!suggestionWrapperEl) {
         return
       }
 
-      suggestionEl.classList.add('!opacity-100', '!visible')
+      suggestionWrapperEl.classList.add('!opacity-100', '!visible')
       headerRef.current?.classList.add(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
     }, 200)
   }
 
   const onBlurHandler = () => {
-    const suggestionEl = searchRef.current?.nextElementSibling
-    if (!suggestionEl) {
+    requestAnimationFrame(() => {
+      const searchEl = searchRef.current
+      if (!searchEl) {
+        return
+      }
+
+      const active = document.activeElement
+      if (active === searchEl) {
+        return
+      } else if (active instanceof HTMLElement && 'searchResult' in active.dataset) {
+        return
+      }
+
+      setTimeout(() => {
+        searchEl.parentElement?.classList.remove('md:w-64', 'lg:w-96')
+      }, 100)
+
+      const suggestionWrapperEl = searchEl.nextElementSibling
+      if (!suggestionWrapperEl) {
+        return
+      }
+
+      suggestionWrapperEl.classList.remove('!opacity-100', '!visible')
+      headerRef.current?.classList.remove(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
+    })
+  }
+
+  const onSearchResultKeydownHandler = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Enter') {
+      const child = event.currentTarget.firstElementChild
+      if (child instanceof HTMLAnchorElement) {
+        child.click()
+
+        const activeEl = document.activeElement
+        if (activeEl instanceof HTMLElement) {
+          activeEl.blur()
+        }
+      }
+
       return
     }
 
-    suggestionEl.classList.remove('!opacity-100', '!visible')
-    headerRef.current?.classList.remove(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
+    const moveFocus = (
+      getElement: (from: HTMLElement) => Element | null,
+      nextOffset: () => number | null,
+    ) => {
+      const currentTarget = event.currentTarget
+      const element = getElement(currentTarget)
+      if (element instanceof HTMLElement) {
+        event.preventDefault()
+        element.focus()
+
+        return
+      }
+
+      const searchEl = searchRef.current
+      if (!searchEl) {
+        return
+      }
+
+      const originalOffset = arrowOffsetRef.current
+
+      const offset = nextOffset()
+      if (offset === null) {
+        return
+      }
+
+      event.preventDefault()
+      search.mutate(
+        {
+          query: searchEl.value,
+          offset,
+        },
+        {
+          onSuccess(result) {
+            if (result.length === 4) {
+              flushSync(() => {
+                setSearchResults(result)
+              })
+
+              const element = getElement(currentTarget)
+              if (element instanceof HTMLElement) {
+                element.focus()
+              }
+            } else {
+              arrowOffsetRef.current = originalOffset
+            }
+          },
+        },
+      )
+    }
+
+    if (event.key === 'ArrowUp') {
+      moveFocus(
+        el => el.previousElementSibling,
+        () => {
+          if (arrowOffsetRef.current === 0) {
+            return null
+          }
+          return --arrowOffsetRef.current
+        },
+      )
+    } else if (event.key === 'ArrowDown') {
+      moveFocus(
+        el => el.nextElementSibling,
+        () => ++arrowOffsetRef.current,
+      )
+    }
   }
 
-  const dateFormatter = new Intl.DateTimeFormat('id-ID', {
-    dateStyle: 'long',
-  })
+  const onInputKeydownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'ArrowDown') {
+      return
+    }
+
+    const searchEl = searchRef.current
+    if (!searchEl) {
+      return
+    }
+
+    const firstSuggestionEl = searchEl.nextElementSibling?.firstElementChild?.firstElementChild
+    if (!(firstSuggestionEl instanceof HTMLElement)) {
+      return
+    }
+
+    event.preventDefault()
+    firstSuggestionEl.focus()
+  }
 
   return (
-    <div className="relative w-20 transition-[width] duration-200 ease-in-out md:w-28 md:focus-within:w-64 lg:focus-within:w-96">
+    <div className="relative w-20 transition-[width] duration-200 ease-in-out md:w-28">
       <Input
         ref={searchRef}
         onInput={onInputHandler}
-        onFocus={onFocusHandler}
+        onFocus={onInputFocusHandler}
         onBlur={onBlurHandler}
+        onKeyDown={onInputKeydownHandler}
         type="search"
         placeholder="Cari..."
         className="!ring-0"
@@ -130,14 +268,22 @@ export function Search({ headerRef }: Props) {
 
       <div className="invisible absolute max-h-[calc(100vh-4rem)] w-full overflow-hidden opacity-0 transition-all">
         {searchResults ? (
-          <div className="mt-1 flex h-fit flex-col gap-3 rounded-md border border-input bg-background p-3 text-sm">
+          <div className="mt-1 flex h-fit flex-col rounded-md border border-input bg-background px-1 py-1 text-sm">
             {searchResults.length ? (
               searchResults.map(result => (
-                <div key={result.id} className="flex gap-3">
-                  <Link to="/anime/$id" params={{ id: result.id.toString() }}>
+                <div
+                  key={result.id}
+                  tabIndex={0}
+                  onKeyDown={onSearchResultKeydownHandler}
+                  onBlur={onBlurHandler}
+                  data-search-result
+                  className="flex gap-3 px-[.375rem] py-[.375rem]"
+                >
+                  <Link to="/anime/$id" params={{ id: result.id.toString() }} tabIndex={-1}>
                     <Image
                       src={result.id}
-                      className="h-[89px] max-w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
+                      tabIndex={-1}
+                      className="h-[89px] w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
                     />
                   </Link>
 
@@ -147,6 +293,7 @@ export function Search({ headerRef }: Props) {
                         <Link
                           to="/anime/$id"
                           params={{ id: result.id.toString() }}
+                          tabIndex={-1}
                           className="block truncate text-sm font-bold"
                         >
                           {result.title}
@@ -156,6 +303,7 @@ export function Search({ headerRef }: Props) {
                         <Link
                           to="/anime/$id"
                           params={{ id: result.id.toString() }}
+                          tabIndex={-1}
                           className="block truncate text-xs font-bold text-slate-500"
                         >
                           {result.englishTitle}
@@ -181,7 +329,9 @@ export function Search({ headerRef }: Props) {
                 </div>
               ))
             ) : (
-              <span>:(</span>
+              <div className="flex justify-center px-[.375rem] py-[.375rem]">
+                <span className="rotate-90">:(</span>
+              </div>
             )}
           </div>
         ) : null}

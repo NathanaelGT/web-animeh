@@ -19,7 +19,9 @@ export function AnimeType({ type }: Props) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger className={`${className} px-2 py-1`}>{type}</TooltipTrigger>
+        <TooltipTrigger tabIndex={-1} className={`${className} px-2 py-1`}>
+          {type}
+        </TooltipTrigger>
         <TooltipContent>Jenis</TooltipContent>
       </Tooltip>
     </TooltipProvider>

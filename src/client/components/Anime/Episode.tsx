@@ -30,7 +30,9 @@ export function AnimeEpisode({ episode }: Props) {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger className={`${className} px-2 py-1`}>{text}</TooltipTrigger>
+        <TooltipTrigger tabIndex={-1} className={`${className} px-2 py-1`}>
+          {text}
+        </TooltipTrigger>
         <TooltipContent>{episode ? episode + ' Episode' : 'Jumlah Episode'}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
