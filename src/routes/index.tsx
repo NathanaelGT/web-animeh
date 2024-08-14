@@ -34,7 +34,7 @@ function Index() {
   animeListPages.setState(() => animeListQuery.data!.pages)
 
   return (
-    <main className="px-12 py-10">
+    <main>
       <InfiniteScroll
         dataLength={
           animeListQuery.data
@@ -45,7 +45,7 @@ function Index() {
         next={animeListQuery.fetchNextPage}
         hasMore={animeListQuery.hasNextPage}
         loader={<></>}
-        className="grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6"
+        className="grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6 px-12 py-10"
       >
         {animeListQuery.data?.pages.map((_, index) => (
           <PosterDisplayGroup key={index} index={index} />
