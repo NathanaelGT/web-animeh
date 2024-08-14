@@ -1,4 +1,6 @@
+import { memo } from 'react'
 import { Link } from '@tanstack/react-router'
+import { animeListPages } from '~c/stores'
 import { SimpleTooltip } from '@/ui/tooltip'
 import { AnimePoster } from '@/Anime/Poster'
 import { AnimeType } from '@/Anime/Type'
@@ -6,15 +8,12 @@ import { AnimeRating } from '@/Anime/Rating'
 import { AnimeDuration } from '@/Anime/Duration'
 import { AnimeEpisode } from '@/Anime/Episode'
 
-import type { RouteRouter } from '~s/trpc-procedures/route'
-import type { TRPCResponse } from '~/shared/utils/types'
-
 type Props = {
-  animeList: TRPCResponse<(typeof RouteRouter)['/']>
+  index: number
 }
 
-export function PosterDisplayGroup({ animeList }: Props) {
-  return animeList.map(animeData => (
+export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Props) {
+  return animeListPages.state[index]!.map(animeData => (
     <div key={animeData.id} className="mx-auto max-w-[162px]">
       <AnimePoster small asLink anime={animeData}>
         {animeData.totalEpisodes && (
@@ -44,4 +43,4 @@ export function PosterDisplayGroup({ animeList }: Props) {
       </div>
     </div>
   ))
-}
+})

@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
+import { animeListPages } from '~c/stores'
 import { PosterDisplayGroup } from '@/page/home/PosterDisplayGroup'
 
 export const Route = createFileRoute('/')({
@@ -23,6 +25,14 @@ function Index() {
     },
   )
 
+  useEffect(() => {
+    return () => {
+      animeListPages.setState(() => null as never)
+    }
+  }, [])
+
+  animeListPages.setState(() => animeListQuery.data!.pages)
+
   return (
     <main className="px-12 py-10">
       <InfiniteScroll
@@ -37,8 +47,8 @@ function Index() {
         loader={<></>}
         className="grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6"
       >
-        {animeListQuery.data?.pages.map((page, index) => (
-          <PosterDisplayGroup key={index} animeList={page} />
+        {animeListQuery.data?.pages.map((_, index) => (
+          <PosterDisplayGroup key={index} index={index} />
         ))}
       </InfiniteScroll>
     </main>

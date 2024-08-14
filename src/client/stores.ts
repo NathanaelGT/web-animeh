@@ -1,5 +1,6 @@
 export * from './stores/profile'
 export * from './stores/episodeList'
+export * from './stores/animeListPages'
 export * from './stores/clientProfileId'
 export * from './stores/clientProfileName'
 export * from './stores/clientProfileSettings'
