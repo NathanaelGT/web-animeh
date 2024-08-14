@@ -134,30 +134,6 @@ export const RouteRouter = router({
       })
     }
 
-    ;(async () => {
-      const animeData = await ctx.db.query.anime.findFirst({
-        columns: { title: true },
-        where: (anime, { eq }) => eq(anime.id, input),
-        with: {
-          metadata: {
-            columns: { providerId: true, providerSlug: true },
-          },
-        },
-      })
-
-      if (!animeData) {
-        return
-      } else if (!animeData.metadata.providerSlug) {
-        logger.warn('invalid provider slug', {
-          animeId: input,
-          provider: 'kuramanime',
-          anime: animeData,
-        })
-
-        return
-      }
-    })()
-
     return episodeList
   }),
 } satisfies Record<
