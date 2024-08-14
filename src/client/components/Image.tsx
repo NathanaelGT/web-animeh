@@ -1,5 +1,5 @@
 import type { JSX } from 'react'
-import { useImage } from '../hooks/useImage'
+import { useImage } from '~c/hooks/useImage'
 
 namespace Image {
   export type Props = Omit<JSX.IntrinsicElements['img'], 'src'> & {

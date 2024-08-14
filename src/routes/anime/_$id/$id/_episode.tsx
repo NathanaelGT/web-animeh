@@ -1,4 +1,4 @@
-import { useContext, useState, useMemo, useRef, useEffect } from 'react'
+import { useContext, useState, useMemo, useRef } from 'react'
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { api } from '~c/trpc'

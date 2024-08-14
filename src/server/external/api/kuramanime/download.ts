@@ -154,13 +154,13 @@ export const downloadEpisode = async (
 
     await writer.end()
 
-    downloadProgress.emit(emitKey, { text: `Mengoptimalisasi video` })
+    downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
 
     const filePath = path.join(animePath, fileName + '.mp4')
 
     await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
 
-    downloadProgress.emit(emitKey, { text: `Video selesai diunduh`, done: true })
+    downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
 
     await fs.rm(tempFilePath)
 
