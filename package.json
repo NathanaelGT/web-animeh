@@ -38,7 +38,6 @@
     "drizzle-orm": "^0.32.1",
     "drizzle-zod": "^0.5.1",
     "lucide-react": "^0.417.0",
-    "mime": "^4.0.4",
     "mitt": "^3.0.1",
     "p-limit": "^6.1.0",
     "p-queue": "^8.0.1",
