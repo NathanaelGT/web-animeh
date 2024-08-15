@@ -5,7 +5,8 @@ import { env } from '~/env'
 import { anime, animeMetadata } from '~s/db/schema'
 import { videosDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
-import { fetchText, fetchWindowJson } from '~/shared/utils/fetch'
+import { fetchText } from '~/shared/utils/fetch'
+import { parseFromJsObjectString } from '~/shared/utils/json'
 import { formatBytes } from '~/shared/utils/byte'
 import { EpisodeNotFoundError } from '~s/error'
 import { downloadProgress } from '~s/external/download/progress'
@@ -170,10 +171,11 @@ export const downloadEpisode = async (
   return formattedContentLength
 }
 
-function getKuramanimeInitProcess() {
-  return fetchWindowJson(
-    `https://kuramanime.${env.KURAMANIME_TLD}/assets/js/sizzly.js`,
-    kuramanimeInitProcessSchema,
+async function getKuramanimeInitProcess() {
+  const js = await fetchText(`https://kuramanime.${env.KURAMANIME_TLD}/assets/js/sizzly.js`)
+
+  return kuramanimeInitProcessSchema.parse(
+    parseFromJsObjectString(js.replace('window.init_process =', '').replace(';', '')),
   )
 }
 
@@ -186,10 +188,13 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
     throw new EpisodeNotFoundError()
   }
 
-  const kProcess = await fetchWindowJson(
+  const kProcessJs = await fetchText(
     `https://kuramanime.${env.KURAMANIME_TLD}/assets/js/${kpsUrl}.js`,
-    kuramanimeProcessSchema,
   )
+  const kProcess = kuramanimeProcessSchema.parse(
+    parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
+  )
+
   const pageToken = await fetchText(
     `https://kuramanime.${env.KURAMANIME_TLD}/assets/${kProcess.env.MIX_AUTH_ROUTE_PARAM}`,
   )
@@ -197,9 +202,10 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
   return [pageToken, kProcess] as const
 }
 
-function getKuramanimeGlobalData() {
-  return fetchWindowJson(
-    'https://kuramadrive.com/api/v1/var/js/master.js',
-    kuramanimeGlobalDataSchema,
+async function getKuramanimeGlobalData() {
+  const js = await fetchText('https://kuramadrive.com/api/v1/var/js/master.js')
+
+  return kuramanimeGlobalDataSchema.parse(
+    parseFromJsObjectString(js.replace('window.GLOBAL_DATA =', '').replace(';', '')),
   )
 }
