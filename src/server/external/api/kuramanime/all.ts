@@ -1,4 +1,4 @@
-import axios from 'axios'
+import xior from 'xior'
 import { z } from 'zod'
 import { env } from '~/env'
 import { logger } from '~s/utils/logger'
@@ -106,7 +106,7 @@ export const fetchAll = (callback: (animeList: Anime[]) => void) => {
 
   const fetchPage = (page: number) => {
     return limitRequest(async () => {
-      const { data } = await axios.get(
+      const { data } = await xior.get(
         `https://kuramanime.${env.KURAMANIME_TLD}/properties/country/jp?` +
           `order_by=latest&name=JP&page=${page}&need_json=true`,
       )

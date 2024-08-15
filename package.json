@@ -31,8 +31,7 @@
     "@trpc/client": "^11.0.0-rc.467",
     "@trpc/react-query": "^11.0.0-rc.467",
     "@trpc/server": "^11.0.0-rc.467",
-    "@tutkli/jikan-ts": "^2.0.2",
-    "axios": "^1.7.3",
+    "@tutkli/jikan-ts": "nathanaelgt/jikan-ts#xior",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
@@ -52,6 +51,7 @@
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "trpc-bun-adapter": "^1.1.1",
+    "xior": "^0.5.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -59,7 +59,6 @@
     "@tanstack/router-cli": "^1.37.0",
     "@tanstack/router-devtools": "^1.40.0",
     "@tanstack/router-plugin": "^1.39.13",
-    "@types/axios": "^0.14.0",
     "@types/bun": "^1.1.6",
     "@types/eslint": "^8.56.10",
     "@types/node": "^20.14.8",
