@@ -7,7 +7,7 @@ import { basePath } from '~s/utils/path'
 import { fetchAndUpdate } from '~s/anime/update'
 import { handleReadImageError, readImage, type Image } from '~s/utils/image'
 import { imageEmitterMap, pendingImageEmitterMap, type ImageEmitterParam } from '~s/emits/loadImage'
-import { getImageMimeType } from '~/shared/utils/mime'
+import { getMimeType } from '~s/utils/mime'
 import type { ServerWebSocket } from 'bun'
 import type { CreateBunContextOptions } from 'trpc-bun-adapter'
 import type { anime } from '~s/db/schema'
@@ -68,7 +68,7 @@ export const createTRPCContext = (opts: ContextOpts) => {
           if (imageExtension === 'webp') {
             loadImage([[imagePath, base64]])
           } else {
-            loadImage([[imagePath, base64, getImageMimeType(imageExtension)]])
+            loadImage([[imagePath, base64, getMimeType(imageExtension)]])
           }
         })
         .catch(error => {
