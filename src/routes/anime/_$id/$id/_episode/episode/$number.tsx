@@ -3,8 +3,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { episodeListStore } from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
 import { DownloadProgress } from '@/ui/custom/download-progress'
-import { AutoplayVideo } from '@/ui/custom/autoplay-video'
 import { Download } from '@/page/anime/episode/number/Download'
+import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,
@@ -30,12 +30,7 @@ function EpisodeNumber() {
             <DownloadProgress text={status} />
           </div>
         ) : status ? (
-          <AutoplayVideo
-            src={`http://localhost:${import.meta.env.PROD ? 8888 : 8887}/videos/${params.id}/${params.number.padStart(2, '0')}.mp4`}
-            controls
-            controlsList="nodownload"
-            className="h-full w-full"
-          />
+          <VideoPlayer params={params} className="h-full w-full" />
         ) : status === false ? (
           <Download animeId={Number(params.id)} episodeNumber={Number(params.number)} />
         ) : (
