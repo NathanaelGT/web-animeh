@@ -20,7 +20,7 @@ export const handleVideoRequest = async (request: Request, target: string): Prom
   const start = parseNumber(parts[0]) || 0
   const end = parseNumber(parts[1]) || fileSize - 1
 
-  const res = new Response(fs.createReadStream(videoPath, { start, end }))
+  const res = new Response(fs.createReadStream(videoPath, { start, end }), { status: 206 })
 
   res.headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`)
   res.headers.set('Accept-Ranges', 'bytes')
