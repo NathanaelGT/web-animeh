@@ -8,13 +8,13 @@ type Props = {
 }
 
 export function Download(props: Props) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [placeholder, setPlaceholder] = useState('')
   const downloadEpisode = api.component.poster.download.useMutation()
 
-  if (isLoading) {
+  if (placeholder) {
     return (
       <div className="m-auto">
-        <p>Memuat unduhan</p>
+        <p>{placeholder}</p>
       </div>
     )
   }
@@ -24,8 +24,17 @@ export function Download(props: Props) {
       <p>Episode {props.episodeNumber} belum terunduh</p>
       <Button
         onClick={() => {
-          setIsLoading(true)
-          downloadEpisode.mutate(props)
+          setPlaceholder('Memuat unduhan')
+
+          downloadEpisode.mutate(props, {
+            onSuccess(result) {
+              if (result?.size === '') {
+                setPlaceholder(
+                  `Episode ${props.episodeNumber} telah ditambahkan ke antrian unduhan`,
+                )
+              }
+            },
+          })
         }}
         variant="indigo"
         size="sm"

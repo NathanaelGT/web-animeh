@@ -5,12 +5,13 @@ import { env } from '~/env'
 import { anime, animeMetadata } from '~s/db/schema'
 import { videosDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
-import { fetchText } from '~/shared/utils/fetch'
-import { parseFromJsObjectString } from '~/shared/utils/json'
-import { formatBytes } from '~/shared/utils/byte'
 import { EpisodeNotFoundError } from '~s/error'
+import { downloadQueue } from '~s/external/queue'
 import { downloadProgress } from '~s/external/download/progress'
 import { kuramanimeGlobalDataSchema, download as kdriveDownload } from '~s/external/download/kdrive'
+import { fetchText } from '~/shared/utils/fetch'
+import { formatBytes } from '~/shared/utils/byte'
+import { parseFromJsObjectString } from '~/shared/utils/json'
 
 const kuramanimeInitProcessSchema = z.object({
   env: z.object({
@@ -44,7 +45,7 @@ export const downloadEpisode = async (
   metadata: Pick<typeof animeMetadata.$inferSelect, 'providerId' | 'providerSlug'>,
   episodeNumber: number,
   onFinish?: () => void,
-): Promise<string | null> => {
+): Promise<{ size: string | null } | null> => {
   const animePath = videosDirPath + localAnime.id
   const fileName = episodeNumber.toString().padStart(2, '0')
   const tempFilePath = path.join(animePath, fileName + '_.mp4')
@@ -59,63 +60,69 @@ export const downloadEpisode = async (
 
   const emitKey = `${localAnime.title}: Episode ${episodeNumber}`
 
-  if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !kGlobalData) {
-    downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
-    ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
-      getKuramanimeProcess(episodeUrl.toString()),
-      getKuramanimeInitProcess(),
-      getKuramanimeGlobalData(),
-    ])
-  }
-
-  episodeUrl.searchParams.set(kProcess.env.MIX_PAGE_TOKEN_KEY, kMIX_PAGE_TOKEN_VALUE)
-  episodeUrl.searchParams.set(kProcess.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
-  episodeUrl.searchParams.set('page', '1')
-
-  downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
-  const responseHtml = await fetchText(episodeUrl.toString())
-
-  let downloadUrl = responseHtml.slice(responseHtml.lastIndexOf('MP4 720p (Hardsub)'))
-
-  if (downloadUrl.length < 2) {
-    // tokennya expired
-    if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
-      unsetCredentials()
-
-      return downloadEpisode(localAnime, metadata, episodeNumber, onFinish)
+  const getDownloadUrl = async () => {
+    if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !kGlobalData) {
+      downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
+      ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
+        getKuramanimeProcess(episodeUrl.toString()),
+        getKuramanimeInitProcess(),
+        getKuramanimeGlobalData(),
+      ])
     }
 
-    downloadProgress.emit(emitKey, {
-      text: 'Terjadi error yang tidak diketahui. Harap cek log',
-      done: true,
-    })
+    episodeUrl.searchParams.set(kProcess.env.MIX_PAGE_TOKEN_KEY, kMIX_PAGE_TOKEN_VALUE)
+    episodeUrl.searchParams.set(kProcess.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
+    episodeUrl.searchParams.set('page', '1')
 
-    logger.error('Download episode: unknown error', {
-      localAnime,
-      metadata,
-      episodeNumber,
-      responseHtml,
-    })
+    downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
+    const responseHtml = await fetchText(episodeUrl.toString())
 
-    throw new Error('unknown error')
+    let downloadUrl = responseHtml.slice(responseHtml.lastIndexOf('MP4 720p (Hardsub)'))
+
+    if (downloadUrl.length < 2) {
+      // tokennya expired
+      if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
+        unsetCredentials()
+
+        return getDownloadUrl()
+      }
+
+      downloadProgress.emit(emitKey, {
+        text: 'Terjadi error yang tidak diketahui. Harap cek log',
+        done: true,
+      })
+
+      logger.error('Download episode: unknown error', {
+        localAnime,
+        metadata,
+        episodeNumber,
+        responseHtml,
+      })
+
+      throw new Error('unknown error')
+    }
+
+    downloadUrl = downloadUrl.slice(downloadUrl.indexOf('https://kuramadrive.com/kdrive/'))
+    downloadUrl = downloadUrl.slice(0, downloadUrl.indexOf('"'))
+
+    return downloadUrl
   }
 
-  const mkDirPromise = fs.mkdir(animePath, { recursive: true })
+  const go = async (formattedContentLengthCb?: (formattedContentLength: string | null) => void) => {
+    const downloadUrl = await getDownloadUrl()
+    const mkDirPromise = fs.mkdir(animePath, { recursive: true })
 
-  downloadUrl = downloadUrl.slice(downloadUrl.indexOf('https://kuramadrive.com/kdrive/'))
-  downloadUrl = downloadUrl.slice(0, downloadUrl.indexOf('"'))
+    const { contentLength, stream } = await kdriveDownload(downloadUrl, kGlobalData!)
+    const formattedContentLength = contentLength ? formatBytes(contentLength) : null
 
-  const { contentLength, stream } = await kdriveDownload(downloadUrl, kGlobalData)
-  const formattedContentLength = contentLength ? formatBytes(contentLength) : null
+    formattedContentLengthCb?.(formattedContentLength)
 
-  let receivedLength = 0
+    await mkDirPromise
 
-  await mkDirPromise
-
-  const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
-
-  ;(async () => {
+    const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
+    let receivedLength = 0
     let skip = false
+
     const emitProgress = (data: Uint8Array) => {
       receivedLength += data.length
 
@@ -153,22 +160,42 @@ export const downloadEpisode = async (
       text: `Mengunduh: ${formattedContentLength} / ${formattedContentLength} (100%)`,
     })
 
-    await writer.end()
+    // biar keluar dari queue untuk proses selanjutnya
+    ;(async () => {
+      await writer.end()
 
-    downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
+      downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
 
-    const filePath = path.join(animePath, fileName + '.mp4')
+      const filePath = path.join(animePath, fileName + '.mp4')
 
-    await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
+      await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
 
-    downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+      downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
 
-    await fs.rm(tempFilePath)
+      await fs.rm(tempFilePath)
 
-    onFinish?.()
-  })()
+      onFinish?.()
+    })()
+  }
 
-  return formattedContentLength
+  if (downloadQueue.pending === env.PARALLEL_DOWNLOAD_LIMIT) {
+    downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya selesai' })
+    downloadQueue.add(async () => {
+      await go()
+    })
+
+    return { size: '' }
+  }
+
+  downloadProgress.emit(emitKey, { text: 'Menginisialisasi proses unduhan' })
+
+  return new Promise(resolve => {
+    downloadQueue.add(async () => {
+      await go(formattedContentLength => {
+        resolve({ size: formattedContentLength })
+      })
+    })
+  })
 }
 
 async function getKuramanimeInitProcess() {

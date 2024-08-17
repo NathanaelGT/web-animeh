@@ -125,25 +125,45 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
                       episodeNumber: episode,
                     },
                     {
-                      onSuccess(size) {
-                        if (size) {
-                          toast({
-                            title: 'Sedang mengunduh ' + partialTitle,
-                            description: 'Ukuran file: ' + size,
-                            action: (
-                              <ToastAction altText="Lihat unduhan">
-                                <Link to="/pengaturan/unduhan">Lihat unduhan</Link>
-                              </ToastAction>
-                            ),
-                          })
+                      onSuccess(result) {
+                        if (result) {
+                          let dismiss: () => void
+                          const action = (
+                            <ToastAction altText="Lihat unduhan">
+                              <Link
+                                to="/pengaturan/unduhan"
+                                onClick={() => {
+                                  dismiss()
+                                }}
+                              >
+                                Lihat unduhan
+                              </Link>
+                            </ToastAction>
+                          )
+
+                          if (result.size) {
+                            ;({ dismiss } = toast({
+                              title: 'Sedang mengunduh ' + partialTitle,
+                              description: 'Ukuran file: ' + result.size,
+                              action,
+                            }))
+                          } else {
+                            ;({ dismiss } = toast({
+                              title: partialTitle + ' telah ditambahkan ke antrian unduhan',
+                              action,
+                            }))
+                          }
                         } else {
-                          toast({
+                          const { dismiss } = toast({
                             title: partialTitle + ' sudah terunduh',
                             action: (
                               <ToastAction altText="Nonton">
                                 <Link
                                   to="/anime/$id/episode/$number"
                                   params={{ id: animeId, number: episode.toString() }}
+                                  onClick={() => {
+                                    dismiss()
+                                  }}
                                 >
                                   Nonton
                                 </Link>

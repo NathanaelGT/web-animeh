@@ -9,6 +9,7 @@ export const env = createEnv({
   server: {
     KURAMANIME_TLD: z.string(),
     PARALLEL_REQUEST_LIMIT: z.coerce.number().min(1),
+    PARALLEL_DOWNLOAD_LIMIT: z.coerce.number().min(1),
   },
 
   client: {
