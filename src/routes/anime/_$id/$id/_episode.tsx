@@ -4,7 +4,7 @@ import { useStore } from '@tanstack/react-store'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import { clientProfileSettingsStore, episodeListStore, type EpisodeList } from '~c/stores'
-import { AnimeDataContext } from '~c/context'
+import { AnimeDataContext, AnimeWatchSessionContext } from '~c/context'
 import { searchEpisode } from '~/shared/utils/episode'
 import { sleep } from '~/shared/utils/time'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
@@ -30,6 +30,7 @@ function EpisodeLayout() {
   const { episodeFilter } = clientProfileSettingsStore.state
   const perPage = useStore(clientProfileSettingsStore, state => state.episodeFilter.perPage)
 
+  const [watchSessionId] = useState(() => Math.random().toString().slice(2))
   const animeData = useContext(AnimeDataContext)
   const params = Route.useParams()
   const [displayMode, setDisplayMode] = useState(episodeFilter.displayMode)
@@ -264,7 +265,9 @@ function EpisodeLayout() {
           </div>
         </aside>
 
-        <Outlet />
+        <AnimeWatchSessionContext.Provider value={{ id: watchSessionId }}>
+          <Outlet />
+        </AnimeWatchSessionContext.Provider>
       </div>
     </div>
   )

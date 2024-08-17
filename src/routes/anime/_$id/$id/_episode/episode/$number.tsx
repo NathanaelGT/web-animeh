@@ -30,7 +30,7 @@ function EpisodeNumber() {
             <DownloadProgress text={status} />
           </div>
         ) : status ? (
-          <VideoPlayer params={params} className="h-full w-full" />
+          <VideoPlayer params={params} />
         ) : status === false ? (
           <Download animeId={Number(params.id)} episodeNumber={Number(params.number)} />
         ) : (
