@@ -184,10 +184,20 @@ export function VideoPlayer({ params }: Props) {
     window.addEventListener('keydown', keybindHandler)
 
     return () => {
+      const voidEl = document.getElementById('void')
+
       video.pause()
-      document.getElementById('void')?.appendChild(video)
+      voidEl?.appendChild(video)
 
       window.removeEventListener('keydown', keybindHandler)
+
+      if (document.pictureInPictureElement === video) {
+        setTimeout(() => {
+          if (voidEl?.contains(video)) {
+            document.exitPictureInPicture()
+          }
+        })
+      }
     }
   }, [])
 
