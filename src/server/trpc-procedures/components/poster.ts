@@ -4,13 +4,14 @@ import { videosDirPath, glob } from '~s/utils/path'
 import { downloadEpisode } from '~s/external/api/kuramanime/download'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { updateEpisode } from '~s/anime/episode/update'
+import { downloadProgressSnapshot } from '~/server/external/download/progress'
 
 export const PosterRouter = router({
   episodeList: procedure.input(z.number()).query(async ({ ctx, input }) => {
     const downloadedEpisodeListPromise = glob(videosDirPath + input, '*.mp4')
 
     const animeData = await ctx.db.query.anime.findFirst({
-      columns: { id: true, episodeUpdatedAt: true },
+      columns: { id: true, title: true, episodeUpdatedAt: true },
       where: (anime, { eq }) => eq(anime.id, input),
     })
 
@@ -34,6 +35,14 @@ export const PosterRouter = router({
       // bentuk episode: "01.mp4"
       downloaded.add(parseInt(episode))
     }
+
+    downloadProgressSnapshot.forEach((_, key) => {
+      const [title, episode] = key.split(': Episode ') as [string, string]
+
+      if (title === animeData.title) {
+        downloaded.add(parseInt(episode))
+      }
+    })
 
     return episodeList.map(({ number }) => [number, downloaded.has(number)] as const)
   }),
@@ -64,4 +73,60 @@ export const PosterRouter = router({
         input.episodeNumber,
       )
     }),
+
+  downloadAll: procedure.input(z.number()).mutation(async ({ ctx, input }) => {
+    const [animeData, downloadedEpisodeList] = await Promise.all([
+      ctx.db.query.anime.findFirst({
+        columns: { title: true },
+        where: (anime, { eq }) => eq(anime.id, input),
+        with: {
+          metadata: {
+            columns: { providerId: true, providerSlug: true },
+            limit: 1,
+          },
+        },
+      }),
+
+      glob(videosDirPath + input, '*.mp4').then(episodes => {
+        return episodes.map(episode => parseInt(episode))
+      }),
+    ])
+
+    if (!animeData) {
+      throw new Error('404')
+    } else if (!animeData.metadata[0]?.providerSlug) {
+      throw new Error('invalid provider slug')
+    }
+
+    downloadProgressSnapshot.forEach((_, key) => {
+      const [title, episode] = key.split(': Episode ') as [string, string]
+
+      if (title === animeData.title) {
+        downloadedEpisodeList.push(parseInt(episode))
+      }
+    })
+
+    const episodes = await ctx.db.query.episodes.findMany({
+      columns: { number: true },
+      where: (episodes, { and, eq, not, inArray }) => {
+        return and(
+          eq(episodes.animeId, input),
+          not(inArray(episodes.number, downloadedEpisodeList)),
+        )
+      },
+      orderBy: (episodes, { asc }) => asc(episodes.number),
+    })
+
+    ;(async () => {
+      for (const episode of episodes) {
+        await downloadEpisode(
+          { id: input, title: animeData.title },
+          animeData.metadata[0]!,
+          episode.number,
+        )
+      }
+    })()
+
+    return episodes.length
+  }),
 })

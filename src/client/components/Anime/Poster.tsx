@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { api } from '~c/trpc'
 import { useToast } from '@/ui/use-toast'
+import { MapArray } from '@/logic/MapArray'
 import { MapTrpc } from '@/logic/MapTrpc'
 import { ToastAction } from '@/ui/toast'
 import {
@@ -31,6 +32,7 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
   const { toast } = useToast()
   const [shouldQuery, setShouldQuery] = useState(false)
   const downloadEpisode = api.component.poster.download.useMutation()
+  const downloadAllEpisode = api.component.poster.downloadAll.useMutation()
   const episodeList = api.component.poster.episodeList.useQuery(anime.id, {
     enabled: shouldQuery,
   })
@@ -47,6 +49,21 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
   )
 
   const animeId = anime.id.toString()
+
+  const downloadAll = () => {
+    const { dismiss } = toast({ title: 'Mulai mengunduh semua episode ' + anime.title })
+
+    downloadAllEpisode.mutate(anime.id, {
+      onSuccess(count) {
+        dismiss()
+
+        const t = toast({
+          title: `${count} episode ${anime.title} sedang dalam proses unduh`,
+          action: <SeeDownloadAction toast={() => t} />,
+        })
+      },
+    })
+  }
 
   return (
     <ContextMenu onOpenChange={setShouldQuery}>
@@ -96,103 +113,108 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
         <ContextMenuSub>
           <ContextMenuSubTrigger>Unduh</ContextMenuSubTrigger>
           <ContextMenuSubContent className="w-48">
-            {/* <ContextMenuItem>
-              <PlusCircledIcon className="mr-2 h-4 w-4" />
-              Semua
-            </ContextMenuItem>
-            <ContextMenuSeparator /> */}
-            <MapTrpc
-              query={episodeList}
-              filterCb
-              onLoading={() => <ContextMenuItem>Memuat...</ContextMenuItem>}
-              onEmpty={really => (
-                <ContextMenuItem>
-                  {really ? 'Belum ada episode yang rilis' : 'Semua episode sudah terunduh'}
+            {!episodeList.data ? (
+              <ContextMenuItem>Memuat...</ContextMenuItem>
+            ) : episodeList.data.every(([, isDownloaded]) => isDownloaded) ? (
+              <ContextMenuItem>Semua episode sudah terunduh</ContextMenuItem>
+            ) : (
+              <>
+                <ContextMenuItem onClick={downloadAll} role="button" className="cursor-pointer">
+                  Semua
                 </ContextMenuItem>
-              )}
-              cb={([episode, isDownloaded]) => {
-                if (isDownloaded) {
-                  return null
-                }
+                <ContextMenuSeparator />
+                <MapArray
+                  data={episodeList.data}
+                  cb={([episode, isDownloaded]) => {
+                    if (isDownloaded) {
+                      return null
+                    }
 
-                const download = () => {
-                  const partialTitle = `${anime.title} episode ${episode}`
-                  const { dismiss } = toast({ title: 'Mulai mengunduh ' + partialTitle })
+                    const download = () => {
+                      const partialTitle = `${anime.title} episode ${episode}`
+                      const { dismiss } = toast({ title: 'Mulai mengunduh ' + partialTitle })
 
-                  downloadEpisode.mutate(
-                    {
-                      animeId: anime.id,
-                      episodeNumber: episode,
-                    },
-                    {
-                      onSuccess(result) {
-                        if (result) {
-                          let dismiss: () => void
-                          const action = (
-                            <ToastAction altText="Lihat unduhan">
-                              <Link
-                                to="/pengaturan/unduhan"
-                                onClick={() => {
-                                  dismiss()
-                                }}
-                              >
-                                Lihat unduhan
-                              </Link>
-                            </ToastAction>
-                          )
+                      downloadEpisode.mutate(
+                        {
+                          animeId: anime.id,
+                          episodeNumber: episode,
+                        },
+                        {
+                          onSuccess(result) {
+                            if (result) {
+                              if (result.size) {
+                                const t = toast({
+                                  title: 'Sedang mengunduh ' + partialTitle,
+                                  description: 'Ukuran file: ' + result.size,
+                                  action: <SeeDownloadAction toast={() => t} />,
+                                })
+                              } else {
+                                const t = toast({
+                                  title: partialTitle + ' telah ditambahkan ke antrian unduhan',
+                                  action: <SeeDownloadAction toast={() => t} />,
+                                })
+                              }
+                            } else {
+                              const { dismiss } = toast({
+                                title: partialTitle + ' sudah terunduh',
+                                action: (
+                                  <ToastAction altText="Nonton">
+                                    <Link
+                                      to="/anime/$id/episode/$number"
+                                      params={{ id: animeId, number: episode.toString() }}
+                                      onClick={() => {
+                                        dismiss()
+                                      }}
+                                    >
+                                      Nonton
+                                    </Link>
+                                  </ToastAction>
+                                ),
+                              })
+                            }
 
-                          if (result.size) {
-                            ;({ dismiss } = toast({
-                              title: 'Sedang mengunduh ' + partialTitle,
-                              description: 'Ukuran file: ' + result.size,
-                              action,
-                            }))
-                          } else {
-                            ;({ dismiss } = toast({
-                              title: partialTitle + ' telah ditambahkan ke antrian unduhan',
-                              action,
-                            }))
-                          }
-                        } else {
-                          const { dismiss } = toast({
-                            title: partialTitle + ' sudah terunduh',
-                            action: (
-                              <ToastAction altText="Nonton">
-                                <Link
-                                  to="/anime/$id/episode/$number"
-                                  params={{ id: animeId, number: episode.toString() }}
-                                  onClick={() => {
-                                    dismiss()
-                                  }}
-                                >
-                                  Nonton
-                                </Link>
-                              </ToastAction>
-                            ),
-                          })
-                        }
+                            dismiss()
+                          },
+                        },
+                      )
+                    }
 
-                        dismiss()
-                      },
-                    },
-                  )
-                }
-
-                return (
-                  <ContextMenuItem
-                    key={episode}
-                    onClick={download}
-                    role="button"
-                    className="cursor-pointer"
-                  >
-                    Episode {episode}
-                  </ContextMenuItem>
-                )
-              }}
-            />
+                    return (
+                      <ContextMenuItem
+                        key={episode}
+                        onClick={download}
+                        role="button"
+                        className="cursor-pointer"
+                      >
+                        Episode {episode}
+                      </ContextMenuItem>
+                    )
+                  }}
+                />
+              </>
+            )}
           </ContextMenuSubContent>
         </ContextMenuSub>
       </ContextMenuContent>
     </ContextMenu>
+  )
+}
+
+function SeeDownloadAction({
+  toast,
+}: {
+  toast: () => ReturnType<ReturnType<typeof useToast>['toast']>
+}) {
+  return (
+    <ToastAction altText="Lihat unduhan">
+      <Link
+        to="/pengaturan/unduhan"
+        onClick={() => {
+          toast().dismiss()
+        }}
+      >
+        Lihat unduhan
+      </Link>
+    </ToastAction>
   )
 }
