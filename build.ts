@@ -31,8 +31,12 @@ await Promise.all([
       let cssOriginalPath: string
 
       let indexHtml = (await fs.readFile('./dist/public/index.html', { encoding: 'utf-8' }))
+        .replaceAll(' />', '>')
+        .split('\n')
+        .map(line => line.trim())
+        .join('')
         .replace(
-          /<script type="module" crossorigin src="(.*)"><\/script>/,
+          /<script type="module" crossorigin src="(.*?)"><\/script>/,
           (_, jsRelPath: string) => {
             jsOriginalPath = jsRelPath
             const identifier = '<: JS :>'
@@ -52,7 +56,7 @@ await Promise.all([
             return identifier
           },
         )
-        .replace(/<link rel="stylesheet" crossorigin href="(.*)">/, (_, cssRelPath: string) => {
+        .replace(/<link rel="stylesheet" crossorigin href="(.*?)">/, (_, cssRelPath: string) => {
           cssOriginalPath = cssRelPath
           const identifier = '<: CSS :>'
 
@@ -70,13 +74,6 @@ await Promise.all([
 
           return identifier
         })
-
-      const htmls = indexHtml.split('\n').map(line => line.trim())
-      const doctypeTokens = htmls[0]!.split(' ')
-
-      doctypeTokens[0] = doctypeTokens[0]!.toUpperCase()
-      htmls[0] = doctypeTokens.join(' ')
-      indexHtml = htmls.join('')
 
       const compress = promisify(zlib.brotliCompress)
 
