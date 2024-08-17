@@ -16,7 +16,7 @@ process.stdout.clearLine(0)
 
 log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`)
 
-await $`rm -rf ./dist && mkdir ./dist`.quiet().catch(handleError)
+await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
 let appVersion = ''
 
@@ -30,7 +30,7 @@ await Promise.all([
       let jsOriginalPath: string
       let cssOriginalPath: string
 
-      let indexHtml = (await fs.readFile('./dist/public/index.html', { encoding: 'utf-8' }))
+      let indexHtml = (await Bun.file('./dist/public/index.html').text())
         .replaceAll(' />', '>')
         .split('\n')
         .map(line => line.trim())
@@ -45,7 +45,7 @@ await Promise.all([
               (async () => {
                 const jsPath = path.join('./dist/public', jsRelPath)
 
-                const js = (await fs.readFile(jsPath, { encoding: 'utf-8' })).trim()
+                const js = (await Bun.file(jsPath).text()).trim()
 
                 indexHtml = indexHtml.split(identifier).join(`<script type="module">${js}</script>`)
 
@@ -64,9 +64,9 @@ await Promise.all([
             (async () => {
               const cssPath = path.join('./dist/public', cssRelPath)
 
-              const css = await fs.readFile(cssPath, { encoding: 'utf-8' })
+              const css = (await Bun.file(cssPath).text()).trim()
 
-              indexHtml = indexHtml.split(identifier).join(`<style>${css.trim()}</style>`)
+              indexHtml = indexHtml.split(identifier).join(`<style>${css}</style>`)
 
               void fs.rm(cssPath)
             })(),
@@ -79,7 +79,7 @@ await Promise.all([
 
       await Promise.all(promises)
 
-      const removeAssetDirPromise = fs.readdir('./dist/public/assets').then(async files => {
+      const removeAssetDirPromise = getFiles('./dist/public/assets').then(async files => {
         if (files.length === 0) {
           await fs.rmdir('./dist/public/assets')
         }
@@ -88,10 +88,7 @@ await Promise.all([
       const buffer = Buffer.from(indexHtml, 'utf-8')
       const compressed = await compress(buffer)
 
-      await Promise.all([
-        fs.writeFile('./dist/public/index.html', compressed),
-        removeAssetDirPromise,
-      ])
+      await Promise.all([Bun.write('./dist/public/index.html', compressed), removeAssetDirPromise])
 
       logBuildInfo(
         'client',
@@ -145,7 +142,7 @@ await Promise.all([
     .then(async ([message, minified]) => {
       const result = '// @bun\n' + minified.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
 
-      await fs.writeFile('./dist/index.js', result)
+      await Bun.write('./dist/index.js', result)
 
       logBuildInfo(
         'server',
@@ -179,17 +176,10 @@ await Promise.all([
       })
     }),
 
-  fs.readdir('./drizzle', { recursive: true, withFileTypes: true }).then(async dirents => {
-    const prefixLength = ('drizzle' + path.sep).length
-
-    const promises = dirents
-      .map(dirent => {
-        const filePath = (dirent.parentPath + path.sep + dirent.name).slice(prefixLength)
-
-        if (
-          (filePath.startsWith('meta') && filePath.endsWith('_snapshot.json')) ||
-          dirent.isDirectory()
-        ) {
+  getFiles('./drizzle').then(async filePaths => {
+    const promises = filePaths
+      .map(filePath => {
+        if (filePath.startsWith('meta') && filePath.endsWith('_snapshot.json')) {
           return
         }
 
@@ -201,7 +191,7 @@ await Promise.all([
 
     return Promise.all(promises)
   }),
-]).catch(handleError)
+])
 
 type File = {
   path: string
@@ -267,6 +257,10 @@ async function handleError(e: any) {
   console.error(e)
 
   process.exit(1)
+}
+
+function getFiles(fromDirectory: string) {
+  return Array.fromAsync(new Bun.Glob('**').scan(fromDirectory))
 }
 
 log(

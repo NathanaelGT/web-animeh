@@ -5,10 +5,13 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 export default defineConfig({
   plugins: [tsconfigPaths(), react(), TanStackRouterVite()],
-  esbuild: {
-    legalComments: 'none',
-  },
   build: {
     target: 'esnext',
+    minify: 'terser',
+    terserOptions: {
+      format: {
+        comments: false,
+      },
+    },
   },
 })
