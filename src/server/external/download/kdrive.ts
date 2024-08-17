@@ -1,6 +1,5 @@
 import z from 'zod'
 import { fetchText, fetchJsonValidate } from '~/shared/utils/fetch'
-import { parseNumber } from '~/shared/utils/number'
 
 export const kuramanimeGlobalDataSchema = z.object({
   tokens: z.object({
@@ -12,10 +11,10 @@ const kdriveCheckResponseSchema = z.object({
   url: z.string().url(),
 })
 
-export async function download(
+export const prepare = async (
   kDriveUrl: string,
   kGlobalData: z.infer<typeof kuramanimeGlobalDataSchema>,
-) {
+) => {
   let domain = await fetchText(kDriveUrl)
   domain = domain.slice(domain.indexOf('data-domain="'))
   domain = domain.slice(domain.indexOf('"') + 1, domain.indexOf('" '))
@@ -34,23 +33,5 @@ export async function download(
     },
   })
 
-  const response = await fetch(responseJson.url)
-  const reader = (response.body as ReadableStream<Uint8Array> | null)?.getReader()
-  if (!reader) {
-    throw new Error('no reader')
-  }
-
-  return {
-    contentLength: parseNumber(response.headers?.get('Content-Length')),
-    stream: (async function* () {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) {
-          break
-        }
-
-        yield value
-      }
-    })(),
-  }
+  return fetch(responseJson.url)
 }

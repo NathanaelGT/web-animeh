@@ -6,12 +6,13 @@ import { anime, animeMetadata } from '~s/db/schema'
 import { videosDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
 import { EpisodeNotFoundError } from '~s/error'
-import { downloadQueue } from '~s/external/queue'
+import { metadataQueue, downloadQueue } from '~s/external/queue'
 import { downloadProgress } from '~s/external/download/progress'
-import { kuramanimeGlobalDataSchema, download as kdriveDownload } from '~s/external/download/kdrive'
+import { kuramanimeGlobalDataSchema, prepare as kdrivePrepare } from '~s/external/download/kdrive'
 import { fetchText } from '~/shared/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
+import { parseNumber } from '~/shared/utils/number'
 
 const kuramanimeInitProcessSchema = z.object({
   env: z.object({
@@ -39,6 +40,9 @@ const unsetCredentials = () => {
   kInitProcess = null
   kGlobalData = null
 }
+
+const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
+  env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
 
 export const downloadEpisode = async (
   localAnime: Pick<typeof anime.$inferSelect, 'id' | 'title'>,
@@ -108,81 +112,133 @@ export const downloadEpisode = async (
     return downloadUrl
   }
 
-  const go = async (formattedContentLengthCb?: (formattedContentLength: string | null) => void) => {
-    const downloadUrl = await getDownloadUrl()
-    const mkDirPromise = fs.mkdir(animePath, { recursive: true })
+  const start = (formattedContentLengthCb?: (formattedContentLength: string | null) => void) => {
+    const metadataLock = new Promise<void>(releaseMetadataLock => {
+      let downloadIsStarted = false
 
-    const { contentLength, stream } = await kdriveDownload(downloadUrl, kGlobalData!)
-    const formattedContentLength = contentLength ? formatBytes(contentLength) : null
+      const prepareResponsePromise = new Promise<Response>(resolvePreparedResponse => {
+        metadataQueue.add(async () => {
+          const preparedResponse = await kdrivePrepare(await getDownloadUrl(), kGlobalData!)
 
-    formattedContentLengthCb?.(formattedContentLength)
+          if (!downloadIsStarted) {
+            downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya selesai' })
+          }
 
-    await mkDirPromise
+          resolvePreparedResponse(preparedResponse)
 
-    const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
-    let receivedLength = 0
-    let skip = false
+          await metadataLock
+        })
+      })
 
-    const emitProgress = (data: Uint8Array) => {
-      receivedLength += data.length
+      downloadQueue.add(async () => {
+        downloadIsStarted = true
 
-      if (skip) {
-        return
-      }
+        downloadProgress.emit(emitKey, {
+          text: 'Mulai mengunduh',
+        })
 
-      skip = true
-      let text = 'Mengunduh: ' + formatBytes(receivedLength)
+        const mkDirPromise = fs.mkdir(animePath, { recursive: true })
+        const preparedResponse = await prepareResponsePromise
+        const reader = (preparedResponse.body as ReadableStream<Uint8Array> | null)?.getReader()
+        if (!reader) {
+          throw new Error('no reader')
+        }
 
-      if (contentLength) {
-        text +=
-          ' / ' +
-          formattedContentLength +
-          ' (' +
-          ((receivedLength / contentLength) * 100).toFixed(2) +
-          '%)'
-      }
+        const contentLength = parseNumber(preparedResponse.headers?.get('Content-Length'))
+        const formattedContentLength = contentLength ? formatBytes(contentLength) : null
 
-      downloadProgress.emit(emitKey, { text })
-    }
-    const intervalId = setInterval(() => {
-      skip = false
-    }, 100)
+        formattedContentLengthCb?.(formattedContentLength)
 
-    for await (const data of stream) {
-      writer.write(data)
+        await mkDirPromise
 
-      emitProgress(data)
-    }
+        const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
+        let receivedLength = 0
+        let skip = false
+        let isResolved = false
 
-    clearInterval(intervalId)
+        const startTime = Bun.nanoseconds()
+        const emitProgress = (data: Uint8Array) => {
+          receivedLength += data.length
 
-    downloadProgress.emit(emitKey, {
-      text: `Mengunduh: ${formattedContentLength} / ${formattedContentLength} (100%)`,
+          if (skip) {
+            return
+          }
+
+          skip = true
+
+          const elapsedTime = (Bun.nanoseconds() - startTime) / 1e9 // ns -> s
+
+          if (
+            !isResolved &&
+            contentLength &&
+            contentLength - receivedLength < PREDOWNLOAD_VIDEO_METADATA_THRESHOLD
+          ) {
+            isResolved = true
+
+            releaseMetadataLock()
+          }
+
+          let text = 'Mengunduh: ' + formatBytes(receivedLength)
+          const speed = '@' + formatBytes(receivedLength / elapsedTime) + 'ps'
+
+          if (contentLength) {
+            text +=
+              ' / ' +
+              formattedContentLength +
+              speed +
+              ' (' +
+              ((receivedLength / contentLength) * 100).toFixed(2) +
+              '%)'
+          } else {
+            text += speed
+          }
+
+          downloadProgress.emit(emitKey, { text })
+        }
+        const intervalId = setInterval(() => {
+          skip = false
+        }, 50)
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) {
+            break
+          }
+
+          writer.write(value)
+
+          emitProgress(value)
+        }
+
+        clearInterval(intervalId)
+
+        downloadProgress.emit(emitKey, {
+          text: `Mengunduh: ${formattedContentLength} / ${formattedContentLength} (100%)`,
+        })
+
+        // biar keluar dari queue untuk proses selanjutnya
+        ;(async () => {
+          await writer.end()
+
+          const filePath = path.join(animePath, fileName + '.mp4')
+
+          downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
+
+          await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
+
+          downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+
+          await fs.rm(tempFilePath)
+
+          onFinish?.()
+        })()
+      })
     })
-
-    // biar keluar dari queue untuk proses selanjutnya
-    ;(async () => {
-      await writer.end()
-
-      downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
-
-      const filePath = path.join(animePath, fileName + '.mp4')
-
-      await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
-
-      downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
-
-      await fs.rm(tempFilePath)
-
-      onFinish?.()
-    })()
   }
 
   if (downloadQueue.pending === env.PARALLEL_DOWNLOAD_LIMIT) {
-    downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya selesai' })
-    downloadQueue.add(async () => {
-      await go()
-    })
+    downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya' })
+    start()
 
     return { size: '' }
   }
@@ -190,10 +246,8 @@ export const downloadEpisode = async (
   downloadProgress.emit(emitKey, { text: 'Menginisialisasi proses unduhan' })
 
   return new Promise(resolve => {
-    downloadQueue.add(async () => {
-      await go(formattedContentLength => {
-        resolve({ size: formattedContentLength })
-      })
+    start(formattedContentLength => {
+      resolve({ size: formattedContentLength })
     })
   })
 }
