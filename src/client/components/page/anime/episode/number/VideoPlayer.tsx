@@ -99,12 +99,48 @@ export function VideoPlayer({ params }: Props) {
         }
 
         const handler = {
+          ArrowLeft() {
+            video.currentTime -= 5
+          },
+
+          ArrowRight() {
+            video.currentTime += 5
+          },
+
+          ArrowUp() {
+            video.volume = Math.min(1, video.volume + 0.05)
+          },
+
+          ArrowDown() {
+            video.volume = Math.max(0, video.volume - 0.05)
+          },
+
+          Home() {
+            video.currentTime = 0
+          },
+
+          End() {
+            video.currentTime = video.duration
+          },
+
           p() {
             changeEpisode(Number(gotoEpisodeRef.current) - 1)
           },
 
           n() {
             changeEpisode(Number(gotoEpisodeRef.current) + 1)
+          },
+
+          m() {
+            video.muted = !video.muted
+          },
+
+          i() {
+            if (document.pictureInPictureElement === video) {
+              document.exitPictureInPicture()
+            } else {
+              video.requestPictureInPicture()
+            }
           },
 
           f() {
@@ -116,11 +152,7 @@ export function VideoPlayer({ params }: Props) {
           },
 
           [' ']() {
-            if (document.activeElement === video) {
-              return
-            }
-
-            if (video.paused) {
+            if (video.paused || video.ended) {
               video.play()
             } else {
               video.pause()
