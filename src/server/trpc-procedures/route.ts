@@ -1,16 +1,14 @@
+import z from 'zod'
+import { procedure, router } from '~s/trpc'
+import { updateEpisode } from '~s/anime/episode/update'
+import { dedupeEpisodes } from '~s/anime/episode/dedupe'
+import { omit } from '~/shared/utils/object'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
   AnyProcedure,
   AnyRouter,
   CreateRouterOptions,
 } from '@trpc/server/unstable-core-do-not-import'
-import z from 'zod'
-import { episodes } from '~s/db/schema'
-import { procedure, router } from '~s/trpc'
-import { isMoreThanOneDay } from '~s/utils/time'
-import { logger } from '~s/utils/logger'
-import { updateEpisode } from '~s/anime/episode/update'
-import { omit } from '~/shared/utils/object'
 
 export const RouteRouter = router({
   '/': procedure.input(z.object({ cursor: z.number().nullish() })).query(async ({ ctx, input }) => {
@@ -96,9 +94,7 @@ export const RouteRouter = router({
       imageExtension: animeData.imageExtension,
     })
 
-    if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-      updateEpisode({ id: input })
-    }
+    updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt })
 
     return {
       ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
@@ -121,20 +117,18 @@ export const RouteRouter = router({
       throw new Error('404')
     }
 
-    let episodeList: Omit<typeof episodes.$inferSelect, 'animeId'>[]
+    const [freshEpisodeList, dbEpisodeList] = await Promise.all([
+      updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt }),
 
-    if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-      episodeList = (await updateEpisode({ id: input })).map(episode => omit(episode, 'animeId'))
-    } else {
-      episodeList = await ctx.db.query.episodes.findMany({
+      ctx.db.query.episodes.findMany({
         where: (episodes, { eq }) => eq(episodes.animeId, input),
         columns: {
           animeId: false,
         },
-      })
-    }
+      }),
+    ])
 
-    return episodeList
+    return dedupeEpisodes(dbEpisodeList, freshEpisodeList, episode => omit(episode, 'animeId'))
   }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never

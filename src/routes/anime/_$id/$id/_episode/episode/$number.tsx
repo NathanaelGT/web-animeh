@@ -23,7 +23,7 @@ function EpisodeNumber() {
   const status = episode.downloadStatus as string | boolean | undefined
 
   return (
-    <main className="bg-slate-100">
+    <main className="mb-auto bg-slate-100">
       <div className="flex aspect-video bg-slate-200">
         {typeof status === 'string' ? (
           <div className="m-auto text-center">

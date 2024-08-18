@@ -217,53 +217,60 @@ function EpisodeLayout() {
               {animeData.title}
             </Link>
           </h1>,
-          `Episode ${currentEpisode}`,
+          animeData.totalEpisodes === 1 ? 'Nonton' : `Episode ${currentEpisode}`,
         ]}
         viewTransitionPrefix={params.id}
         itemClassName="drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]"
         className="hidden md:block"
       />
 
-      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline outline-1 outline-primary/5 md:grid md:grid-cols-[16rem_1fr]">
-        <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
-          <div className="flex h-10 gap-2 bg-primary/75 p-2 text-primary-foreground">
-            <SearchFilter
-              episodeListRef={episodeListRef}
-              episodeCount={episodeCount}
-              pageList={pageList}
-              displayMode={displayMode}
-              setDisplayMode={setDisplayMode}
-              sortLatest={sortLatest}
-              setSortLatest={setSortLatest}
-              hideFiller={hideFiller}
-              setHideFiller={setHideFiller}
-              hideRecap={hideRecap}
-              setHideRecap={setHideRecap}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-            />
+      <div
+        className={
+          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline outline-1 outline-primary/5' +
+          (animeData.totalEpisodes === 1 ? '' : ' md:grid md:grid-cols-[16rem_1fr]')
+        }
+      >
+        {animeData.totalEpisodes !== 1 && (
+          <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
+            <div className="flex h-10 gap-2 bg-primary/75 p-2 text-primary-foreground">
+              <SearchFilter
+                episodeListRef={episodeListRef}
+                episodeCount={episodeCount}
+                pageList={pageList}
+                displayMode={displayMode}
+                setDisplayMode={setDisplayMode}
+                sortLatest={sortLatest}
+                setSortLatest={setSortLatest}
+                hideFiller={hideFiller}
+                setHideFiller={setHideFiller}
+                hideRecap={hideRecap}
+                setHideRecap={setHideRecap}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+              />
 
-            <SearchInput animeId={params.id} search={search} />
-          </div>
+              <SearchInput animeId={params.id} search={search} />
+            </div>
 
-          <div
-            ref={episodeListRef}
-            className={
-              'h-fit justify-items-center scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
-              (compactMode
-                ? 'grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2 overflow-y-scroll p-2 text-xs md:grid-cols-5'
-                : 'overflow-y-auto text-sm')
-            }
-          >
-            <EpisodeSelector
-              key={params.id + '|' + currentPage}
-              animeId={params.id}
-              currentEpisode={currentEpisode ?? 1}
-              episodeList={currentPageEpisodeList}
-              compactMode={compactMode}
-            />
-          </div>
-        </aside>
+            <div
+              ref={episodeListRef}
+              className={
+                'h-fit justify-items-center scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
+                (compactMode
+                  ? 'grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2 overflow-y-scroll p-2 text-xs md:grid-cols-5'
+                  : 'overflow-y-auto text-sm')
+              }
+            >
+              <EpisodeSelector
+                key={params.id + '|' + currentPage}
+                animeId={params.id}
+                currentEpisode={currentEpisode ?? 1}
+                episodeList={currentPageEpisodeList}
+                compactMode={compactMode}
+              />
+            </div>
+          </aside>
+        )}
 
         <AnimeWatchSessionContext.Provider value={{ id: watchSessionId }}>
           <Outlet />

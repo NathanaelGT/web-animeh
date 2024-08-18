@@ -23,3 +23,16 @@ export const isMoreThanOneDay = <TNullAs = true>(
 
   return diff > 24 * 60 * 60 * 1000
 }
+
+export const isMoreThanOneMinute = <TNullAs = true>(
+  compareTo: Date | null,
+  { nullAs = true as TNullAs } = {},
+) => {
+  if (compareTo === null) {
+    return nullAs
+  }
+
+  const diff = Date.now() - compareTo.getTime()
+
+  return diff > 60 * 1000
+}

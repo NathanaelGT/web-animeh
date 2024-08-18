@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { oneRemInPx } from '~c/utils/css'
 import { SimpleTooltip } from '@/ui/tooltip'
-import type { EpisodeList } from '~c/context'
+import type { EpisodeList } from '~c/stores'
 
 const calculateRenderLimit = (episodeHeightInRem: number) => {
   const headerHeight = 4 * oneRemInPx
@@ -29,38 +29,46 @@ export function EpisodeTooltip({ episode }: EpisodeTooltipProps) {
           <td>Episode</td>
           <td>: {episode.number}</td>
         </tr>
-        <tr>
-          <td className="align-top">Judul</td>
-          <td>
-            : {episode.title}
-            {episode.romanjiTitle && (
-              <>
-                <br />
-                <span className="text-transparent">: </span>
-                <span className="text-xs italic text-slate-500">{episode.romanjiTitle}</span>
-              </>
-            )}
-            {episode.japaneseTitle && (
-              <>
-                <br />
-                <span className="text-transparent">: </span>
-                <span className="text-xs italic text-slate-500">{episode.japaneseTitle}</span>
-              </>
-            )}
-          </td>
-        </tr>
-        <tr>
-          <td>Skor</td>
-          <td>: {episode.score}</td>
-        </tr>
-        <tr>
-          <td>Filler</td>
-          <td>: {episode.is_filler ? 'Ya' : 'Bukan'}</td>
-        </tr>
-        <tr>
-          <td>Recap</td>
-          <td>: {episode.is_recap ? 'Ya' : 'Bukan'}</td>
-        </tr>
+        {(episode.title || episode.romanjiTitle || episode.japaneseTitle) && (
+          <tr>
+            <td className="align-top">Judul</td>
+            <td>
+              {episode.title && <span>: {episode.title}</span>}
+              {episode.romanjiTitle && (
+                <>
+                  <br />
+                  <span className="text-transparent">: </span>
+                  <span className="text-xs italic text-slate-500">{episode.romanjiTitle}</span>
+                </>
+              )}
+              {episode.japaneseTitle && (
+                <>
+                  <br />
+                  <span className="text-transparent">: </span>
+                  <span className="text-xs italic text-slate-500">{episode.japaneseTitle}</span>
+                </>
+              )}
+            </td>
+          </tr>
+        )}
+        {episode.score !== null && (
+          <tr>
+            <td>Skor</td>
+            <td>: {episode.score}</td>
+          </tr>
+        )}
+        {episode.is_filler !== null && (
+          <tr>
+            <td>Filler</td>
+            <td>: {episode.is_filler ? 'Ya' : 'Bukan'}</td>
+          </tr>
+        )}
+        {episode.is_recap !== null && (
+          <tr>
+            <td>Recap</td>
+            <td>: {episode.is_recap ? 'Ya' : 'Bukan'}</td>
+          </tr>
+        )}
       </tbody>
     </table>
   )
@@ -108,7 +116,13 @@ function DetailEpisodeSelector(initial: boolean, { animeId, currentEpisode, epis
 
             <p className="min-w-4 flex-auto">{episode.number}</p>
 
-            <p className="w-full truncate">{episode.title}</p>
+            <p className="w-full truncate">
+              {episode.title ? (
+                episode.title
+              ) : (
+                <span className="opacity-50">Episode {episode.number}</span>
+              )}
+            </p>
           </Link>
         </SimpleTooltip>
       </div>

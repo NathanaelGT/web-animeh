@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { api } from '~c/trpc'
+import { AnimeDataContext } from '~c/context'
 import { Button } from '@/ui/button'
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
 
 export function Download(props: Props) {
   const [placeholder, setPlaceholder] = useState('')
+  const animeData = useContext(AnimeDataContext)
   const downloadEpisode = api.component.poster.download.useMutation()
 
   if (placeholder) {
@@ -19,9 +21,11 @@ export function Download(props: Props) {
     )
   }
 
+  const title = animeData.totalEpisodes === 1 ? animeData.title : 'Episode ' + props.episodeNumber
+
   return (
-    <div className="m-auto flex flex-col gap-3">
-      <p>Episode {props.episodeNumber} belum terunduh</p>
+    <div className="p-auto m-4 flex w-full flex-col items-center justify-center gap-3">
+      <p className="text-center">{title} belum terunduh</p>
       <Button
         onClick={() => {
           setPlaceholder('Memuat unduhan')
@@ -38,7 +42,7 @@ export function Download(props: Props) {
         }}
         variant="indigo"
         size="sm"
-        className="font-bold"
+        className="w-full max-w-96 font-bold"
       >
         Unduh
       </Button>
