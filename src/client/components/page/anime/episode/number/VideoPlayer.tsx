@@ -34,22 +34,32 @@ export function VideoPlayer({ params }: Props) {
       return
     }
 
+    const autoplay = () => {
+      video.addEventListener(
+        'loadeddata',
+        () => {
+          video.muted = true
+          video.play().then(() => {
+            video.muted = false
+          })
+        },
+        { once: true },
+      )
+    }
+
     const src = getSrc(params.id, params.number)
     if (video.dataset.id === watchSession.id) {
       if (video.src !== src) {
         video.src = src
+        autoplay()
       }
     } else {
       video.dataset.id = watchSession.id
       video.src = src
+      autoplay()
     }
 
     container.appendChild(video)
-
-    video.muted = true
-    video.play().then(() => {
-      video.muted = false
-    })
 
     const changeEpisode = (episodeTarget: number) => {
       if (!searchEpisode(episodeListStore.state, episodeTarget)) {
@@ -192,20 +202,21 @@ export function VideoPlayer({ params }: Props) {
     return () => {
       const voidEl = document.getElementById('void')
 
-      video.pause()
       voidEl?.appendChild(video)
 
       video.removeEventListener('ended', videoEndedHandler)
       video.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
       window.removeEventListener('keydown', keybindHandler)
 
-      if (document.pictureInPictureElement === video) {
-        setTimeout(() => {
-          if (voidEl?.contains(video)) {
+      setTimeout(() => {
+        if (voidEl?.contains(video)) {
+          video.pause()
+
+          if (document.pictureInPictureElement === video) {
             document.exitPictureInPicture()
           }
-        })
-      }
+        }
+      })
     }
   }, [])
 
