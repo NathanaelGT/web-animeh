@@ -15,7 +15,7 @@ type Props = {
 export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Props) {
   return animeListPages.state[index]!.map(animeData => (
     <div key={animeData.id} className="mx-auto max-w-[162px]">
-      <AnimePoster small asLink anime={animeData}>
+      <AnimePoster small asLink anime={animeData} tabIndex={-1}>
         {animeData.totalEpisodes && (
           <SimpleTooltip title={animeData.totalEpisodes + ' Episode'}>
             <span className="absolute bottom-2 left-2 rounded-md bg-slate-600/75 px-1 text-primary-foreground">

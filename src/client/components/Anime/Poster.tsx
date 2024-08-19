@@ -26,9 +26,10 @@ type Props = PropsWithChildren<{
     title: string
     imageExtension: string | null
   }
+  tabIndex?: number
 }>
 
-export function AnimePoster({ small, asLink, anime, children }: Props) {
+export function AnimePoster({ small, asLink, anime, tabIndex, children }: Props) {
   const { toast } = useToast()
   const [shouldQuery, setShouldQuery] = useState(false)
   const downloadEpisode = api.component.poster.download.useMutation()
@@ -70,7 +71,7 @@ export function AnimePoster({ small, asLink, anime, children }: Props) {
       <ContextMenuTrigger asChild>
         <div className="relative block transition-all hover:scale-105">
           {asLink ? (
-            <Link to="/anime/$id" params={{ id: animeId }}>
+            <Link to="/anime/$id" params={{ id: animeId }} tabIndex={tabIndex}>
               {poster}
               {children}
             </Link>
