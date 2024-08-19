@@ -235,12 +235,18 @@ export function Search({ headerRef }: Props) {
   }
 
   const onInputKeydownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'ArrowDown') {
+    const searchEl = searchRef.current
+    if (!searchEl) {
       return
     }
 
-    const searchEl = searchRef.current
-    if (!searchEl) {
+    if (event.key === 'Escape') {
+      // Escape defaultnya bakal ngeclear input yang typenya search
+      event.preventDefault()
+      searchEl.blur()
+
+      return
+    } else if (event.key !== 'ArrowDown') {
       return
     }
 
