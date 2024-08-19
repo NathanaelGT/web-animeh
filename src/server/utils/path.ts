@@ -9,9 +9,17 @@ export const basePath = isProduction()
 
 export const videosDirPath = path.join(basePath, 'videos/')
 
-export const glob = async (path: string, pattern: string, options?: GlobScanOptions) => {
+export const glob = async (
+  path: string,
+  pattern: string,
+  options?: Omit<GlobScanOptions, 'cwd'>,
+) => {
   const isExists = await fs.exists(path)
   if (isExists) {
+    if (options) {
+      ;(options as GlobScanOptions).cwd = path
+    }
+
     return Array.fromAsync(new Bun.Glob(pattern).scan(options ?? path))
   }
 
