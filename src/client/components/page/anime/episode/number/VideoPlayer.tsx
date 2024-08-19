@@ -182,6 +182,14 @@ export function VideoPlayer({ params }: Props) {
     }
 
     const videoFullscreenChangeHandler = () => {
+      // kalo user mencet tombol fullscreen, focusnya bakal pindah ke tombolnya
+      // tapi karena tombolnya bagian dari shadow dom, jadi document.activeElement = video
+      // pada saat focusnya adalah tombol fullscreen, kalo user mencet spasi,
+      // bakal keoverride jadi toggle fullscreen
+      if (document.activeElement === video) {
+        video.focus()
+      }
+
       if (gotoEpisodeRef.current === params.number || document.fullscreenElement === video) {
         return
       }
