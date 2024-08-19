@@ -51,6 +51,29 @@ export function VideoPlayer({ params }: Props) {
       video.muted = false
     })
 
+    const changeEpisode = (episodeTarget: number) => {
+      if (!searchEpisode(episodeListStore.state, episodeTarget)) {
+        return
+      }
+
+      const episodeString = episodeTarget.toString()
+
+      if (document.fullscreenElement === video) {
+        video.src = getSrc(params.id, episodeString)
+        video.play()
+
+        gotoEpisodeRef.current = episodeString
+      } else {
+        router.navigate({
+          to: '/anime/$id/episode/$number',
+          params: {
+            id: params.id,
+            number: episodeString,
+          },
+        })
+      }
+    }
+
     const keybindHandler = (event: KeyboardEvent) => {
       if (
         event.target instanceof HTMLElement &&
@@ -75,29 +98,6 @@ export function VideoPlayer({ params }: Props) {
           handler()
         }
       } else {
-        const changeEpisode = (episodeTarget: number) => {
-          if (!searchEpisode(episodeListStore.state, episodeTarget)) {
-            return
-          }
-
-          const episodeString = episodeTarget.toString()
-
-          if (document.fullscreenElement === video) {
-            video.src = getSrc(params.id, episodeString)
-            video.play()
-
-            gotoEpisodeRef.current = episodeString
-          } else {
-            router.navigate({
-              to: '/anime/$id/episode/$number',
-              params: {
-                id: params.id,
-                number: episodeString,
-              },
-            })
-          }
-        }
-
         const handler = {
           ArrowLeft() {
             video.currentTime -= 5
@@ -167,7 +167,11 @@ export function VideoPlayer({ params }: Props) {
       }
     }
 
-    video.onfullscreenchange = () => {
+    const videoEndedHandler = () => {
+      changeEpisode(Number(gotoEpisodeRef.current) + 1)
+    }
+
+    const videoFullscreenChangeHandler = () => {
       if (gotoEpisodeRef.current === params.number || document.fullscreenElement === video) {
         return
       }
@@ -181,6 +185,8 @@ export function VideoPlayer({ params }: Props) {
       })
     }
 
+    video.addEventListener('ended', videoEndedHandler)
+    video.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
     window.addEventListener('keydown', keybindHandler)
 
     return () => {
@@ -189,6 +195,8 @@ export function VideoPlayer({ params }: Props) {
       video.pause()
       voidEl?.appendChild(video)
 
+      video.removeEventListener('ended', videoEndedHandler)
+      video.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
       window.removeEventListener('keydown', keybindHandler)
 
       if (document.pictureInPictureElement === video) {
