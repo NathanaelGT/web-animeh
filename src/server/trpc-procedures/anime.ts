@@ -1,17 +1,20 @@
 import { observable } from '@trpc/server/observable'
 import { z } from 'zod'
 import { procedure, router } from '~s/trpc'
-import { videosDirPath, glob } from '~s/utils/path'
+import { glob, animeVideoRealDirPath } from '~s/utils/path'
 import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
 
 export const AnimeRouter = router({
   episodes: procedure.input(z.number()).subscription(async ({ ctx, input }) => {
-    const [animeData, downloadedEpisodeList] = await Promise.all([
+    const [animeData, downloadedEpisodePaths] = await Promise.all([
       ctx.db.query.anime.findFirst({
         columns: { title: true },
         where: (anime, { eq }) => eq(anime.id, input),
       }),
-      glob(videosDirPath + input, '*.mp4'),
+
+      animeVideoRealDirPath(input).then(videoRealDir => {
+        return videoRealDir ? glob(videoRealDir, '*.mp4') : []
+      }),
     ])
 
     if (!animeData) {
@@ -19,8 +22,11 @@ export const AnimeRouter = router({
     }
 
     const episodeList: Record<number, string | true> = {}
-    for (const episode of downloadedEpisodeList) {
-      episodeList[parseInt(episode)] = true
+    const downloadedEpisodePathSliceAt = (downloadedEpisodePaths[0]?.lastIndexOf('/') ?? 0) + 1
+    for (const downloadedEpisodePath of downloadedEpisodePaths) {
+      const episodePath = downloadedEpisodePath.slice(downloadedEpisodePathSliceAt)
+
+      episodeList[parseInt(episodePath)] = true
     }
 
     return observable<typeof episodeList>(emit => {

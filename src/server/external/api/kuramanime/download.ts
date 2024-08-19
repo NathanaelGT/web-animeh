@@ -3,7 +3,7 @@ import path from 'path'
 import z from 'zod'
 import { env } from '~/env'
 import { anime, animeMetadata } from '~s/db/schema'
-import { videosDirPath } from '~s/utils/path'
+import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
 import { EpisodeNotFoundError } from '~s/error'
 import { metadataQueue, downloadQueue } from '~s/external/queue'
@@ -45,24 +45,35 @@ const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
   env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
 
 export const downloadEpisode = async (
-  localAnime: Pick<typeof anime.$inferSelect, 'id' | 'title'>,
+  animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>,
   metadata: Pick<typeof animeMetadata.$inferSelect, 'providerId' | 'providerSlug'>,
   episodeNumber: number,
   onFinish?: () => void,
 ): Promise<{ size: string | null } | null> => {
-  const animePath = videosDirPath + localAnime.id
-  const fileName = episodeNumber.toString().padStart(2, '0')
-  const tempFilePath = path.join(animePath, fileName + '_.mp4')
-  const file = Bun.file(tempFilePath)
+  let animeDirPath = await animeVideoRealDirPath(animeData.id)
+  let shouldCheck = true
+  if (!animeDirPath) {
+    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
+    shouldCheck = false
+  }
 
-  if (await file.exists()) {
-    return null
+  const fileName = episodeNumber.toString().padStart(2, '0')
+  const filePath = animeDirPath + fileName + '.mp4'
+  const tempFilePath = animeDirPath + fileName + '_.mp4'
+  const tempFile = Bun.file(tempFilePath)
+
+  if (shouldCheck) {
+    const checks = await Promise.all([tempFile.exists(), Bun.file(filePath).exists()])
+
+    if (checks.some(exists => exists)) {
+      return null
+    }
   }
 
   const episodeUrl = new URL('https://kuramanime.' + env.KURAMANIME_TLD)
   episodeUrl.pathname = `/anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
-  const emitKey = `${localAnime.title}: Episode ${episodeNumber}`
+  const emitKey = `${animeData.title}: Episode ${episodeNumber}`
 
   const getDownloadUrl = async () => {
     if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !kGlobalData) {
@@ -97,7 +108,7 @@ export const downloadEpisode = async (
       })
 
       logger.error('Download episode: unknown error', {
-        localAnime,
+        localAnime: animeData,
         metadata,
         episodeNumber,
         responseHtml,
@@ -137,7 +148,7 @@ export const downloadEpisode = async (
           text: 'Mulai mengunduh',
         })
 
-        const mkDirPromise = fs.mkdir(animePath, { recursive: true })
+        const mkDirPromise = fs.mkdir(animeDirPath, { recursive: true })
         const preparedResponse = await prepareResponsePromise
         const reader = (preparedResponse.body as ReadableStream<Uint8Array> | null)?.getReader()
         if (!reader) {
@@ -151,7 +162,7 @@ export const downloadEpisode = async (
 
         await mkDirPromise
 
-        const writer = file.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
+        const writer = tempFile.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
         let receivedLength = 0
         let skip = false
         let isResolved = false
@@ -220,8 +231,6 @@ export const downloadEpisode = async (
         ;(async () => {
           await writer.end()
 
-          const filePath = path.join(animePath, fileName + '.mp4')
-
           downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
 
           await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
@@ -289,4 +298,21 @@ async function getKuramanimeGlobalData() {
   return kuramanimeGlobalDataSchema.parse(
     parseFromJsObjectString(js.replace('window.GLOBAL_DATA =', '').replace(';', '')),
   )
+}
+
+function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>) {
+  // list lengkap dan penjelasannya: https://stackoverflow.com/a/31976060
+
+  let result = ''
+
+  const forbiddenChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']) // 1
+  for (const char of animeData.title) {
+    if (!forbiddenChars.has(char) && char.charCodeAt(0) > 31 /* 2 */) {
+      result += char
+    }
+  }
+
+  // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
+
+  return result.replace(/\s+/g, ' ') + '.' + animeData.id
 }

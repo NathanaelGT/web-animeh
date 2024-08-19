@@ -1,17 +1,20 @@
 import Bun from 'bun'
-import path from 'path'
 import fs from 'fs'
-import { basePath } from '~s/utils/path'
+import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
 
 export const handleVideoRequest = async (request: Request, target: string): Promise<Response> => {
-  const videoPath = path.join(basePath, target)
-  const video = Bun.file(videoPath)
-
-  if (video.size === 0) {
+  const pathArr = target.slice('/videos/'.length).split('/')
+  if (pathArr.length !== 2) {
     return new Response('Not found', { status: 404 })
   }
 
+  const videoFileResult = await getVideoFile(pathArr as [string, string])
+  if (!videoFileResult) {
+    return new Response('Not found', { status: 404 })
+  }
+
+  const [video, videoPath] = videoFileResult
   const range = request.headers.get('range')
   if (!range) {
     return new Response(video)
@@ -29,4 +32,41 @@ export const handleVideoRequest = async (request: Request, target: string): Prom
   res.headers.set('Content-Type', video.type)
 
   return res
+}
+
+const getVideoFile = async ([animeId, episodeNumber]: [string, string], _retry = true) => {
+  const [realVideoDirPath, videoPathIsFromCache] = await getRealVideoDirPath(animeId)
+  if (!realVideoDirPath) {
+    return null
+  }
+
+  const videoPath = realVideoDirPath + episodeNumber
+  const video = Bun.file(videoPath)
+
+  if (video.size === 0) {
+    if (videoPathIsFromCache && _retry) {
+      realVideoDirPathCache.delete(animeId)
+
+      return getVideoFile([animeId, episodeNumber], false)
+    }
+
+    return null
+  }
+
+  return [video, videoPath] as const
+}
+
+const realVideoDirPathCache = new Map<string, string>()
+const getRealVideoDirPath = async (animeId: string) => {
+  const cache = realVideoDirPathCache.get(animeId)
+  if (cache) {
+    return [cache, true]
+  }
+
+  const result = await realAnimeVideoDirPath(animeId)
+  if (result) {
+    realVideoDirPathCache.set(animeId, result)
+  }
+
+  return [result, false]
 }
