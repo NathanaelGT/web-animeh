@@ -84,12 +84,12 @@ export function Header() {
 
           <ProfileSwitcher />
 
-          <Link to="/pengaturan">
-            <Button variant="outline" size="icon">
+          <Button asChild variant="outline" size="icon">
+            <Link to="/pengaturan">
               <Settings className="h-4 w-4" />
               <span className="sr-only">Pengaturan</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>
