@@ -8,6 +8,12 @@ import { formatNs } from 'src/server/utils/time'
 const killPreviousServerPromise =
   os.platform() === 'linux' ? $`fuser -k 8887/tcp`.quiet().nothrow() : Promise.resolve()
 
+const copyEnvPromise = (async () => {
+  if (!(await Bun.file('.env').exists())) {
+    await Bun.write('.env', Bun.file('.env.example'))
+  }
+})()
+
 const maxWidth = 140
 
 process.stdout.moveCursor(0, -1)
@@ -25,7 +31,7 @@ const client = Bun.spawn(['bunx', '--bun', 'vite', '--port', '8888'], {
 const clientStartNs = Bun.nanoseconds()
 const clientStdout = client.stdout.getReader()
 
-await killPreviousServerPromise
+await Promise.all([killPreviousServerPromise, copyEnvPromise])
 
 const server = Bun.spawn(['bun', '--hot', './src/server/index.ts', ...Bun.argv.slice(2)], {
   stdin: 'inherit',

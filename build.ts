@@ -201,6 +201,8 @@ await Promise.all([
 
     return Promise.all(promises)
   }),
+
+  Bun.write('./dist/.env', Bun.file('./.env.example')),
 ])
 
 type File = {
