@@ -1,7 +1,7 @@
 import path from 'path'
 import { initTRPC } from '@trpc/server'
 import SuperJSON from 'superjson'
-import { ZodError } from 'zod'
+import { isValiError } from 'valibot'
 import { db } from '~s/db'
 import { basePath } from '~s/utils/path'
 import { fetchAndUpdate } from '~s/anime/update'
@@ -111,7 +111,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        valiError: isValiError(error.cause) ? error.cause.issues : null,
       },
     }
   },

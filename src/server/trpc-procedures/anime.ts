@@ -1,11 +1,11 @@
 import { observable } from '@trpc/server/observable'
-import { z } from 'zod'
+import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { glob, animeVideoRealDirPath } from '~s/utils/path'
 import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
 
 export const AnimeRouter = router({
-  episodes: procedure.input(z.number()).subscription(async ({ ctx, input }) => {
+  episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input }) => {
     const [animeData, downloadedEpisodePaths] = await Promise.all([
       ctx.db.query.anime.findFirst({
         columns: { title: true },

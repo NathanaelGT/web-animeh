@@ -1,4 +1,4 @@
-import z from 'zod'
+import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { videosDirPath, glob } from '~s/utils/path'
 import { downloadEpisode } from '~s/external/api/kuramanime/download'
@@ -7,7 +7,7 @@ import { updateEpisode } from '~s/anime/episode/update'
 import { downloadProgressSnapshot } from '~/server/external/download/progress'
 
 export const PosterRouter = router({
-  episodeList: procedure.input(z.number()).query(async ({ ctx, input }) => {
+  episodeList: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
     const downloadedEpisodeListPromise = glob(videosDirPath + input, '*.mp4')
 
     const animeData = await ctx.db.query.anime.findFirst({
@@ -48,7 +48,7 @@ export const PosterRouter = router({
   }),
 
   download: procedure
-    .input(z.object({ animeId: z.number(), episodeNumber: z.number() }))
+    .input(v.parser(v.object({ animeId: v.number(), episodeNumber: v.number() })))
     .mutation(async ({ ctx, input }) => {
       const animeData = await ctx.db.query.anime.findFirst({
         columns: { title: true },
@@ -74,7 +74,7 @@ export const PosterRouter = router({
       )
     }),
 
-  downloadAll: procedure.input(z.number()).mutation(async ({ ctx, input }) => {
+  downloadAll: procedure.input(v.parser(v.number())).mutation(async ({ ctx, input }) => {
     const [animeData, downloadedEpisodeList] = await Promise.all([
       ctx.db.query.anime.findFirst({
         columns: { title: true },

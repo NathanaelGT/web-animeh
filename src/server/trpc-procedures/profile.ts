@@ -1,16 +1,16 @@
 import mitt from 'mitt'
-import { z } from 'zod'
+import * as v from 'valibot'
 import { eq } from 'drizzle-orm'
-import { createInsertSchema } from 'drizzle-zod'
 import { observable } from '@trpc/server/observable'
 import { profiles, type Profile } from '~s/db/schema'
 import { procedure, router } from '~s/trpc'
 import { logger } from '~s/utils/logger'
 import { defaultSettings, parse, settingsSchema } from '~/shared/profile/settings'
 
-const profileSchema = createInsertSchema(profiles, {
+const profileSchema = v.object({
+  name: v.string(),
   settings: settingsSchema,
-}).omit({ id: true })
+})
 
 const emitter = mitt<Record<number, Profile>>()
 
@@ -40,7 +40,7 @@ export const ProfileRouter = router({
     return profiles.map(profile => profile.name)
   }),
 
-  change: procedure.input(z.string()).mutation(async ({ input, ctx }) => {
+  change: procedure.input(v.parser(v.string())).mutation(async ({ input, ctx }) => {
     const newProfile = await ctx.db.query.profiles.findFirst({
       where: (profiles, { eq }) => eq(profiles.name, input),
     })
@@ -55,7 +55,7 @@ export const ProfileRouter = router({
     ctx.data.__changeProfile(newProfile)
   }),
 
-  create: procedure.input(z.string()).mutation(async ({ input, ctx }) => {
+  create: procedure.input(v.parser(v.string())).mutation(async ({ input, ctx }) => {
     const newProfile: typeof profiles.$inferInsert = {
       name: input,
       settings: defaultSettings(),
@@ -70,7 +70,7 @@ export const ProfileRouter = router({
     ctx.data.profile = newProfile as typeof profiles.$inferSelect
   }),
 
-  update: procedure.input(profileSchema).mutation(async ({ input, ctx }) => {
+  update: procedure.input(v.parser(profileSchema)).mutation(async ({ input, ctx }) => {
     const newProfileData = input as Profile
 
     try {

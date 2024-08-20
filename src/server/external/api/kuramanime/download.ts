@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import z from 'zod'
+import * as v from 'valibot'
 import { env } from '~/env'
 import { anime, animeMetadata } from '~s/db/schema'
 import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
@@ -14,25 +14,25 @@ import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { parseNumber } from '~/shared/utils/number'
 
-const kuramanimeInitProcessSchema = z.object({
-  env: z.object({
-    MIX_JS_ROUTE_PARAM_ATTR_KEY: z.string(),
-    MIX_JS_ROUTE_PARAM_ATTR: z.string(),
+const kuramanimeInitProcessSchema = v.object({
+  env: v.object({
+    MIX_JS_ROUTE_PARAM_ATTR_KEY: v.string(),
+    MIX_JS_ROUTE_PARAM_ATTR: v.string(),
   }),
 })
 
-const kuramanimeProcessSchema = z.object({
-  env: z.object({
-    MIX_AUTH_ROUTE_PARAM: z.string(),
-    MIX_PAGE_TOKEN_KEY: z.string(),
-    MIX_STREAM_SERVER_KEY: z.string(),
+const kuramanimeProcessSchema = v.object({
+  env: v.object({
+    MIX_AUTH_ROUTE_PARAM: v.string(),
+    MIX_PAGE_TOKEN_KEY: v.string(),
+    MIX_STREAM_SERVER_KEY: v.string(),
   }),
 })
 
 let kMIX_PAGE_TOKEN_VALUE: string | null
-let kProcess: z.infer<typeof kuramanimeProcessSchema> | null
-let kInitProcess: z.infer<typeof kuramanimeInitProcessSchema> | null
-let kGlobalData: z.infer<typeof kuramanimeGlobalDataSchema> | null
+let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
+let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
+let kGlobalData: v.InferInput<typeof kuramanimeGlobalDataSchema> | null
 
 const unsetCredentials = () => {
   kMIX_PAGE_TOKEN_VALUE = null
@@ -264,7 +264,8 @@ export const downloadEpisode = async (
 async function getKuramanimeInitProcess() {
   const js = await fetchText(`https://kuramanime.${env.KURAMANIME_TLD}/assets/js/sizzly.js`)
 
-  return kuramanimeInitProcessSchema.parse(
+  return v.parse(
+    kuramanimeInitProcessSchema,
     parseFromJsObjectString(js.replace('window.init_process =', '').replace(';', '')),
   )
 }
@@ -281,7 +282,8 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
   const kProcessJs = await fetchText(
     `https://kuramanime.${env.KURAMANIME_TLD}/assets/js/${kpsUrl}.js`,
   )
-  const kProcess = kuramanimeProcessSchema.parse(
+  const kProcess = v.parse(
+    kuramanimeProcessSchema,
     parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
   )
 
@@ -295,7 +297,8 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
 async function getKuramanimeGlobalData() {
   const js = await fetchText('https://kuramadrive.com/api/v1/var/js/master.js')
 
-  return kuramanimeGlobalDataSchema.parse(
+  return v.parse(
+    kuramanimeGlobalDataSchema,
     parseFromJsObjectString(js.replace('window.GLOBAL_DATA =', '').replace(';', '')),
   )
 }

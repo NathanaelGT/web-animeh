@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as v from 'valibot'
 import { limitRequest } from '~s/external/limit'
 
 export const fetchText = async (url: string, init?: FetchRequestInit) => {
@@ -13,10 +13,12 @@ export const fetchJson = async (url: string, init?: FetchRequestInit) => {
   return response.json()
 }
 
-export const fetchJsonValidate = async <T extends z.ZodRawShape>(
+export const fetchJsonValidate = async <
+  TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
+>(
   url: string,
-  schema: z.ZodObject<T>,
+  schema: TSchema,
   init?: FetchRequestInit,
 ) => {
-  return schema.parse(await fetchJson(url, init))
+  return v.parse(schema, await fetchJson(url, init))
 }

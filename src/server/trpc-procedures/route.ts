@@ -1,4 +1,4 @@
-import z from 'zod'
+import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
@@ -11,32 +11,34 @@ import type {
 } from '@trpc/server/unstable-core-do-not-import'
 
 export const RouteRouter = router({
-  '/': procedure.input(z.object({ cursor: z.number().nullish() })).query(async ({ ctx, input }) => {
-    const perPage = 48
+  '/': procedure
+    .input(v.parser(v.object({ cursor: v.nullish(v.number()) })))
+    .query(async ({ ctx, input }) => {
+      const perPage = 48
 
-    const animeList = await ctx.db.query.anime.findMany({
-      limit: perPage,
-      orderBy: (anime, { desc }) => [desc(anime.id)],
-      where: input.cursor ? (anime, { lt }) => lt(anime.id, input.cursor!) : undefined,
-      columns: {
-        id: true,
-        title: true,
-        type: true,
-        rating: true,
-        duration: true,
-        totalEpisodes: true,
-        imageExtension: true,
-      },
-    })
+      const animeList = await ctx.db.query.anime.findMany({
+        limit: perPage,
+        orderBy: (anime, { desc }) => [desc(anime.id)],
+        where: input.cursor ? (anime, { lt }) => lt(anime.id, input.cursor!) : undefined,
+        columns: {
+          id: true,
+          title: true,
+          type: true,
+          rating: true,
+          duration: true,
+          totalEpisodes: true,
+          imageExtension: true,
+        },
+      })
 
-    for (const animeData of animeList) {
-      ctx.loadAnimePoster(animeData)
-    }
+      for (const animeData of animeList) {
+        ctx.loadAnimePoster(animeData)
+      }
 
-    return animeList
-  }),
+      return animeList
+    }),
 
-  '/anime/_$id': procedure.input(z.number()).query(async ({ ctx, input }) => {
+  '/anime/_$id': procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
       where: (anime, { eq }) => eq(anime.id, input),
       columns: {
@@ -107,29 +109,31 @@ export const RouteRouter = router({
     }
   }),
 
-  '/anime/_$id/$id/_episode': procedure.input(z.number()).query(async ({ ctx, input }) => {
-    const animeData = await ctx.db.query.anime.findFirst({
-      columns: { episodeUpdatedAt: true },
-      where: (anime, { eq }) => eq(anime.id, input),
-    })
+  '/anime/_$id/$id/_episode': procedure
+    .input(v.parser(v.number()))
+    .query(async ({ ctx, input }) => {
+      const animeData = await ctx.db.query.anime.findFirst({
+        columns: { episodeUpdatedAt: true },
+        where: (anime, { eq }) => eq(anime.id, input),
+      })
 
-    if (!animeData) {
-      throw new Error('404')
-    }
+      if (!animeData) {
+        throw new Error('404')
+      }
 
-    const [freshEpisodeList, dbEpisodeList] = await Promise.all([
-      updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt }),
+      const [freshEpisodeList, dbEpisodeList] = await Promise.all([
+        updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt }),
 
-      ctx.db.query.episodes.findMany({
-        where: (episodes, { eq }) => eq(episodes.animeId, input),
-        columns: {
-          animeId: false,
-        },
-      }),
-    ])
+        ctx.db.query.episodes.findMany({
+          where: (episodes, { eq }) => eq(episodes.animeId, input),
+          columns: {
+            animeId: false,
+          },
+        }),
+      ])
 
-    return dedupeEpisodes(dbEpisodeList, freshEpisodeList, episode => omit(episode, 'animeId'))
-  }),
+      return dedupeEpisodes(dbEpisodeList, freshEpisodeList, episode => omit(episode, 'animeId'))
+    }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never
   AnyProcedure | CreateRouterOptions | AnyRouter

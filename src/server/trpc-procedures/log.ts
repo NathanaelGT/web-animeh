@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import * as v from 'valibot'
 import { procedure } from '~s/trpc'
 import { logger } from '~s/utils/logger'
 
@@ -13,11 +13,13 @@ type UnionToTuple<U> =
 
 export const LogProcedure = procedure
   .input(
-    z.object({
-      level: z.enum(Object.keys(logger) as UnionToTuple<keyof typeof logger>),
-      message: z.string(),
-      context: z.record(z.unknown()).default({}),
-    }),
+    v.parser(
+      v.object({
+        level: v.picklist(Object.keys(logger) as UnionToTuple<keyof typeof logger>),
+        message: v.string(),
+        context: v.optional(v.record(v.string(), v.unknown()), {}),
+      }),
+    ),
   )
   .mutation(({ input, ctx }) => {
     input.context = { client: ctx.data, ...input.context }

@@ -1,23 +1,26 @@
-import { createEnv } from '@t3-oss/env-core'
-import { z } from 'zod'
+import * as v from 'valibot'
 
-export const env = createEnv({
-  shared: {
-    //
-  },
+const number = (min: number) => {
+  return v.pipe(
+    v.unknown(),
+    v.transform(Number),
+    v.check(input => !isNaN(input)),
+    v.minValue(min),
+  )
+}
 
-  server: {
-    KURAMANIME_TLD: z.string(),
-    PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB: z.coerce.number().min(0),
-    PARALLEL_REQUEST_LIMIT: z.coerce.number().min(1),
-    PARALLEL_DOWNLOAD_LIMIT: z.coerce.number().min(1),
-  },
-
-  client: {
-    //
-  },
-
-  clientPrefix: 'PUBLIC',
-  runtimeEnv: import.meta.env,
-  emptyStringAsUndefined: true,
+const schema = v.object({
+  KURAMANIME_TLD: v.string(),
+  PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB: number(0),
+  PARALLEL_REQUEST_LIMIT: number(1),
+  PARALLEL_DOWNLOAD_LIMIT: number(1),
 })
+
+const transformedEnv = process.env
+for (const key in transformedEnv) {
+  if (transformedEnv[key] === '') {
+    delete transformedEnv[key]
+  }
+}
+
+export const env = v.parse(schema, transformedEnv)

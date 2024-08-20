@@ -1,28 +1,29 @@
-import { z } from 'zod'
+import * as v from 'valibot'
 
 export const headerPositions = ['static', 'sticky', 'hybrid'] as const
 
 export const episodeDisplayMode = ['Padat', 'Detail', 'Auto'] as const
 
-export const episodeFilterSchema = z.object({
-  displayMode: z.enum(episodeDisplayMode).catch('Auto'),
-  sortLatest: z.boolean().catch(false),
-  hideFiller: z.boolean().catch(false),
-  hideRecap: z.boolean().catch(false),
-  perPage: z.number().catch(100),
+export const episodeFilterSchema = v.object({
+  displayMode: v.fallback(v.picklist(episodeDisplayMode), 'Auto'),
+  sortLatest: v.fallback(v.boolean(), false),
+  hideFiller: v.fallback(v.boolean(), false),
+  hideRecap: v.fallback(v.boolean(), false),
+  perPage: v.fallback(v.number(), 100),
 })
 
-export const settingsSchema = z.object({
-  headerPosition: z.enum(headerPositions).catch('hybrid'),
-  episodeFilter: episodeFilterSchema.default({}),
+export const settingsSchema = v.object({
+  headerPosition: v.fallback(v.picklist(headerPositions), 'hybrid'),
+  // @ts-ignore semua field di episodeFilterSchema ada fallbacknya
+  episodeFilter: v.optional(episodeFilterSchema, {}),
 })
 
 export const defaultSettings = () => {
   if (import.meta.env.PROD) {
-    return settingsSchema.parse({})
+    return v.parse(settingsSchema, {})
   } else {
     try {
-      return settingsSchema.parse({})
+      return v.parse(settingsSchema, {})
     } catch {
       throw new Error('Please specify default or catch value for all settings')
     }
@@ -31,7 +32,7 @@ export const defaultSettings = () => {
 
 export const parse = (settingsJson: unknown) => {
   try {
-    return settingsSchema.parse(settingsJson)
+    return v.parse(settingsSchema, settingsJson)
   } catch {
     return defaultSettings()
   }

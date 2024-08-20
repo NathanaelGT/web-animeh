@@ -1,6 +1,6 @@
 import { customType, text, integer, real, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
-import type { z } from 'zod'
+import type * as v from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
 const dateDiv100 = customType<{ data: Date }>({
@@ -31,7 +31,7 @@ const score = customType<{ data: number }>({
   },
 })
 
-type Settings = z.infer<typeof settingsSchema>
+type Settings = v.InferInput<typeof settingsSchema>
 export type AnimeType = 'Movie' | 'TV' | 'ONA' | 'Special' | 'TV Special' | 'OVA' | (string & {})
 
 export const profiles = sqliteTable('profiles', {

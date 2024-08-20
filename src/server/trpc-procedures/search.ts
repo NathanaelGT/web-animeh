@@ -1,13 +1,15 @@
-import { z } from 'zod'
+import * as v from 'valibot'
 import { procedure } from '~s/trpc'
 import { animeSynonyms, animeToGenres, genres } from '~s/db/schema'
 
 export const SearchProcedure = procedure
   .input(
-    z.object({
-      query: z.string(),
-      offset: z.number(),
-    }),
+    v.parser(
+      v.object({
+        query: v.string(),
+        offset: v.number(),
+      }),
+    ),
   )
   .mutation(async ({ ctx, input }) => {
     const q = input.query

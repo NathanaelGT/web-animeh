@@ -1,19 +1,19 @@
-import z from 'zod'
+import * as v from 'valibot'
 import { fetchText, fetchJsonValidate } from '~/shared/utils/fetch'
 
-export const kuramanimeGlobalDataSchema = z.object({
-  tokens: z.object({
-    globalBearerToken: z.string(),
+export const kuramanimeGlobalDataSchema = v.object({
+  tokens: v.object({
+    globalBearerToken: v.string(),
   }),
 })
 
-const kdriveCheckResponseSchema = z.object({
-  url: z.string().url(),
+const kdriveCheckResponseSchema = v.object({
+  url: v.pipe(v.string(), v.url()),
 })
 
 export const prepare = async (
   kDriveUrl: string,
-  kGlobalData: z.infer<typeof kuramanimeGlobalDataSchema>,
+  kGlobalData: v.InferInput<typeof kuramanimeGlobalDataSchema>,
 ) => {
   let domain = await fetchText(kDriveUrl)
   domain = domain.slice(domain.indexOf('data-domain="'))
