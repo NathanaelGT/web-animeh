@@ -218,7 +218,7 @@ export function VideoPlayer({ params }: Props) {
 
       setTimeout(() => {
         if (voidEl?.contains(video)) {
-          video.pause()
+          video.src = ''
 
           if (document.pictureInPictureElement === video) {
             document.exitPictureInPicture()
