@@ -1,5 +1,11 @@
 # [Web Animeh](https://github.com/NathanaelGT/web-animeh)
 
+# Requirement
+
+- [Git](https://git-scm.com/) (dev)
+- [Bun](https://bun.sh)
+- [FFmpeg](https://www.ffmpeg.org)
+
 # Installation
 
 ```shell
