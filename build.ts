@@ -19,6 +19,10 @@ log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized p
 await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
 let appVersion = ''
+let resolveBuildNumber: (value: string) => void
+const buildNumberPromise = new Promise<string>(resolve => {
+  resolveBuildNumber = resolve
+})
 
 const buildStartNs = Bun.nanoseconds()
 
@@ -45,7 +49,9 @@ await Promise.all([
               (async () => {
                 const jsPath = path.join('./dist/public', jsRelPath)
 
-                const js = (await Bun.file(jsPath).text()).trim()
+                const js = (await Bun.file(jsPath).text())
+                  .trim()
+                  .replace('$INJECT_VERSION$', await buildNumberPromise)
 
                 indexHtml = indexHtml.split(identifier).join(`<script type="module">${js}</script>`)
 
@@ -173,6 +179,10 @@ await Promise.all([
 
       await $`bun ./dist -v`.text().then(version => {
         appVersion = version.trim()
+
+        resolveBuildNumber(
+          appVersion.slice(appVersion.indexOf('build ') + 'build '.length, appVersion.indexOf(')')),
+        )
       })
     }),
 

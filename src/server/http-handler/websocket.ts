@@ -3,6 +3,7 @@ import { db } from '~s/db'
 import { profiles } from '~s/db/schema'
 import { defaultSettings, parse } from '~/shared/profile/settings'
 import { isProduction } from '~s/env' with { type: 'macro' }
+import { buildNumber } from '~s/info' with { type: 'macro' }
 import type { WebSocketData } from '~s/index'
 
 const globalForId = globalThis as unknown as {
@@ -15,7 +16,8 @@ if (!isProduction()) {
 let id = 1
 
 export const handleWebsocketRequest = async (request: Request, server: Bun.Server) => {
-  const profileId = Number(request.url.slice(server.url.origin.length + 1))
+  const [version, profileIdString] = request.url.slice(server.url.origin.length + 1).split('&')
+  const profileId = Number(profileIdString)
 
   let profile = await db.query.profiles.findFirst({
     where(profiles, { eq }) {
@@ -51,7 +53,10 @@ export const handleWebsocketRequest = async (request: Request, server: Bun.Serve
 
   const upgradeSuccess = server.upgrade(request, {
     data: {
-      id: (isProduction() ? id : globalForId.id).toString(36),
+      id:
+        isProduction() && version !== buildNumber()
+          ? ''
+          : (isProduction() ? id : globalForId.id).toString(36),
       profile,
     } satisfies WebSocketData,
   })

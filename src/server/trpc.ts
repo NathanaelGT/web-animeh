@@ -18,6 +18,10 @@ type ContextOpts = CreateBunContextOptions & { client: ServerWebSocket<WebSocket
 const WARM_IMAGE_KEY = '__WARM_IMAGE__'
 
 export const createTRPCContext = (opts: ContextOpts) => {
+  if (opts.client.data.id === '') {
+    opts.client.close(4000)
+  }
+
   const loadImage = async (value: ImageEmitterParam) => {
     const emitter =
       imageEmitterMap.get(opts.client.data.id) ||

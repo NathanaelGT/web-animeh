@@ -7,7 +7,21 @@ import { clientProfileIdStore } from '~c/stores'
 import type { TRPCRouter } from '~s/router'
 
 export const wsClient = createWSClient({
-  url: `ws://localhost:${import.meta.env.PROD ? 8888 : 8887}/${clientProfileIdStore.state ?? ''}`,
+  retryDelayMs() {
+    return 0
+  },
+
+  url() {
+    const port = import.meta.env.PROD ? 8888 : 8887
+
+    return `ws://localhost:${port}/$INJECT_VERSION$&${clientProfileIdStore.state ?? ''}`
+  },
+
+  onClose(cause) {
+    if (cause?.code === 4000) {
+      location.reload()
+    }
+  },
 })
 
 const createQueryClient = () => new QueryClient()
