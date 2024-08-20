@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useMemo, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { api } from '~c/trpc'
@@ -14,10 +14,13 @@ export const Route = createFileRoute('/')({
 const perPage = 48
 
 function Index() {
+  const id = useMemo(() => Math.random().toString().slice(2), [])
   const animeListQuery = api.route['/'].useInfiniteQuery(
-    {},
+    // @ts-ignore
+    { x: id }, // biar engga pake data dari load sebelumnya, jadi dikasih random id
     {
       getNextPageParam: lastPage => lastPage.at(-1)?.id,
+      refetchOnMount: false,
       initialData: {
         pages: [Route.useLoaderData()],
         pageParams: [null],
