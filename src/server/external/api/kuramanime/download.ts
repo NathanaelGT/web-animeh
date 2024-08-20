@@ -190,7 +190,7 @@ export const downloadEpisode = async (
           }
 
           let text = 'Mengunduh: ' + formatBytes(receivedLength)
-          const speed = '@' + formatBytes(receivedLength / elapsedTime) + 'ps'
+          const speed = '@' + formatBytes(receivedLength / elapsedTime) + '/s'
 
           if (contentLength) {
             text +=
