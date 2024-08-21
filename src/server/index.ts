@@ -33,7 +33,7 @@ const logMessage = (
   const date = format(new Date())
   const elapsedTime = elapsedNs ? ' ~ ' + formatNs(elapsedNs) : ''
 
-  const dots = fill(31, message, elapsedTime, context ? context.length + 3 : 0)
+  const dots = fill(29, message, elapsedTime, context ? context.length + 3 : 0)
 
   let ctx = ''
   if (context) {

@@ -68,7 +68,7 @@ type Level = 'server' | 'client' | 'reload' | 'vite' | 'hmr'
 const logMessage = (level: Level, message: string, elapsed: number | null = null) => {
   const date = format(new Date())
   const elapsedTime = elapsed ? ' ~ ' + formatNs(elapsed) : ''
-  const dots = fill(31, message, elapsedTime)
+  const dots = fill(29, message, elapsedTime)
   const formattedMessage = message.replaceAll(',', '\x1b[90m,\x1b[37m')
 
   return `\x1b[90m[${date}] ${level.padStart(6)}: \x1b[37m${formattedMessage} \x1b[90m${dots}${elapsedTime}\x1b[0m\n`

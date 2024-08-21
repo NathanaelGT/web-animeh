@@ -61,7 +61,7 @@ const writeToConsole = (date: string, level: Level, message: string, context: Co
   }
 
   const elapsedTime = context.elapsedNs ? ' ~ ' + formatNs(context.elapsedNs) : ''
-  const dots = fill(31, message, caller, elapsedTime)
+  const dots = fill(29, message, caller, elapsedTime)
   const levelColor = (
     {
       INFO: '\x1b[34m',
