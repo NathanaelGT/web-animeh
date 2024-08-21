@@ -15,7 +15,7 @@ export const episodeFilterSchema = v.object({
 export const settingsSchema = v.object({
   headerPosition: v.fallback(v.picklist(headerPositions), 'hybrid'),
   // @ts-ignore semua field di episodeFilterSchema ada fallbacknya
-  episodeFilter: v.optional(episodeFilterSchema, {}),
+  episodeFilter: v.optional(episodeFilterSchema, {}) as typeof episodeFilterSchema,
 })
 
 export const defaultSettings = () => {
