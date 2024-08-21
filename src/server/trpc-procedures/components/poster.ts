@@ -33,8 +33,6 @@ export const PosterRouter = router({
       ,
     ])
 
-    console.log(downloadedEpisodeList)
-
     const downloaded = new Set<number>()
     for (const episode of downloadedEpisodeList) {
       // bentuk episode: "01.mp4"
