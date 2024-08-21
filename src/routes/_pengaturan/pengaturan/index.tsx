@@ -28,7 +28,7 @@ function Pengaturan() {
     }
 
     update.mutate(
-      { ...profileStore.state, name },
+      { ...profileStore.state!, name },
       {
         onSuccess() {
           setInputNameError('')

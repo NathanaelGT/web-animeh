@@ -46,7 +46,7 @@ function PengaturanTampilan() {
                     <CommandItem
                       key={position}
                       onSelect={() => {
-                        const newState = { ...profileStore.state }
+                        const newState = { ...profileStore.state! }
                         newState.settings!.headerPosition = position
 
                         setHeaderPositionPopoverIsOpen(false)

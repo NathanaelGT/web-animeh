@@ -71,7 +71,7 @@ export const ProfileRouter = router({
   }),
 
   update: procedure.input(v.parser(profileSchema)).mutation(async ({ input, ctx }) => {
-    const newProfileData = input as Profile
+    const newProfileData = input as typeof input & { id: number }
 
     try {
       await ctx.db.update(profiles).set(newProfileData).where(eq(profiles.id, ctx.data.profile.id))
