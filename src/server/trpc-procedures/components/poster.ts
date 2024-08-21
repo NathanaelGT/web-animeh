@@ -30,7 +30,6 @@ export const PosterRouter = router({
       videoRealDirPromise.then(videoRealDir => {
         return videoRealDir ? glob(videoRealDir, '*.mp4') : []
       }),
-      ,
     ])
 
     const downloaded = new Set<number>()
