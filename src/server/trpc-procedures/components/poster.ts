@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
-import { videosDirPath, glob } from '~s/utils/path'
+import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { downloadEpisode } from '~s/external/api/kuramanime/download'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { updateEpisode } from '~s/anime/episode/update'
@@ -8,7 +8,7 @@ import { downloadProgressSnapshot } from '~/server/external/download/progress'
 
 export const PosterRouter = router({
   episodeList: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
-    const downloadedEpisodeListPromise = glob(videosDirPath + input, '*.mp4')
+    const videoRealDirPromise = animeVideoRealDirPath(input)
 
     const animeData = await ctx.db.query.anime.findFirst({
       columns: { id: true, title: true, episodeUpdatedAt: true },
@@ -27,8 +27,13 @@ export const PosterRouter = router({
             where: (episodes, { eq }) => eq(episodes.animeId, input),
           }),
 
-      downloadedEpisodeListPromise,
+      videoRealDirPromise.then(videoRealDir => {
+        return videoRealDir ? glob(videoRealDir, '*.mp4') : []
+      }),
+      ,
     ])
+
+    console.log(downloadedEpisodeList)
 
     const downloaded = new Set<number>()
     for (const episode of downloadedEpisodeList) {
@@ -87,8 +92,12 @@ export const PosterRouter = router({
         },
       }),
 
-      glob(videosDirPath + input, '*.mp4').then(episodes => {
-        return episodes.map(episode => parseInt(episode))
+      animeVideoRealDirPath(input).then(videoRealDir => {
+        return videoRealDir
+          ? glob(videoRealDir, '*.mp4').then(episodes => {
+              return episodes.map(episode => parseInt(episode))
+            })
+          : []
       }),
     ])
 
