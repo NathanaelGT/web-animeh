@@ -1,5 +1,5 @@
-import { useContext } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { useContext, useEffect } from 'react'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { Play } from 'lucide-react'
 import { AnimeDataContext } from '~c/context'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
@@ -18,8 +18,30 @@ export const Route = createFileRoute('/anime/_$id/$id/')({
 function AnimeId() {
   const animeData = useContext(AnimeDataContext)
   const params = Route.useParams()
+  const router = useRouter()
 
-  if (animeData === undefined) {
+  useEffect(() => {
+    if (!animeData) {
+      return
+    }
+
+    const keybindHandler = (event: KeyboardEvent) => {
+      if (event.key === 'Enter') {
+        router.navigate({
+          to: '/anime/$id/episode/$number',
+          params: { id: params.id, number: '1' },
+        })
+      }
+    }
+
+    window.addEventListener('keydown', keybindHandler)
+
+    return () => {
+      window.removeEventListener('keydown', keybindHandler)
+    }
+  }, [params.id])
+
+  if (!animeData) {
     return <div>Not found</div>
   }
 
