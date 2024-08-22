@@ -104,7 +104,10 @@ function AnimeId() {
 
         {animeData.synopsis && (
           <div>
-            <p dangerouslySetInnerHTML={{ __html: animeData.synopsis }} className="text-justify" />
+            <p
+              dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
+              className="whitespace-pre text-wrap text-justify"
+            />
           </div>
         )}
 
