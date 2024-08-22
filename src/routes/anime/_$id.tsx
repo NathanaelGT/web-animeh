@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
 import { AnimeDataContext } from '~c/context'
 import { Image } from '@/Image'
+import { headerChildStore } from '~c/stores'
 
 let latestAnimeId = ''
 
@@ -20,6 +22,18 @@ export const Route = createFileRoute('/anime/_$id')({
 function AnimeIdLayout() {
   const animeData = Route.useLoaderData()
   const params = Route.useParams()
+
+  useEffect(() => {
+    headerChildStore.setState(() => (
+      <div className="fixed -z-50 h-16 overflow-hidden">
+        <Image src={params.id} className="h-screen w-screen opacity-40 blur-xl" />
+      </div>
+    ))
+
+    return () => {
+      headerChildStore.setState(() => null)
+    }
+  }, [params.id])
 
   return (
     <>

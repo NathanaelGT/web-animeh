@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+export const themes = ['dark', 'light', 'system'] as const
+
 export const headerPositions = ['static', 'sticky', 'hybrid'] as const
 
 export const episodeDisplayMode = ['Padat', 'Detail', 'Auto'] as const
@@ -13,6 +15,7 @@ export const episodeFilterSchema = v.object({
 })
 
 export const settingsSchema = v.object({
+  theme: v.fallback(v.picklist(themes), 'system'),
   headerPosition: v.fallback(v.picklist(headerPositions), 'hybrid'),
   // @ts-ignore semua field di episodeFilterSchema ada fallbacknya
   episodeFilter: v.optional(episodeFilterSchema, {}) as typeof episodeFilterSchema,

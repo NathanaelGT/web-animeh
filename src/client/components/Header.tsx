@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
-import { clientProfileSettingsStore } from '~/client/stores'
+import { clientProfileSettingsStore, headerChildStore } from '~c/stores'
 import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
 import { Button } from '@/ui/button'
@@ -11,6 +11,7 @@ export const HYBRID_HEADER_CLASS_ON_HIDDEN = 'translate-y-[calc(-100%+1px)]'
 
 export function Header() {
   const headerPosition = useStore(clientProfileSettingsStore, store => store.headerPosition)
+  const headerChild = useStore(headerChildStore)
   const headerRef = useRef<HTMLElement | null>(null)
 
   let isHybrid = headerPosition === 'hybrid'
@@ -58,20 +59,29 @@ export function Header() {
     }
   }, [isHybrid])
 
-  let className = ''
+  let className = headerChild
+    ? 'border-slate-400 bg-[#fff] dark:border-slate-900 dark:bg-[#000]'
+    : 'bg-background'
   if (headerPosition !== 'static') {
-    className = 'sticky top-0'
+    className += ' sticky top-0'
   }
   if (isHybrid) {
     className += ' transition-transform'
   }
 
+  const parentClassName = headerChild ? '[&_*]:border-slate-400 dark:[&_*]:border-slate-900' : ''
+  const childClassName = headerChild
+    ? 'bg-[#fff]/25 hover:bg-[#fff]/50 dark:bg-[#000]/25 dark:hover:bg-[#000]/50'
+    : ''
+
   return (
     <header
       ref={headerRef}
       style={{ viewTransitionName: 'header' }}
-      className={`${className} z-50 border-b bg-background`}
+      className={`${className} z-50 border-b`}
     >
+      {headerChild}
+
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
           <Link to="/" preloadDelay={50}>
@@ -79,15 +89,14 @@ export function Header() {
           </Link>
         </div>
 
-        <div className="flex items-center space-x-3 lg:space-x-4">
-          <Search headerRef={headerRef} />
+        <div className={`${parentClassName} flex items-center space-x-3 lg:space-x-4`}>
+          <Search headerRef={headerRef} className={childClassName} />
 
-          <ProfileSwitcher />
+          <ProfileSwitcher className={childClassName} />
 
-          <Button asChild variant="outline" size="icon">
+          <Button asChild variant="outline" size="icon" className={childClassName}>
             <Link to="/pengaturan">
               <Settings className="h-4 w-4" />
-              <span className="sr-only">Pengaturan</span>
             </Link>
           </Button>
         </div>

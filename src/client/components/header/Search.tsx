@@ -15,6 +15,7 @@ import type { TRPCResponse } from '~/shared/utils/types'
 
 type Props = {
   headerRef: React.MutableRefObject<HTMLElement | null>
+  className: string
 }
 
 export const HEADER_CLASS_ON_SEARCH_INPUT_FOCUS = '_focus'
@@ -23,7 +24,7 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   dateStyle: 'long',
 })
 
-export function Search({ headerRef }: Props) {
+export function Search({ headerRef, className }: Props) {
   const searchRef = useRef<HTMLInputElement | null>(null)
   const arrowOffsetRef = useRef(0)
 
@@ -269,7 +270,7 @@ export function Search({ headerRef }: Props) {
         onKeyDown={onInputKeydownHandler}
         type="search"
         placeholder="Cari..."
-        className="!ring-0"
+        className={`!ring-0 ${className}`}
       />
 
       <div className="invisible absolute max-h-[calc(100vh-4rem)] w-full overflow-hidden opacity-0 transition-all">

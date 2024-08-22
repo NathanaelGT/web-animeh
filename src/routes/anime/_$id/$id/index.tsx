@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Play } from 'lucide-react'
 import { AnimeDataContext } from '~c/context'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
@@ -73,10 +73,15 @@ function AnimeId() {
             title: animeData.title,
             imageExtension: animeData.imageExtension,
           }}
+          className="shadow shadow-foreground/50"
         />
 
         <div className="grid w-[225px] gap-3">
-          <Button asChild variant="sky" className="gap-2 text-lg font-bold">
+          <Button
+            asChild
+            variant="sky"
+            className="gap-2 text-lg font-bold shadow shadow-foreground/25"
+          >
             <Link to="/anime/$id/episode/$number" params={{ id: params.id, number: '1' }}>
               <Play />
               Nonton
@@ -89,12 +94,12 @@ function AnimeId() {
         <div className="mt-4 sm:mt-0">
           <h1 className="text-3xl">{animeData.title}</h1>
           {animeData.englishTitle && (
-            <h2 className={`text-xs text-slate-500 ${SHADOW}`}>{animeData.englishTitle}</h2>
+            <h2 className={`text-xs text-muted-foreground ${SHADOW}`}>{animeData.englishTitle}</h2>
           )}
         </div>
 
         <div className="w-fit rounded-lg bg-primary/10 p-[1px]">
-          <div className="flex gap-[2px] overflow-hidden rounded-md text-xs text-primary shadow-md">
+          <div className="flex gap-[2px] overflow-hidden rounded-md text-xs text-primary text-slate-800 shadow-md">
             <AnimeType type={animeData.type} />
             <AnimeRating rating={animeData.rating} />
             <AnimeDuration duration={animeData.duration} />
@@ -103,17 +108,11 @@ function AnimeId() {
         </div>
 
         {animeData.synopsis && (
-          <div>
-            <p
-              dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
-              className="whitespace-pre text-wrap text-justify"
-            />
-          </div>
+          <p
+            dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
+            className="whitespace-pre text-wrap text-justify"
+          />
         )}
-
-        <div>
-          <Outlet />
-        </div>
       </div>
 
       <div className="flex flex-col gap-3 [grid-area:info] lg:-mb-10 lg:-mr-12 lg:-mt-[6.5rem] lg:bg-primary/10 lg:pb-10 lg:pl-4 lg:pr-12 lg:pt-[6.5rem]">

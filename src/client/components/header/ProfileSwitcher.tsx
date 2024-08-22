@@ -24,7 +24,11 @@ import type { TRPCResponse } from '~/shared/utils/types'
 
 type Profiles = TRPCResponse<(typeof ProfileRouter)['list']>
 
-export function ProfileSwitcher() {
+type Props = {
+  className: string
+}
+
+export function ProfileSwitcher({ className }: Props) {
   const [isOpen, setOpen] = useState(false)
   const [showNewProfileDialog, setShowNewProfileDialog] = useState(false)
   const [inputNameError, setInputNameError] = useState('')
@@ -76,10 +80,8 @@ export function ProfileSwitcher() {
           <Button
             variant="outline"
             role="combobox"
-            aria-expanded={isOpen}
-            aria-label="Select a team"
             onMouseDown={fetchProfiles}
-            className="justify-between sm:w-48"
+            className={`justify-between sm:w-48 ${className}`}
           >
             <span className="overflow-hidden">{currentProfileName ?? 'Loading'}</span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

@@ -35,7 +35,7 @@ export function SearchInput({ animeId, search }: Props) {
       onKeyDown={keyDownHandler}
       autoComplete="off"
       placeholder="Cari episode..."
-      className="h-6 bg-transparent ring-indigo-400/75 placeholder:text-primary-foreground/75 focus-visible:ring-1"
+      className="h-6 border-slate-300 bg-transparent ring-indigo-400/75 placeholder:text-slate-300/75 focus-visible:ring-1"
     />
   )
 }

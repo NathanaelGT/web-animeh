@@ -95,7 +95,7 @@ export function SearchFilter({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline2" className="h-6 w-6 bg-transparent p-1 md:mx-2">
+        <Button variant="outline2" className="h-6 w-6 border-slate-300 bg-transparent p-1 md:mx-2">
           <Filter />
         </Button>
       </PopoverTrigger>

@@ -232,7 +232,7 @@ function EpisodeLayout() {
       >
         {animeData.totalEpisodes !== 1 && (
           <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
-            <div className="flex h-10 gap-2 bg-primary/75 p-2 text-primary-foreground">
+            <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
               <SearchFilter
                 episodeListRef={episodeListRef}
                 episodeCount={episodeCount}
