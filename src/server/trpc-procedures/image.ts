@@ -5,7 +5,7 @@ import {
   pendingImageEmitterMap,
   type ImageEmitterParam,
   type ImageEmitter,
-} from '~/server/emits/loadImage'
+} from '~s/emits/loadImage'
 
 export const ImageSubscriptionProcedure = procedure.subscription(opts => {
   let activate: (value: ImageEmitter | PromiseLike<ImageEmitter>) => void

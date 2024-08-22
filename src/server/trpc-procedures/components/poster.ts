@@ -2,9 +2,9 @@ import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { downloadEpisode } from '~s/external/api/kuramanime/download'
+import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { updateEpisode } from '~s/anime/episode/update'
-import { downloadProgressSnapshot } from '~/server/external/download/progress'
 
 export const PosterRouter = router({
   episodeList: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
