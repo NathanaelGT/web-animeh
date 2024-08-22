@@ -105,6 +105,7 @@ export function Search({ headerRef, className }: Props) {
     }
   }
 
+  const onInputFocusTimeoutId = useRef<Timer | null>(null)
   const onInputFocusHandler = () => {
     const searchEl = searchRef.current
     if (!searchEl) {
@@ -113,7 +114,9 @@ export function Search({ headerRef, className }: Props) {
 
     searchEl.parentElement?.classList.add('md:w-64', 'lg:w-96')
 
-    setTimeout(() => {
+    onInputFocusTimeoutId.current = setTimeout(() => {
+      onInputFocusTimeoutId.current = null
+
       const suggestionWrapperEl = searchEl.nextElementSibling
       if (!suggestionWrapperEl) {
         return
@@ -147,8 +150,15 @@ export function Search({ headerRef, className }: Props) {
         return
       }
 
-      suggestionWrapperEl.classList.remove('!opacity-100', '!visible')
       headerRef.current?.classList.remove(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
+
+      if (onInputFocusTimeoutId.current) {
+        clearTimeout(onInputFocusTimeoutId.current)
+
+        onInputFocusTimeoutId.current = null
+      } else {
+        suggestionWrapperEl.classList.remove('!opacity-100', '!visible')
+      }
     })
   }
 
