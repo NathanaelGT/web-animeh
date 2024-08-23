@@ -167,7 +167,7 @@ export const downloadEpisode = async (
         let skip = false
         let isResolved = false
 
-        const startTime = Bun.nanoseconds()
+        const startTime = performance.now()
         const emitProgress = (data: Uint8Array) => {
           receivedLength += data.length
 
@@ -177,7 +177,7 @@ export const downloadEpisode = async (
 
           skip = true
 
-          const elapsedTime = (Bun.nanoseconds() - startTime) / 1e9 // ns -> s
+          const elapsedTime = (performance.now() - startTime) / 1e3 // ms -> s
 
           if (
             !isResolved &&
