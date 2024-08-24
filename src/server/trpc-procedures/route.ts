@@ -29,7 +29,7 @@ export const RouteRouter = router({
         ? (await glob(videosDirPath, '*', { onlyFiles: false }))
             .map(dirName => {
               const index = dirName.lastIndexOf('.')
-              const id = index === -1 ? dirName : dirName.slice(index + 1)
+              const id = dirName.slice(index + 1)
 
               return Number(id)
             })
