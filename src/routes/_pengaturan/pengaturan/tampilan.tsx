@@ -4,6 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Check, ChevronsUpDown } from 'lucide-react'
 import { api } from '~c/trpc'
 import { profileStore, clientProfileSettingsStore } from '~c/stores'
+import { picker } from '~/shared/utils/object'
 import { ucFirst } from '~/shared/utils/string'
 import { themes, headerPositions } from '~/shared/profile/settings'
 import { Button } from '@/ui/button'
@@ -16,7 +17,7 @@ export const Route = createFileRoute('/_pengaturan/pengaturan/tampilan')({
 })
 
 function PengaturanTampilan() {
-  const settings = useStore(clientProfileSettingsStore)
+  const settings = useStore(clientProfileSettingsStore, picker('theme', 'headerPosition'))
 
   return (
     <div className="grid gap-y-4 py-2 pb-4">

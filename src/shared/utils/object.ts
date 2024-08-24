@@ -26,3 +26,15 @@ export const omit = <TObj extends object, TRemove extends (keyof TObj)[]>(
 
   return newObj
 }
+
+export const picker = <T extends Record<string, any>, K extends keyof T>(...keys: K[]) => {
+  return (obj: T) => {
+    const picked = {} as Pick<T, K>
+
+    for (const key of keys) {
+      picked[key] = obj[key]
+    }
+
+    return picked
+  }
+}
