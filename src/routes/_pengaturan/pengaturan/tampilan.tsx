@@ -21,7 +21,7 @@ function PengaturanTampilan() {
   return (
     <div className="grid gap-y-4 py-2 pb-4">
       <Select
-        label={'Tema'}
+        label="Tema"
         options={themes}
         value={settings.theme}
         onChange={(settings, theme) => {
