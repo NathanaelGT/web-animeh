@@ -62,13 +62,15 @@ export function VideoPlayer({ params }: Props) {
     container.appendChild(video)
 
     const changeEpisode = (episodeTarget: number) => {
-      if (!searchEpisode(episodeListStore.state, episodeTarget)) {
+      const episode = searchEpisode(episodeListStore.state, episodeTarget)
+      if (!episode) {
         return
       }
 
       const episodeString = episodeTarget.toString()
 
-      if (document.fullscreenElement === video) {
+      // downloadStatus typenya boolean|string
+      if (episode.downloadStatus === true && document.fullscreenElement === video) {
         video.src = getSrc(params.id, episodeString)
         video.play()
 
