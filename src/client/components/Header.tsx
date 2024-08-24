@@ -84,8 +84,16 @@ export function Header() {
 
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
-          <Link to="/" preloadDelay={50}>
+          <Link to="/" preloadDelay={50} className="mr-8 font-extrabold">
             Web Animeh
+          </Link>
+
+          <Link
+            to="/"
+            search={() => ({ terunduh: 'yoi' })}
+            activeProps={{ className: 'font-bold' }}
+          >
+            Terunduh
           </Link>
         </div>
 

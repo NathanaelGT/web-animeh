@@ -2,6 +2,7 @@ import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
+import { glob, videosDirPath } from '~s/utils/path'
 import { omit } from '~/shared/utils/object'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
@@ -12,14 +13,39 @@ import type {
 
 export const RouteRouter = router({
   '/': procedure
-    .input(v.parser(v.object({ cursor: v.nullish(v.number()) })))
+    .input(
+      v.parser(
+        v.object({
+          x: v.nullish(v.string()), // x cuma untuk cache busting
+          cursor: v.nullish(v.number()),
+          downloaded: v.boolean(),
+        }),
+      ),
+    )
     .query(async ({ ctx, input }) => {
       const perPage = 48
+
+      const ids = input.downloaded
+        ? (await glob(videosDirPath, '*', { onlyFiles: false }))
+            .map(dirName => {
+              const index = dirName.lastIndexOf('.')
+              const id = index === -1 ? dirName : dirName.slice(index + 1)
+
+              return Number(id)
+            })
+            .filter(id => !isNaN(id))
+            .sort((a, b) => b - a)
+            .slice(input.cursor ?? 0, input.cursor ? input.cursor + perPage : perPage)
+        : null
 
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
         orderBy: (anime, { desc }) => [desc(anime.id)],
-        where: input.cursor ? (anime, { lt }) => lt(anime.id, input.cursor!) : undefined,
+        where: ids
+          ? (anime, { inArray }) => inArray(anime.id, ids)
+          : input.cursor
+            ? (anime, { lt }) => lt(anime.id, input.cursor!)
+            : undefined,
         columns: {
           id: true,
           title: true,

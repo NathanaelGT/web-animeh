@@ -1,23 +1,31 @@
 import { useMemo, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { valibotSearchValidator } from '@tanstack/router-valibot-adapter'
+import * as v from 'valibot'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import { animeListPages } from '~c/stores'
 import { PosterDisplayGroup } from '@/page/home/PosterDisplayGroup'
 
+const searchSchema = v.object({
+  terunduh: v.fallback(v.string(), ''),
+})
+
 export const Route = createFileRoute('/')({
   component: Index,
-  loader: () => fetchRouteData('/', {}),
+  validateSearch: valibotSearchValidator(searchSchema),
+  loaderDeps: ({ search }) => search as v.InferOutput<typeof searchSchema>,
+  loader: ({ deps }) => fetchRouteData('/', { downloaded: deps.terunduh === 'yoi' }),
 })
 
 const perPage = 48
 
 function Index() {
   const id = useMemo(() => Math.random().toString().slice(2), [])
+  const routeDeps = Route.useLoaderDeps()
   const animeListQuery = api.route['/'].useInfiniteQuery(
-    // @ts-ignore
-    { x: id }, // biar engga pake data dari load sebelumnya, jadi dikasih random id
+    { x: id, downloaded: routeDeps.terunduh === 'yoi' },
     {
       getNextPageParam: lastPage => lastPage.at(-1)?.id,
       refetchOnMount: false,
