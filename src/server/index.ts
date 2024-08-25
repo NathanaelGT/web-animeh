@@ -1,6 +1,7 @@
 // import argv ditaro dipaling atas biar hasil buildnya pengecekan argv dilakukan diawal
 import { argv } from '~s/argv'
 import Bun from 'bun'
+// import os from 'os'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { websocket, httpHandler } from '~s/handler'
 import { fill, maxWidth } from '~s/utils/cli'
@@ -72,6 +73,16 @@ export type WebSocketData = {
 
 const server = Bun.serve<WebSocketData & BunWSClientCtx>({
   port: isProduction() ? 8888 : 8887,
+  // hostname: Object.values(os.networkInterfaces()).reduce(
+  //   (r, list) =>
+  //     r.concat(
+  //       list.reduce(
+  //         (rr, i) => rr.concat((i.family === 'IPv4' && !i.internal && i.address) || []),
+  //         [],
+  //       ),
+  //     ),
+  //   [],
+  // )[0],
   websocket: argv.log
     ? {
         ...websocket,
@@ -107,7 +118,7 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
             const elapsed = Bun.nanoseconds() - startNs
 
             ;(() => {
-              if (message !== '[]') {
+              if (message === '[]' || typeof message !== 'string') {
                 return
               }
 
@@ -142,7 +153,7 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
 
               const context = param ? `${ws.data.id} ${param}` : ws.data.id
 
-              log(level, message, elapsed, context, true)
+              log(level, path, elapsed, context, true)
             })()
           }
         },
