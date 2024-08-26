@@ -118,11 +118,12 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
             const elapsed = Bun.nanoseconds() - startNs
 
             ;(() => {
-              if (message === '[]' || typeof message !== 'string') {
+              message = message.toString()
+              if (message === '[]') {
                 return
               }
 
-              const data = JSON.parse(message.toString()) as Record<string, unknown> | null
+              const data = JSON.parse(message) as Record<string, unknown> | null
               if (!isObject(data?.params)) {
                 return
               }
@@ -153,7 +154,7 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
 
               const context = param ? `${ws.data.id} ${param}` : ws.data.id
 
-              log(level, path, elapsed, context, true)
+              log(level, msg, elapsed, context, true)
             })()
           }
         },
