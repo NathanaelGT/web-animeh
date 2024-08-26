@@ -29,23 +29,29 @@ const logMessage = (
   message: string,
   elapsedNs: number | null = null,
   context: string | null = null,
-  formatContext = false,
+  formatContextRegex: RegExp | null = null,
+  contextBraces: [string, string] = ['(', ')'],
 ) => {
   const date = format(new Date())
   const elapsedTime = elapsedNs ? ' ~ ' + formatNs(elapsedNs) : ''
 
-  const dots = fill(29, message, elapsedTime, context ? context.length + 3 : 0)
+  const dots = fill(
+    29,
+    message,
+    elapsedTime,
+    context ? context.length + 1 + contextBraces[0].length + contextBraces[1].length : 0,
+  )
 
   let ctx = ''
   if (context) {
-    if (formatContext) {
+    if (formatContextRegex) {
       if (context.endsWith('..')) {
         context = context.slice(0, -2) + '\x1b[90m..'
       }
-      context = context.replace(/({|}|:|,|")/g, '\x1b[90m$1\x1b[37m')
+      context = context.replace(formatContextRegex, '\x1b[90m$1\x1b[37m')
     }
 
-    ctx = `\x1b[90m(\x1b[37m${context}\x1b[90m) `
+    ctx = `\x1b[90m${contextBraces[0]}\x1b[37m${context}\x1b[90m${contextBraces[1]} `
   }
 
   return `\x1b[90m[${date}] ${level.padStart(6)}: \x1b[37m${message} ${ctx}\x1b[90m${dots}${elapsedTime}\x1b[0m\n`
@@ -154,7 +160,7 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
 
               const context = param ? `${ws.data.id} ${param}` : ws.data.id
 
-              log(level, msg, elapsed, context, true)
+              log(level, msg, elapsed, context, /({|}|:|,|")/g)
             })()
           }
         },
@@ -175,9 +181,11 @@ const server = Bun.serve<WebSocketData & BunWSClientCtx>({
           return response
         } finally {
           const elapsed = Bun.nanoseconds() - startNs
-          const url = server.url.href.slice(server.url.origin.length)
+          const url = request.url.slice(server.url.origin.length)
+          const range = request.headers.get('range')
+          const context = range ? range.replace('bytes=', '') : null
 
-          log('http', url, elapsed)
+          log('http', url, elapsed, context, /(-)/g, ['{', '}'])
         }
       }
     : httpHandler,
