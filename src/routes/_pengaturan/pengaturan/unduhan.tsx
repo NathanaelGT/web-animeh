@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
 import { DownloadProgress } from '@/ui/custom/download-progress'
+import { CancelButton } from '@/page/pengaturan/unduhan/CancelButton'
 import { Progress } from '@/ui/progress'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan')({
@@ -20,7 +21,7 @@ function PengaturanUnduhan() {
 
   return (
     <div className="space-y-4 py-2 pb-4">
-      <div className="grid gap-y-4 md:w-2/3">
+      <div className="grid gap-y-6 md:w-2/3">
         <h2 className="text-lg font-bold">Daftar Unduhan</h2>
 
         {!downloadList ? (
@@ -37,6 +38,10 @@ function PengaturanUnduhan() {
 
                 {text.endsWith('%)') && (
                   <Progress value={Number(text.slice(text.indexOf('(') + 1, -2))} />
+                )}
+
+                {text !== 'Mengoptimalisasi video' && text !== 'Video selesai diunduh' && (
+                  <CancelButton name={name} />
                 )}
               </div>
             )}

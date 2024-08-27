@@ -14,6 +14,7 @@ const kdriveCheckResponseSchema = v.object({
 export const prepare = async (
   kDriveUrl: string,
   kGlobalData: v.InferInput<typeof kuramanimeGlobalDataSchema>,
+  signal?: AbortSignal,
 ) => {
   let domain = await fetchText(kDriveUrl)
   domain = domain.slice(domain.indexOf('data-domain="'))
@@ -28,10 +29,11 @@ export const prepare = async (
   const responseJson = await fetchJsonValidate(kDriveCheckUrl, kdriveCheckResponseSchema, {
     method: 'POST',
     body: checkBody,
+    signal,
     headers: {
       Authorization: `Bearer ${kGlobalData.tokens.globalBearerToken}`,
     },
   })
 
-  return fetch(responseJson.url)
+  return fetch(responseJson.url, { signal })
 }

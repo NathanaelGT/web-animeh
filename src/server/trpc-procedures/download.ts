@@ -1,8 +1,10 @@
 import { observable } from '@trpc/server/observable'
+import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import {
   downloadProgress,
   downloadProgressSnapshot,
+  downloadProgressController,
   type DownloadProgressData,
 } from '~s/external/download/progress'
 
@@ -41,5 +43,17 @@ export const DownloadRouter = router({
         downloadProgress.off('*', downloadProgressHandler)
       }
     })
+  }),
+
+  cancel: procedure.input(v.parser(v.string())).mutation(async ({ input }) => {
+    const controller = downloadProgressController.get(input)
+
+    if (controller) {
+      controller.abort()
+
+      return true
+    } else {
+      return false
+    }
   }),
 })
