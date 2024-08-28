@@ -201,10 +201,6 @@ if (firstTime) {
       error,
       stacktraces: error.stack?.split('\n'),
     })
-
-    if (isProduction()) {
-      process.exit(1)
-    }
   })
 
   process.on('unhandledRejection', reason => {
@@ -220,10 +216,6 @@ if (firstTime) {
     }
 
     logger.error(message, context)
-
-    if (isProduction()) {
-      process.exit(1)
-    }
   })
 
   process.on('SIGHUP', () => process.exit(129))
