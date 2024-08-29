@@ -10,6 +10,7 @@ import { logger } from '~s/utils/logger'
 import { format } from '~/shared/utils/date'
 import { isObject } from '~/shared/utils/object'
 import { seed } from '~s/anime/seed'
+import { SilentError } from '~s/error'
 import { serverType } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
@@ -197,6 +198,10 @@ if (!isProduction()) {
 
 if (firstTime) {
   process.on('uncaughtException', error => {
+    if (error instanceof SilentError) {
+      return
+    }
+
     logger.error('Uncaught Exception: ' + error.message, {
       error,
       stacktraces: error.stack?.split('\n'),
@@ -204,6 +209,10 @@ if (firstTime) {
   })
 
   process.on('unhandledRejection', reason => {
+    if (reason instanceof SilentError) {
+      return
+    }
+
     const context: NonNullable<Parameters<typeof logger.error>[1]> = { reason }
 
     let message = 'Unhandled Rejection'
