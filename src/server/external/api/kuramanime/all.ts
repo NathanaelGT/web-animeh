@@ -1,4 +1,4 @@
-import xior from 'xior'
+import ky from 'ky'
 import * as v from 'valibot'
 import { env } from '~/env'
 import { logger } from '~s/utils/logger'
@@ -106,12 +106,12 @@ export const fetchAll = (callback: (animeList: Anime[]) => void) => {
 
   const fetchPage = (page: number) => {
     return limitRequest(async () => {
-      const { data } = await xior.get(
+      const response = await ky.get(
         `https://kuramanime.${env.KURAMANIME_TLD}/properties/country/jp?` +
           `order_by=latest&name=JP&page=${page}&need_json=true`,
       )
 
-      const parsedData = v.parse(listResultSchema, data)
+      const parsedData = v.parse(listResultSchema, response.json())
       maxPage = parsedData.animes.last_page
 
       callback(parsedData.animes.data)

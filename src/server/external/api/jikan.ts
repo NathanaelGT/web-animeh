@@ -1,6 +1,6 @@
-import { JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
+import ky from 'ky'
 import PQueue from 'p-queue'
-import xior from 'xior'
+import { JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
 
 // TODO: coba lebih manfaatkan rate limitnya jikan
 export const jikanQueue = new PQueue({
@@ -10,7 +10,7 @@ export const jikanQueue = new PQueue({
   carryoverConcurrencyCount: true,
 })
 
-export const jikanClient = new JikanClient()
+export const jikanClient = new JikanClient(ky)
 
 type GetProducerSearchParams = Partial<{
   page: number
@@ -43,11 +43,11 @@ type ProcuderResponse = {
 }
 
 export const producerClient = {
-  async getProducers(params: GetProducerSearchParams): Promise<ProcuderResponse> {
-    const response = await xior.get('https://api.jikan.moe/v4/producers', {
-      params,
+  async getProducers(searchParams: GetProducerSearchParams) {
+    const response = await ky.get('https://api.jikan.moe/v4/producers', {
+      searchParams,
     })
 
-    return response.data
+    return response.json<ProcuderResponse>()
   },
 }
