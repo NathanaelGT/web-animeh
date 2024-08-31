@@ -14,7 +14,7 @@ import {
   downloadProgressSnapshot,
 } from '~s/external/download/progress'
 import { kuramanimeGlobalDataSchema, prepare as kdrivePrepare } from '~s/external/download/kdrive'
-import { fetchText } from '~/shared/utils/fetch'
+import { fetchText } from '~s/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { parseNumber } from '~/shared/utils/number'

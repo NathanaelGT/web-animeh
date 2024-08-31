@@ -5,7 +5,7 @@ import { buildConflictUpdateColumns } from '~s/utils/db'
 import { anime, episodes } from '~s/db/schema'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
-import { fetchText } from '~/shared/utils/fetch'
+import { fetchText } from '~s/utils/fetch'
 import { dedupeEpisodes } from './dedupe'
 
 export const updateEpisode = async (

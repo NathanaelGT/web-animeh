@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 import ky from 'ky'
-import { fetchText, fetchJsonValidate } from '~/shared/utils/fetch'
+import { fetchText, fetchJsonValidate } from '~s/utils/fetch'
 
 export const kuramanimeGlobalDataSchema = v.object({
   tokens: v.object({
