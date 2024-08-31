@@ -1,22 +1,22 @@
 import * as v from 'valibot'
+import ky, { type Input, type Options } from 'ky'
 import { limitRequest } from '~s/external/limit'
 import { logger } from '~s/utils/logger'
 import { SilentError } from '~s/error'
 
-export const fetchText = async (url: string, init?: FetchRequestInit) => {
-  const response = await limitRequest(() => fetch(url, init))
+export const fetchText = async (url: Input, options?: Options, kyInstance = ky) => {
+  const response = await limitRequest(() => kyInstance.get(url, options))
 
   return response.text()
 }
 
-export const fetchJson = async (url: string, init?: FetchRequestInit) => {
-  const response = await limitRequest(() => fetch(url, init))
-  const responseText = await response.text()
+export const fetchJson = async (url: Input, options?: Options, kyInstance = ky) => {
+  const responseText = await fetchText(url, options, kyInstance)
 
   try {
     return JSON.parse(responseText)
   } catch (error) {
-    logger.error('failed to parse fetch json', { url, init, responseText, error })
+    logger.error('failed to parse fetch json', { url, options, response: responseText, error })
 
     throw SilentError.from(error)
   }
@@ -25,9 +25,10 @@ export const fetchJson = async (url: string, init?: FetchRequestInit) => {
 export const fetchJsonValidate = async <
   TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>,
 >(
-  url: string,
+  url: Input,
   schema: TSchema,
-  init?: FetchRequestInit,
+  options?: Options,
+  kyInstance = ky,
 ) => {
-  return v.parse(schema, await fetchJson(url, init))
+  return v.parse(schema, await fetchJson(url, options, kyInstance))
 }

@@ -1,4 +1,5 @@
 import path from 'path'
+import ky from 'ky'
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
 import { basePath } from '~s/utils/path'
@@ -67,7 +68,7 @@ export const update = async <TConfig extends UpdateConfig>(
 
   if (updatingImage(updateData)) {
     const url = jikanAnimeData.images.webp?.image_url || jikanAnimeData.images.jpg.image_url
-    const request = limitRequest(() => fetch(url))
+    const request = limitRequest(() => ky.get(url))
     const ext = extension(url)
 
     updateData.imageUrl = url

@@ -17,6 +17,7 @@ import { fetchText } from '~/shared/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { parseNumber } from '~/shared/utils/number'
+import type { KyResponse, Input } from 'ky'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -95,7 +96,7 @@ export const downloadEpisode = async (
     if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !kGlobalData) {
       downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
       ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
-        getKuramanimeProcess(episodeUrl.toString()),
+        getKuramanimeProcess(episodeUrl),
         getKuramanimeInitProcess(),
         getKuramanimeGlobalData(),
       ])
@@ -106,7 +107,7 @@ export const downloadEpisode = async (
     episodeUrl.searchParams.set('page', '1')
 
     downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
-    const responseHtml = await fetchText(episodeUrl.toString(), { signal })
+    const responseHtml = await fetchText(episodeUrl, { signal })
 
     let downloadUrl = responseHtml.slice(responseHtml.lastIndexOf('MP4 720p (Hardsub)'))
 
@@ -155,7 +156,7 @@ export const downloadEpisode = async (
     const metadataLock = new Promise<void>(releaseMetadataLock => {
       let downloadIsStarted = false
 
-      const prepareResponsePromise = new Promise<Response>((resolvePreparedResponse, reject) => {
+      const prepareResponsePromise = new Promise<KyResponse>((resolvePreparedResponse, reject) => {
         metadataQueue
           .add(
             async () => {
@@ -338,7 +339,7 @@ async function getKuramanimeInitProcess() {
   )
 }
 
-async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
+async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: Input) {
   let kpsUrl = await fetchText(anyKuramanimeEpisodeUrl)
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('data-kps="'))
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('"') + 1, kpsUrl.indexOf('">'))

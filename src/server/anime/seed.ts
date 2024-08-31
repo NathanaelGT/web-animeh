@@ -1,4 +1,5 @@
 import path from 'path'
+import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
 import {
   anime,
@@ -69,7 +70,7 @@ export const populate = async () => {
     return Number(hours || 0) * 3600 + Number(minutes || 0) * 60 + Number(seconds || 0)
   }
 
-  const imageResponsePromiseMap = new Map<string, Promise<[string, Response]>>()
+  const imageResponsePromiseMap = new Map<string, Promise<[string, KyResponse]>>()
 
   const now = new Date()
 
@@ -141,7 +142,7 @@ export const populate = async () => {
       if (!imageList.has(animeData.id + '.' + ext)) {
         imageResponsePromiseMap.set(
           imageFetchUrl,
-          limitRequest(async () => [ext, await fetch(imageFetchUrl)]),
+          limitRequest(async () => [ext, await ky.get(imageFetchUrl, { throwHttpErrors: false })]),
         )
       }
 

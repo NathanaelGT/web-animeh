@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import ky from 'ky'
 import { fetchText, fetchJsonValidate } from '~/shared/utils/fetch'
 
 export const kuramanimeGlobalDataSchema = v.object({
@@ -24,7 +25,7 @@ export const prepare = async (
 
   const checkBody = new FormData()
   checkBody.append('domain', domain)
-  checkBody.append('token', null)
+  checkBody.append('token', 'null')
 
   const responseJson = await fetchJsonValidate(kDriveCheckUrl, kdriveCheckResponseSchema, {
     method: 'POST',
@@ -35,5 +36,5 @@ export const prepare = async (
     },
   })
 
-  return fetch(responseJson.url, { signal })
+  return ky.get(responseJson.url, { signal })
 }
