@@ -13,9 +13,7 @@ import type { WebSocketData } from '../index'
 
 const logDir = path.join(basePath, 'logs')
 
-if (isProduction()) {
-  void fs.mkdir(logDir, { recursive: true })
-}
+void fs.mkdir(logDir, { recursive: true })
 
 const logPath = path.join(logDir, `web-animeh.${buildNumber()}${isProduction() ? '' : '.dev'}.log`)
 
