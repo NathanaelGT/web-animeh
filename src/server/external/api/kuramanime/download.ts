@@ -196,134 +196,128 @@ export const downloadEpisode = async (
       downloadQueue
         .add(
           async () => {
-            try {
-              downloadIsStarted = true
+            downloadIsStarted = true
 
-              downloadProgress.emit(emitKey, {
-                text: 'Mulai mengunduh',
-              })
+            downloadProgress.emit(emitKey, {
+              text: 'Mulai mengunduh',
+            })
 
-              const preparedResponse = await prepareResponsePromise
-              if (!preparedResponse) {
+            const preparedResponse = await prepareResponsePromise
+            if (!preparedResponse) {
+              return
+            }
+
+            const reader = (preparedResponse.body as ReadableStream<Uint8Array> | null)?.getReader()
+            if (!reader) {
+              throw new Error('no reader')
+            }
+
+            signal.addEventListener('abort', () => {
+              reader.cancel()
+            })
+
+            const contentLength = parseNumber(preparedResponse.headers?.get('Content-Length'))
+            const formattedContentLength = contentLength ? formatBytes(contentLength) : null
+
+            formattedContentLengthCb?.(formattedContentLength)
+
+            await fs.mkdir(animeDirPath, { recursive: true })
+
+            const writer = tempFile.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
+            let receivedLength = 0
+            let skip = false
+            let isResolved = false
+
+            const startTime = performance.now()
+            const emitProgress = (data: Uint8Array) => {
+              receivedLength += data.length
+
+              if (skip) {
                 return
               }
 
-              const reader = (
-                preparedResponse.body as ReadableStream<Uint8Array> | null
-              )?.getReader()
-              if (!reader) {
-                throw new Error('no reader')
+              skip = true
+
+              const elapsedTime = (performance.now() - startTime) / 1e3 // ms -> s
+
+              if (
+                !isResolved &&
+                contentLength &&
+                contentLength - receivedLength < PREDOWNLOAD_VIDEO_METADATA_THRESHOLD
+              ) {
+                isResolved = true
+
+                releaseMetadataLock()
               }
 
-              signal.addEventListener('abort', () => {
-                reader.cancel()
-              })
+              let text = 'Mengunduh: ' + formatBytes(receivedLength)
+              const speed = '@' + formatBytes(receivedLength / elapsedTime) + '/s'
 
-              const contentLength = parseNumber(preparedResponse.headers?.get('Content-Length'))
-              const formattedContentLength = contentLength ? formatBytes(contentLength) : null
-
-              formattedContentLengthCb?.(formattedContentLength)
-
-              await fs.mkdir(animeDirPath, { recursive: true })
-
-              const writer = tempFile.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
-              let receivedLength = 0
-              let skip = false
-              let isResolved = false
-
-              const startTime = performance.now()
-              const emitProgress = (data: Uint8Array) => {
-                receivedLength += data.length
-
-                if (skip) {
-                  return
-                }
-
-                skip = true
-
-                const elapsedTime = (performance.now() - startTime) / 1e3 // ms -> s
-
-                if (
-                  !isResolved &&
-                  contentLength &&
-                  contentLength - receivedLength < PREDOWNLOAD_VIDEO_METADATA_THRESHOLD
-                ) {
-                  isResolved = true
-
-                  releaseMetadataLock()
-                }
-
-                let text = 'Mengunduh: ' + formatBytes(receivedLength)
-                const speed = '@' + formatBytes(receivedLength / elapsedTime) + '/s'
-
-                if (contentLength) {
-                  text +=
-                    ' / ' +
-                    formattedContentLength +
-                    speed +
-                    ' (' +
-                    ((receivedLength / contentLength) * 100).toFixed(2) +
-                    '%)'
-                } else {
-                  text += speed
-                }
-
-                downloadProgress.emit(emitKey, { text })
-              }
-              const intervalId = setInterval(() => {
-                skip = false
-              }, 50)
-
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
-                  break
-                }
-
-                writer.write(value)
-
-                emitProgress(value)
+              if (contentLength) {
+                text +=
+                  ' / ' +
+                  formattedContentLength +
+                  speed +
+                  ' (' +
+                  ((receivedLength / contentLength) * 100).toFixed(2) +
+                  '%)'
+              } else {
+                text += speed
               }
 
-              clearInterval(intervalId)
-
-              if (signal.aborted) {
-                if (!isResolved) {
-                  releaseMetadataLock()
-                }
-
-                throw new DOMException()
-              }
-
-              downloadProgressController.delete(emitKey)
-
-              const lastProgress = downloadProgressSnapshot.get(emitKey)
-              if (lastProgress) {
-                const { text } = lastProgress
-
-                downloadProgress.emit(emitKey, {
-                  // pake slice, biar hasil outputnya konsisten (kadang ada persenannya, kadang engga)
-                  text: 'Mengunduh: ' + formattedContentLength + text.slice(text.indexOf(' / ')),
-                })
-              }
-
-              // biar keluar dari queue untuk proses selanjutnya
-              ;(async () => {
-                await writer.end()
-
-                downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
-
-                await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
-
-                downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
-
-                await fs.rm(tempFilePath)
-
-                onFinish?.()
-              })()
-            } catch (e) {
-              handleError(e)
+              downloadProgress.emit(emitKey, { text })
             }
+            const intervalId = setInterval(() => {
+              skip = false
+            }, 50)
+
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) {
+                break
+              }
+
+              writer.write(value)
+
+              emitProgress(value)
+            }
+
+            clearInterval(intervalId)
+
+            if (signal.aborted) {
+              if (!isResolved) {
+                releaseMetadataLock()
+              }
+
+              throw new DOMException()
+            }
+
+            downloadProgressController.delete(emitKey)
+
+            const lastProgress = downloadProgressSnapshot.get(emitKey)
+            if (lastProgress) {
+              const { text } = lastProgress
+
+              downloadProgress.emit(emitKey, {
+                // pake slice, biar hasil outputnya konsisten (kadang ada persenannya, kadang engga)
+                text: 'Mengunduh: ' + formattedContentLength + text.slice(text.indexOf(' / ')),
+              })
+            }
+
+            // biar keluar dari queue untuk proses selanjutnya
+            ;(async () => {
+              await writer.end()
+
+              downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
+
+              await Bun.$`ffmpeg -i ${tempFilePath} -codec copy -movflags +faststart ${filePath}`.quiet()
+
+              downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+
+              await fs.rm(tempFilePath)
+
+              onFinish?.()
+            })()
           },
           { signal },
         )
