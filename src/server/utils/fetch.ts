@@ -1,16 +1,16 @@
 import * as v from 'valibot'
-import ky, { type Input, type Options } from 'ky'
+import ky, { type KyInstance, type Input, type Options } from 'ky'
 import { limitRequest } from '~s/external/limit'
 import { logger } from '~s/utils/logger'
 import { SilentError } from '~s/error'
 
-export const fetchText = async (url: Input, options?: Options, kyInstance = ky) => {
-  const response = await limitRequest(() => kyInstance.get(url, options))
+export const fetchText = async (url: Input, options: Options = {}, kyInstance = ky) => {
+  const response = await limitRequest(() => kyInstance(url, options))
 
   return response.text()
 }
 
-export const fetchJson = async (url: Input, options?: Options, kyInstance = ky) => {
+export const fetchJson = async (url: Input, options?: Options, kyInstance?: KyInstance) => {
   const responseText = await fetchText(url, options, kyInstance)
 
   try {
@@ -28,7 +28,7 @@ export const fetchJsonValidate = async <
   url: Input,
   schema: TSchema,
   options?: Options,
-  kyInstance = ky,
+  kyInstance?: KyInstance,
 ) => {
   return v.parse(schema, await fetchJson(url, options, kyInstance))
 }
