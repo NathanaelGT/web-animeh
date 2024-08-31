@@ -1,6 +1,14 @@
 import ky from 'ky'
 import PQueue from 'p-queue'
-import { JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
+import { BaseURL, JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
+
+const kyJikan = ky.create({
+  prefixUrl: BaseURL,
+  retry: {
+    limit: 2,
+    delay: () => 1000,
+  },
+})
 
 // TODO: coba lebih manfaatkan rate limitnya jikan
 export const jikanQueue = new PQueue({
@@ -10,7 +18,7 @@ export const jikanQueue = new PQueue({
   carryoverConcurrencyCount: true,
 })
 
-export const jikanClient = new JikanClient(ky)
+export const jikanClient = new JikanClient(kyJikan)
 
 type GetProducerSearchParams = Partial<{
   page: number
@@ -44,7 +52,7 @@ type ProcuderResponse = {
 
 export const producerClient = {
   async getProducers(searchParams: GetProducerSearchParams) {
-    const response = await ky.get('https://api.jikan.moe/v4/producers', {
+    const response = await kyJikan.get('producers', {
       searchParams,
     })
 
