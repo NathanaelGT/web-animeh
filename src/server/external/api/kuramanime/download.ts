@@ -1,5 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
+import { HTTPError, type KyResponse, type Input } from 'ky'
 import * as v from 'valibot'
 import { env } from '~/env'
 import { anime, animeMetadata } from '~s/db/schema'
@@ -17,7 +18,6 @@ import { fetchText } from '~/shared/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { parseNumber } from '~/shared/utils/number'
-import type { KyResponse, Input } from 'ky'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -92,18 +92,22 @@ export const downloadEpisode = async (
 
   downloadProgressController.set(emitKey, abortController)
 
+  const setCredentials = async () => {
+    downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
+    ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
+      getKuramanimeProcess(episodeUrl),
+      getKuramanimeInitProcess(),
+      getKuramanimeGlobalData(),
+    ])
+  }
+
   const getDownloadUrl = async () => {
     if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !kGlobalData) {
-      downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
-      ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
-        getKuramanimeProcess(episodeUrl),
-        getKuramanimeInitProcess(),
-        getKuramanimeGlobalData(),
-      ])
+      await setCredentials()
     }
 
-    episodeUrl.searchParams.set(kProcess.env.MIX_PAGE_TOKEN_KEY, kMIX_PAGE_TOKEN_VALUE)
-    episodeUrl.searchParams.set(kProcess.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
+    episodeUrl.searchParams.set(kProcess!.env.MIX_PAGE_TOKEN_KEY, kMIX_PAGE_TOKEN_VALUE!)
+    episodeUrl.searchParams.set(kProcess!.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
     episodeUrl.searchParams.set('page', '1')
 
     downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
@@ -160,11 +164,21 @@ export const downloadEpisode = async (
         metadataQueue
           .add(
             async () => {
-              const preparedResponse = await kdrivePrepare(
-                await getDownloadUrl(),
-                kGlobalData!,
-                signal,
-              )
+              const getPreparedResponse = async () => {
+                return kdrivePrepare(await getDownloadUrl(), kGlobalData!, signal)
+              }
+
+              let preparedResponse: Awaited<ReturnType<typeof getPreparedResponse>>
+              try {
+                preparedResponse = await getPreparedResponse()
+              } catch (error) {
+                if (!(error instanceof HTTPError)) {
+                  throw error
+                }
+
+                await setCredentials()
+                preparedResponse = await getPreparedResponse()
+              }
 
               if (!downloadIsStarted) {
                 downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya selesai' })
