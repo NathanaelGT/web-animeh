@@ -95,7 +95,7 @@ export const downloadEpisode = async (
   const setCredentials = async () => {
     downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
     ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess, kGlobalData] = await Promise.all([
-      getKuramanimeProcess(episodeUrl),
+      getKuramanimeProcess(episodeUrl.toString()),
       getKuramanimeInitProcess(),
       getKuramanimeGlobalData(),
     ])
@@ -111,7 +111,7 @@ export const downloadEpisode = async (
     episodeUrl.searchParams.set('page', '1')
 
     downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
-    const responseHtml = await fetchText(episodeUrl, { signal })
+    const responseHtml = await fetchText(episodeUrl.toString(), { signal })
 
     let downloadUrl = responseHtml.slice(responseHtml.lastIndexOf('MP4 720p (Hardsub)'))
 
@@ -347,7 +347,7 @@ async function getKuramanimeInitProcess() {
   )
 }
 
-async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: Input) {
+async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
   let kpsUrl = await fetchText(anyKuramanimeEpisodeUrl)
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('data-kps="'))
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('"') + 1, kpsUrl.indexOf('">'))
