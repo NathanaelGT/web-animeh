@@ -26,7 +26,7 @@ export const AnimeRouter = router({
     for (const downloadedEpisodePath of downloadedEpisodePaths) {
       const episodePath = downloadedEpisodePath.slice(downloadedEpisodePathSliceAt)
 
-      episodeList[parseInt(episodePath)] = true
+      episodeList[parseInt(episodePath)] = episodePath.includes('_') ? '' : true
     }
 
     return observable<typeof episodeList>(emit => {

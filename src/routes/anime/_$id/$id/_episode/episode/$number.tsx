@@ -25,16 +25,20 @@ function EpisodeNumber() {
   return (
     <main className="mb-auto bg-primary">
       <div className="flex aspect-video bg-primary-foreground/85">
-        {typeof status === 'string' ? (
+        {status === undefined ? (
+          <p className="m-auto">Sedang memuat data episode</p>
+        ) : !status ? ( // string kosong = downloadnya pending
+          <Download
+            animeId={Number(params.id)}
+            episodeNumber={Number(params.number)}
+            isPending={status === ''}
+          />
+        ) : typeof status === 'string' ? (
           <div className="m-auto text-center">
             <DownloadProgress text={status} />
           </div>
-        ) : status ? (
-          <VideoPlayer params={params} />
-        ) : status === false ? (
-          <Download animeId={Number(params.id)} episodeNumber={Number(params.number)} />
         ) : (
-          <p className="m-auto">Sedang memuat data episode</p>
+          <VideoPlayer params={params} />
         )}
       </div>
     </main>

@@ -32,21 +32,21 @@ export const PosterRouter = router({
       }),
     ])
 
-    const downloaded = new Set<number>()
+    const downloadCompleted = new Map<number, boolean>()
     for (const episode of downloadedEpisodeList) {
-      // bentuk episode: "01.mp4"
-      downloaded.add(parseInt(episode))
+      // bentuk episode: "01.mp4" atau "01_.mp4"
+      downloadCompleted.set(parseInt(episode), !episode.includes('_'))
     }
 
     downloadProgressSnapshot.forEach((_, key) => {
       const [title, episode] = key.split(': Episode ') as [string, string]
 
       if (title === animeData.title) {
-        downloaded.add(parseInt(episode))
+        downloadCompleted.set(parseInt(episode), false)
       }
     })
 
-    return episodeList.map(({ number }) => [number, downloaded.has(number)] as const)
+    return episodeList.map(({ number }) => [number, downloadCompleted.get(number)] as const)
   }),
 
   download: procedure

@@ -117,7 +117,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
           <ContextMenuSubContent className="w-48">
             {!episodeList.data ? (
               <ContextMenuItem>Memuat...</ContextMenuItem>
-            ) : episodeList.data.every(([, isDownloaded]) => isDownloaded) ? (
+            ) : episodeList.data.every(([, isDownloadCompleted]) => isDownloadCompleted) ? (
               <ContextMenuItem>Semua episode sudah terunduh</ContextMenuItem>
             ) : (
               <>
@@ -127,14 +127,16 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
                 <ContextMenuSeparator />
                 <MapArray
                   data={episodeList.data}
-                  cb={([episode, isDownloaded]) => {
-                    if (isDownloaded) {
+                  cb={([episode, isDownloadCompleted]) => {
+                    if (isDownloadCompleted) {
                       return null
                     }
 
                     const download = () => {
                       const partialTitle = `${anime.title} episode ${episode}`
-                      const { dismiss } = toast({ title: 'Mulai mengunduh ' + partialTitle })
+                      const { dismiss } = toast({
+                        title: `${isDownloadCompleted === false ? 'Lanjut' : 'Mulai'} mengunduh ${partialTitle}`,
+                      })
 
                       downloadEpisode.mutate(
                         {

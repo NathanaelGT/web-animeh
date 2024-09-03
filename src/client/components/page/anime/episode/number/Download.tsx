@@ -6,6 +6,7 @@ import { Button } from '@/ui/button'
 type Props = {
   animeId: number
   episodeNumber: number
+  isPending: boolean
 }
 
 export function Download(props: Props) {
@@ -25,7 +26,9 @@ export function Download(props: Props) {
 
   return (
     <div className="p-auto m-4 flex w-full flex-col items-center justify-center gap-3">
-      <p className="text-center">{title} belum terunduh</p>
+      <p className="text-center">
+        {title} belum{props.isPending ? ' selesai' : ''} diunduh
+      </p>
       <Button
         onClick={() => {
           setPlaceholder('Memuat unduhan')
@@ -44,7 +47,7 @@ export function Download(props: Props) {
         size="sm"
         className="w-full max-w-96 font-bold"
       >
-        Unduh
+        {props.isPending ? 'Lanjutkan Unduhan' : 'Unduh'}
       </Button>
     </div>
   )
