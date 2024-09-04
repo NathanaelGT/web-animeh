@@ -45,7 +45,7 @@ export const safePath = (basePath: string | string[], userProvidedPath: string |
 
 export const animeVideoRealDirPath = async (animeId: string | number) => {
   // TODO: cari cara buat "fast return", dari Bun memang ga disediakan
-  const [videoDirName] = await glob(videosDirPath, '{*.,}' + animeId, {
+  const [videoDirName] = await glob(videosDirPath, `{*.${animeId},${animeId}}`, {
     onlyFiles: false,
   })
 
