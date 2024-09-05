@@ -345,12 +345,20 @@ export const downloadEpisode = async (
               })
             }
 
-            await writer.end()
-            await fs.rename(tempFilePath, filePath)
+            // biar keluar dari queue untuk proses selanjutnya
+            ;(async () => {
+              await writer.end()
 
-            downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+              downloadProgress.emit(emitKey, { text: 'Mengoptimalisasi video' })
 
-            onFinish?.()
+              await Bun.$`ffmpeg -i ${tempFilePath} -c copy -movflags +faststart ${filePath}`.quiet()
+
+              downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+
+              await fs.rm(tempFilePath)
+
+              onFinish?.()
+            })()
           },
           { signal },
         )
