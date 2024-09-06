@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { DownloadIcon, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
 import { DownloadProgress } from '@/ui/custom/download-progress'
 import { CancelButton } from '@/page/pengaturan/unduhan/CancelButton'
-import { Progress } from '@/ui/progress'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan')({
   component: PengaturanUnduhan,
@@ -21,7 +21,7 @@ function PengaturanUnduhan() {
 
   return (
     <div className="space-y-4 py-2 pb-4">
-      <div className="grid gap-y-6 md:w-2/3">
+      <div className="grid gap-y-6">
         <h2 className="text-lg font-bold">Daftar Unduhan</h2>
 
         {!downloadList ? (
@@ -30,21 +30,35 @@ function PengaturanUnduhan() {
           <MapArray
             data={downloadList}
             onEmpty={() => 'Sedang tidak mengunduh apapun'}
-            cb={([name, text]) => (
-              <div key={name}>
-                <p>{name}</p>
+            cb={([name, text]) => {
+              return (
+                <div key={name} className="grid gap-3">
+                  <div className="flex gap-4">
+                    <div className="my-auto w-6">
+                      {text.startsWith('Mengunduh: ') ? (
+                        <DownloadIcon className="w-6" />
+                      ) : text === 'Menunggu unduhan sebelumnya' ? (
+                        <Hourglass />
+                      ) : text === 'Video selesai diunduh' ? (
+                        <CircleCheckBig />
+                      ) : (
+                        <LoaderCircle className="animate-spin" />
+                      )}
+                    </div>
 
-                <DownloadProgress text={text} />
+                    <p className="my-auto flex-1">{name}</p>
 
-                {text.endsWith('%)') && (
-                  <Progress value={Number(text.slice(text.indexOf('(') + 1, -2))} />
-                )}
+                    {text !== 'Mengoptimalisasi video' && <CancelButton name={name} />}
+                  </div>
 
-                {text !== 'Mengoptimalisasi video' && text !== 'Video selesai diunduh' && (
-                  <CancelButton name={name} />
-                )}
-              </div>
-            )}
+                  {text.startsWith('Mengunduh: ') ? (
+                    <DownloadProgress text={text} />
+                  ) : (
+                    <p>{text}</p>
+                  )}
+                </div>
+              )
+            }}
           />
         )}
       </div>

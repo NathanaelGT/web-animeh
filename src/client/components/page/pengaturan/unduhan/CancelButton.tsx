@@ -1,8 +1,14 @@
 import { useState } from 'react'
-import { X, LoaderCircle } from 'lucide-react'
+import { EllipsisVertical, X, LoaderCircle } from 'lucide-react'
 import { api } from '~c/trpc'
 import { useToast } from '@/ui/use-toast'
 import { Button } from '@/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/dropdown-menu'
 
 type Props = {
   name: string
@@ -28,9 +34,22 @@ export function CancelButton({ name }: Props) {
   }
 
   return (
-    <Button variant="destructive" onClick={handleClick} className="w-fit gap-1 pl-3">
-      {isLoading ? <LoaderCircle className="animate-spin" /> : <X />}
-      Batal
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="my-auto">
+          <EllipsisVertical />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-fit">
+        <DropdownMenuItem onClick={handleClick} className="gap-1">
+          {isLoading ? (
+            <LoaderCircle className="h-5 w-5 animate-spin" />
+          ) : (
+            <X className="h-5 w-5" />
+          )}
+          <span>Batal</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
