@@ -137,7 +137,7 @@ await Promise.all([
       )
     }),
 
-  $`bun build ./src/server/index.ts --outdir ./dist --target=bun --minify | grep KB`
+  $`bun build ./src/server/index.ts --define import.meta.env.PROD=true --outdir ./dist --target=bun --minify | grep KB`
     .text()
     .then(async message => {
       return [

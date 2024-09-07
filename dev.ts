@@ -33,21 +33,31 @@ const clientStdout = client.stdout.getReader()
 
 await Promise.all([killPreviousServerPromise, copyEnvPromise])
 
-const server = Bun.spawn(['bun', '--hot', './src/server/index.ts', ...Bun.argv.slice(2)], {
-  stdin: 'inherit',
-  stdout: 'inherit',
-  stderr: 'inherit',
-  env: {
-    MODE: 'development',
-    BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: '1',
-    ...process.env,
+const server = Bun.spawn(
+  [
+    'bun',
+    '--hot',
+    '--define',
+    'import.meta.env.PROD=false',
+    './src/server/index.ts',
+    ...Bun.argv.slice(2),
+  ],
+  {
+    stdin: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
+    env: {
+      MODE: 'development',
+      BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: '1',
+      ...process.env,
+    },
+    ipc(message) {
+      if (message === 'ready') {
+        log('vite', 'Starting')
+      }
+    },
   },
-  ipc(message) {
-    if (message === 'ready') {
-      log('vite', 'Starting')
-    }
-  },
-})
+)
 
 const fill = (minus: string | number = 0, ...args: string[]) => {
   if (typeof minus === 'string') {
