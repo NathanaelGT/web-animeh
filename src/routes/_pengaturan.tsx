@@ -52,7 +52,7 @@ function PengaturanLayout() {
             ))}
           </nav>
         </aside>
-        <div className="flex-1 lg:max-w-2xl">
+        <div className="flex-1">
           <Outlet />
         </div>
       </div>

@@ -20,7 +20,7 @@ function PengaturanUnduhan() {
   })
 
   return (
-    <div className="space-y-4 py-2 pb-4">
+    <div className="space-y-4 py-2 pb-4 lg:max-w-2xl">
       <div className="grid gap-y-6">
         <h2 className="text-lg font-bold">Daftar Unduhan</h2>
 
