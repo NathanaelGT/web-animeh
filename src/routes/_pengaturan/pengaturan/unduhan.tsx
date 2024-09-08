@@ -37,7 +37,7 @@ function PengaturanUnduhan() {
                     <div className="my-auto w-6">
                       {text.startsWith('Mengunduh: ') ? (
                         <DownloadIcon className="w-6" />
-                      ) : text === 'Menunggu unduhan sebelumnya' ? (
+                      ) : text.startsWith('Menunggu') ? (
                         <Hourglass />
                       ) : text === 'Video selesai diunduh' ? (
                         <CircleCheckBig />
