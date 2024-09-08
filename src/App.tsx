@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
 import TRPCReactProvider from '~c/TRPCReactProvider'
 import { createRouter } from '~/router'
-import './client/index.css'
+import '~c/index.css'
 
 const router = createRouter()
 
