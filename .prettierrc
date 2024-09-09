@@ -5,5 +5,6 @@
   "arrowParens": "avoid",
   "trailingComma": "all",
   "quoteProps": "consistent",
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "plugins": ["prettier-plugin-tailwindcss"],
+  "tailwindAttributes": ["data-subs-header"]
 }

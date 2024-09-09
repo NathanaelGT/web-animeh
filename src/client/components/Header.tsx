@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
@@ -13,13 +13,46 @@ export function Header() {
   const headerPosition = useStore(clientProfileSettingsStore, store => store.headerPosition)
   const headerChild = useStore(headerChildStore)
   const headerRef = useRef<HTMLElement | null>(null)
+  const newSubscriberHandlerRef = useRef<(element: HTMLElement) => void>(() => {})
+  const headerSubscribers = useMemo(() => new Set<HTMLElement>(), [])
+
+  const createClassApplier = (method: 'add' | 'remove') => (element: HTMLElement) => {
+    element.classList[method](...element.dataset.subsHeader!.split(' '))
+  }
 
   let isHybrid = headerPosition === 'hybrid'
+
+  useEffect(() => {
+    if (headerPosition !== 'static') {
+      return
+    }
+
+    const apply = createClassApplier('remove')
+
+    newSubscriberHandlerRef.current = apply
+
+    headerSubscribers.forEach(apply)
+  }, [headerPosition === 'static'])
+
+  useEffect(() => {
+    if (headerPosition !== 'sticky') {
+      return
+    }
+
+    const apply = createClassApplier('add')
+
+    newSubscriberHandlerRef.current = apply
+
+    headerSubscribers.forEach(apply)
+  }, [headerPosition === 'sticky'])
 
   useEffect(() => {
     if (!isHybrid) {
       return
     }
+
+    newSubscriberHandlerRef.current = () => {}
+
     const getWindowY = () => document.body.getBoundingClientRect().y
 
     let latestY = getWindowY()
@@ -41,11 +74,11 @@ export function Header() {
       const top = latestY < currentY ? 0 : header.offsetHeight
 
       if (headerTop !== top) {
-        if (top === 0) {
-          header.classList.remove(HYBRID_HEADER_CLASS_ON_HIDDEN)
-        } else {
-          header.classList.add(HYBRID_HEADER_CLASS_ON_HIDDEN)
-        }
+        const getMethod = (condition: boolean) => (condition ? 'remove' : 'add')
+
+        header.classList[getMethod(top === 0)](HYBRID_HEADER_CLASS_ON_HIDDEN)
+
+        headerSubscribers.forEach(createClassApplier(getMethod(top !== 0)))
       }
 
       headerTop = top
@@ -58,6 +91,50 @@ export function Header() {
       document.removeEventListener('scroll', scrollHandler)
     }
   }, [isHybrid])
+
+  useEffect(() => {
+    document.body.querySelectorAll('[data-subs-header]').forEach(element => {
+      if (element instanceof HTMLElement) {
+        newSubscriberHandlerRef.current(element)
+        headerSubscribers.add(element)
+      }
+    })
+
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        const createSubscribersMutater = (method: 'add' | 'delete') => (node: Node) => {
+          if (node instanceof HTMLElement) {
+            if ('subsHeader' in node.dataset) {
+              if (method === 'add') {
+                newSubscriberHandlerRef.current(node)
+              }
+
+              headerSubscribers[method](node)
+            }
+
+            node.querySelectorAll('[data-subs-header]').forEach(element => {
+              if (element instanceof HTMLElement) {
+                if (method === 'add') {
+                  newSubscriberHandlerRef.current(element)
+                }
+
+                headerSubscribers[method](element)
+              }
+            })
+          }
+        }
+
+        mutation.addedNodes.forEach(createSubscribersMutater('add'))
+        mutation.removedNodes.forEach(createSubscribersMutater('delete'))
+      })
+    })
+
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
 
   let className = headerChild
     ? 'border-slate-400 bg-[#fff] dark:border-slate-900 dark:bg-[#000]'
