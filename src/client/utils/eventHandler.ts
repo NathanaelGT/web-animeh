@@ -9,7 +9,8 @@ export const createGlobalKeydownHandler = (handler: (event: KeyboardEvent) => vo
 
     if (
       target instanceof HTMLElement &&
-      (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName) || target.tabIndex === 0)
+      (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName) ||
+        (target.tabIndex === 0 && target.tagName !== 'VIDEO'))
     ) {
       return
     }
