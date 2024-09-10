@@ -19,6 +19,7 @@ import { Route as AnimeIdImport } from './routes/anime/_$id'
 import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
 import { Route as PengaturanPengaturanUnduhanImport } from './routes/_pengaturan/pengaturan/unduhan'
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
+import { Route as PengaturanPengaturanKeybindImport } from './routes/_pengaturan/pengaturan/keybind'
 import { Route as AnimeIdIdIndexImport } from './routes/anime/_$id/$id/index'
 import { Route as AnimeIdIdEpisodeImport } from './routes/anime/_$id/$id/_episode'
 import { Route as AnimeIdIdEpisodeEpisodeNumberImport } from './routes/anime/_$id/$id/_episode/episode/$number'
@@ -72,6 +73,12 @@ const PengaturanPengaturanTampilanRoute =
     getParentRoute: () => PengaturanRoute,
   } as any)
 
+const PengaturanPengaturanKeybindRoute =
+  PengaturanPengaturanKeybindImport.update({
+    path: '/pengaturan/keybind',
+    getParentRoute: () => PengaturanRoute,
+  } as any)
+
 const AnimeIdIdIndexRoute = AnimeIdIdIndexImport.update({
   path: '/',
   getParentRoute: () => AnimeIdIdRoute,
@@ -119,6 +126,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/anime'
       preLoaderRoute: typeof AnimeIdImport
       parentRoute: typeof AnimeRoute
+    }
+    '/_pengaturan/pengaturan/keybind': {
+      id: '/_pengaturan/pengaturan/keybind'
+      path: '/pengaturan/keybind'
+      fullPath: '/pengaturan/keybind'
+      preLoaderRoute: typeof PengaturanPengaturanKeybindImport
+      parentRoute: typeof PengaturanImport
     }
     '/_pengaturan/pengaturan/tampilan': {
       id: '/_pengaturan/pengaturan/tampilan'
@@ -177,6 +191,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren({
   IndexRoute,
   PengaturanRoute: PengaturanRoute.addChildren({
+    PengaturanPengaturanKeybindRoute,
     PengaturanPengaturanTampilanRoute,
     PengaturanPengaturanUnduhanRoute,
     PengaturanPengaturanIndexRoute,
@@ -212,6 +227,7 @@ export const routeTree = rootRoute.addChildren({
     "/_pengaturan": {
       "filePath": "_pengaturan.tsx",
       "children": [
+        "/_pengaturan/pengaturan/keybind",
         "/_pengaturan/pengaturan/tampilan",
         "/_pengaturan/pengaturan/unduhan",
         "/_pengaturan/pengaturan/"
@@ -229,6 +245,10 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/anime/_$id/$id"
       ]
+    },
+    "/_pengaturan/pengaturan/keybind": {
+      "filePath": "_pengaturan/pengaturan/keybind.tsx",
+      "parent": "/_pengaturan"
     },
     "/_pengaturan/pengaturan/tampilan": {
       "filePath": "_pengaturan/pengaturan/tampilan.tsx",

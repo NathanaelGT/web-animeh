@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { Link } from '@tanstack/react-router'
+import { api } from '~c/trpc'
+import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Image } from '@/Image'
 import { SimpleTooltip } from '@/ui/tooltip'
 import { Input } from '@/ui/input'
@@ -9,7 +11,6 @@ import { AnimeRating } from '@/Anime/Rating'
 import { AnimeDuration } from '@/Anime/Duration'
 import { AnimeEpisode } from '@/Anime/Episode'
 import { HYBRID_HEADER_CLASS_ON_HIDDEN } from '@/Header'
-import { api } from '~c/trpc'
 import type { SearchProcedure } from '~s/trpc-procedures/search'
 import type { TRPCResponse } from '~/shared/utils/types'
 
@@ -33,20 +34,10 @@ export function Search({ headerRef, className }: Props) {
     null,
   )
 
-  // keybind search
   useEffect(() => {
-    const keydownHandler = (event: KeyboardEvent) => {
-      if (event.key !== '/') {
-        return
-      }
-
+    return createKeybindHandler('global', 'search', () => {
       const header = headerRef.current
       if (header === null) {
-        return
-      }
-
-      const inputableElements: (string | undefined)[] = ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON']
-      if (inputableElements.includes(document.activeElement?.tagName)) {
         return
       }
 
@@ -76,13 +67,7 @@ export function Search({ headerRef, className }: Props) {
       } else {
         setFocusToSearchInput()
       }
-    }
-
-    document.addEventListener('keydown', keydownHandler)
-
-    return () => {
-      document.removeEventListener('keydown', keydownHandler)
-    }
+    })
   }, [])
 
   const onInputHandler = (event: React.FormEvent<HTMLInputElement>) => {

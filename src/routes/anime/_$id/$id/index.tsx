@@ -2,6 +2,7 @@ import { useContext, useEffect } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { Play } from 'lucide-react'
 import { AnimeDataContext } from '~c/context'
+import { createKeybindHandler } from '~c/utils/eventHandler'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { AnimePoster } from '@/Anime/Poster'
 import { AnimeType } from '@/Anime/Type'
@@ -25,20 +26,12 @@ function AnimeId() {
       return
     }
 
-    const keybindHandler = (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        router.navigate({
-          to: '/anime/$id/episode/$number',
-          params: { id: params.id, number: '1' },
-        })
-      }
-    }
-
-    window.addEventListener('keydown', keybindHandler)
-
-    return () => {
-      window.removeEventListener('keydown', keybindHandler)
-    }
+    return createKeybindHandler('animePage', 'watch', () => {
+      router.navigate({
+        to: '/anime/$id/episode/$number',
+        params: { id: params.id, number: '1' },
+      })
+    })
   }, [params.id])
 
   if (!animeData) {

@@ -2,7 +2,14 @@ import { useRef, useEffect, useContext } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { episodeListStore } from '~c/stores'
 import { AnimeWatchSessionContext } from '~c/context'
+import { clientProfileSettingsStore } from '~c/stores'
+import { captureKeybindFromEvent } from '~c/utils/keybind'
+import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { searchEpisode } from '~/shared/utils/episode'
+import type { InferOutput } from 'valibot'
+import type { settingsSchema } from '~/shared/profile/settings'
+
+type KeybindGroups = InferOutput<typeof settingsSchema>['keybind']
 
 type Props = {
   params: {
@@ -86,98 +93,85 @@ export function VideoPlayer({ params }: Props) {
       }
     }
 
-    const keybindHandler = (event: KeyboardEvent) => {
-      if (
-        event.target instanceof HTMLElement &&
-        ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(event.target.tagName)
-      ) {
+    const keybindHandler: Record<string, () => void> = {
+      back() {
+        video.currentTime -= 5
+      },
+      forward() {
+        video.currentTime += 5
+      },
+      longBack() {
+        video.currentTime -= 87
+      },
+      longForward() {
+        video.currentTime += 87
+      },
+      volumeUp() {
+        video.volume = Math.min(1, video.volume + 0.05)
+      },
+      volumeDown() {
+        video.volume = Math.max(0, video.volume - 0.05)
+      },
+      toStart() {
+        video.currentTime = 0
+      },
+      toEnd() {
+        video.currentTime = video.duration
+      },
+      previous() {
+        changeEpisode(Number(gotoEpisodeRef.current) - 1)
+      },
+      next() {
+        changeEpisode(Number(gotoEpisodeRef.current) + 1)
+      },
+      mute() {
+        video.muted = !video.muted
+      },
+      PiP() {
+        if (document.pictureInPictureElement === video) {
+          document.exitPictureInPicture()
+        } else {
+          video.requestPictureInPicture()
+        }
+      },
+      fullscreen() {
+        if (document.fullscreenElement === video) {
+          document.exitFullscreen()
+        } else {
+          video.requestFullscreen()
+        }
+      },
+      playPause() {
+        if (video.paused || video.ended) {
+          video.play()
+        } else {
+          video.pause()
+        }
+      },
+    } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
+
+    const removeKeybindHandler = createGlobalKeydownHandler(event => {
+      const capturedCombination = captureKeybindFromEvent(event)
+
+      outer: for (const handlerName in keybindHandler) {
+        const combination =
+          clientProfileSettingsStore.state.keybind.videoPlayer[
+            handlerName as keyof KeybindGroups['videoPlayer']
+          ]
+
+        for (let i = 0; i < combination.length; i++) {
+          if (combination[i] !== capturedCombination[i]) {
+            continue outer
+          }
+        }
+
+        event.preventDefault()
+
+        keybindHandler[handlerName]!()
+
         return
       }
-
-      if (event.ctrlKey) {
-        const handler = {
-          ArrowLeft() {
-            video.currentTime -= 87
-          },
-
-          ArrowRight() {
-            video.currentTime += 87
-          },
-        }[event.key]
-
-        if (handler) {
-          event.preventDefault()
-          handler()
-        }
-      } else {
-        const handler = {
-          ArrowLeft() {
-            video.currentTime -= 5
-          },
-
-          ArrowRight() {
-            video.currentTime += 5
-          },
-
-          ArrowUp() {
-            video.volume = Math.min(1, video.volume + 0.05)
-          },
-
-          ArrowDown() {
-            video.volume = Math.max(0, video.volume - 0.05)
-          },
-
-          Home() {
-            video.currentTime = 0
-          },
-
-          End() {
-            video.currentTime = video.duration
-          },
-
-          p() {
-            changeEpisode(Number(gotoEpisodeRef.current) - 1)
-          },
-
-          n() {
-            changeEpisode(Number(gotoEpisodeRef.current) + 1)
-          },
-
-          m() {
-            video.muted = !video.muted
-          },
-
-          i() {
-            if (document.pictureInPictureElement === video) {
-              document.exitPictureInPicture()
-            } else {
-              video.requestPictureInPicture()
-            }
-          },
-
-          f() {
-            if (document.fullscreenElement === video) {
-              document.exitFullscreen()
-            } else {
-              video.requestFullscreen()
-            }
-          },
-
-          [' ']() {
-            if (video.paused || video.ended) {
-              video.play()
-            } else {
-              video.pause()
-            }
-          },
-        }[event.key]
-
-        if (handler) {
-          event.preventDefault()
-          handler()
-        }
-      }
-    }
+    })
 
     const videoEndedHandler = () => {
       changeEpisode(Number(gotoEpisodeRef.current) + 1)
@@ -207,7 +201,6 @@ export function VideoPlayer({ params }: Props) {
 
     video.addEventListener('ended', videoEndedHandler)
     video.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
-    window.addEventListener('keydown', keybindHandler)
 
     return () => {
       const voidEl = document.getElementById('void')
@@ -216,7 +209,8 @@ export function VideoPlayer({ params }: Props) {
 
       video.removeEventListener('ended', videoEndedHandler)
       video.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
-      window.removeEventListener('keydown', keybindHandler)
+
+      removeKeybindHandler()
 
       setTimeout(() => {
         if (voidEl?.contains(video)) {
