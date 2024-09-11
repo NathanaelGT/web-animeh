@@ -1,6 +1,7 @@
-import { useState, useContext } from 'react'
+import { useState, useContext, useEffect } from 'react'
 import { api } from '~c/trpc'
 import { AnimeDataContext } from '~c/context'
+import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Button } from '@/ui/button'
 
 type Props = {
@@ -13,6 +14,26 @@ export function Download(props: Props) {
   const [placeholder, setPlaceholder] = useState('')
   const animeData = useContext(AnimeDataContext)
   const downloadEpisode = api.component.poster.download.useMutation()
+
+  const requestDownload = () => {
+    setPlaceholder('Memuat unduhan')
+
+    downloadEpisode.mutate(props, {
+      onSuccess(result) {
+        if (result?.size === '') {
+          setPlaceholder(`Episode ${props.episodeNumber} telah ditambahkan ke antrian unduhan`)
+        }
+      },
+    })
+  }
+
+  useEffect(() => {
+    return createKeybindHandler('watchPage', 'download', () => {
+      if (!placeholder) {
+        requestDownload()
+      }
+    })
+  }, [placeholder])
 
   if (placeholder) {
     return (
@@ -30,19 +51,7 @@ export function Download(props: Props) {
         {title} belum{props.isPending ? ' selesai' : ''} diunduh
       </p>
       <Button
-        onClick={() => {
-          setPlaceholder('Memuat unduhan')
-
-          downloadEpisode.mutate(props, {
-            onSuccess(result) {
-              if (result?.size === '') {
-                setPlaceholder(
-                  `Episode ${props.episodeNumber} telah ditambahkan ke antrian unduhan`,
-                )
-              }
-            },
-          })
-        }}
+        onClick={requestDownload}
         variant="indigo"
         size="sm"
         className="w-full max-w-96 font-bold"

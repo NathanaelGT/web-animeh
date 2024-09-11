@@ -68,6 +68,12 @@ export const keybindSchema = v.object({
       watch: createKeybind('Enter'),
     }),
   ),
+  watchPage: optional(
+    v.object({
+      search: createKeybind('e'),
+      download: createKeybind('u'),
+    }),
+  ),
   videoPlayer: optional(
     v.object({
       back: createKeybind('ArrowLeft'),
