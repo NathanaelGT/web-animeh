@@ -61,6 +61,7 @@ export const keybindSchema = v.object({
   global: optional(
     v.object({
       search: createKeybind('/'),
+      showKeybindTips: createKeybind('Alt'),
     }),
   ),
   animePage: optional(
@@ -172,4 +173,5 @@ type AllowedDefaultKeybind =
   | [AllowedDefaultModifier, AllowedDefaultModifier, AllowedDefaultModifier, AllowedDefaultKey]
   | [AllowedDefaultModifier, AllowedDefaultModifier, AllowedDefaultKey]
   | [AllowedDefaultModifier, AllowedDefaultKey]
+  | [AllowedDefaultModifier]
   | [AllowedDefaultKey]

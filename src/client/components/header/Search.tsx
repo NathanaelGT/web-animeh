@@ -4,8 +4,8 @@ import { Link } from '@tanstack/react-router'
 import { api } from '~c/trpc'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Image } from '@/Image'
+import { InputKeybind } from '@/ui/custom/input-keybind'
 import { SimpleTooltip } from '@/ui/tooltip'
-import { Input } from '@/ui/input'
 import { AnimeType } from '@/Anime/Type'
 import { AnimeRating } from '@/Anime/Rating'
 import { AnimeDuration } from '@/Anime/Duration'
@@ -26,7 +26,12 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
 })
 
 export function Search({ headerRef, className }: Props) {
-  const searchRef = useRef<HTMLInputElement | null>(null)
+  const elRef = useRef<{
+    mainWrapper?: HTMLDivElement | null
+    input?: HTMLInputElement | null
+    inputWrapper?: HTMLDivElement | null
+    suggestionWrapper?: HTMLDivElement | null
+  }>({})
   const arrowOffsetRef = useRef(0)
 
   const search = api.search.useMutation()
@@ -43,8 +48,8 @@ export function Search({ headerRef, className }: Props) {
 
       const setFocusToSearchInput = () => {
         requestAnimationFrame(() => {
-          const input = searchRef.current
-          if (input === null) {
+          const { input } = elRef.current
+          if (!input) {
             return
           }
 
@@ -92,48 +97,33 @@ export function Search({ headerRef, className }: Props) {
 
   const onInputFocusTimeoutId = useRef<Timer | null>(null)
   const onInputFocusHandler = () => {
-    const searchEl = searchRef.current
-    if (!searchEl) {
-      return
-    }
-
-    searchEl.parentElement?.classList.add('md:w-64', 'lg:w-96')
+    elRef.current.mainWrapper?.classList.add('md:w-64', 'lg:w-96')
 
     onInputFocusTimeoutId.current = setTimeout(() => {
       onInputFocusTimeoutId.current = null
 
-      const suggestionWrapperEl = searchEl.nextElementSibling
-      if (!suggestionWrapperEl) {
-        return
-      }
-
-      suggestionWrapperEl.classList.add('!opacity-100', '!visible')
+      elRef.current.suggestionWrapper?.classList.add('!opacity-100', '!visible')
       headerRef.current?.classList.add(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
     }, 200)
   }
 
   const onBlurHandler = () => {
     requestAnimationFrame(() => {
-      const searchEl = searchRef.current
-      if (!searchEl) {
+      const { input, suggestionWrapper } = elRef.current
+      if (!input || !suggestionWrapper) {
         return
       }
 
       const active = document.activeElement
-      if (active === searchEl) {
+      if (active === input) {
         return
       } else if (active instanceof HTMLElement && 'searchResult' in active.dataset) {
         return
       }
 
       setTimeout(() => {
-        searchEl.parentElement?.classList.remove('md:w-64', 'lg:w-96')
+        elRef.current.mainWrapper?.classList.remove('md:w-64', 'lg:w-96')
       }, 100)
-
-      const suggestionWrapperEl = searchEl.nextElementSibling
-      if (!suggestionWrapperEl) {
-        return
-      }
 
       headerRef.current?.classList.remove(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
 
@@ -142,7 +132,7 @@ export function Search({ headerRef, className }: Props) {
 
         onInputFocusTimeoutId.current = null
       } else {
-        suggestionWrapperEl.classList.remove('!opacity-100', '!visible')
+        suggestionWrapper.classList.remove('!opacity-100', '!visible')
       }
     })
   }
@@ -175,8 +165,8 @@ export function Search({ headerRef, className }: Props) {
         return
       }
 
-      const searchEl = searchRef.current
-      if (!searchEl) {
+      const { input } = elRef.current
+      if (!input) {
         return
       }
 
@@ -190,7 +180,7 @@ export function Search({ headerRef, className }: Props) {
       event.preventDefault()
       search.mutate(
         {
-          query: searchEl.value,
+          query: input.value,
           offset,
         },
         {
@@ -231,22 +221,22 @@ export function Search({ headerRef, className }: Props) {
   }
 
   const onInputKeydownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    const searchEl = searchRef.current
-    if (!searchEl) {
+    const { input } = elRef.current
+    if (!input) {
       return
     }
 
     if (event.key === 'Escape') {
       // Escape defaultnya bakal ngeclear input yang typenya search
       event.preventDefault()
-      searchEl.blur()
+      input.blur()
 
       return
     } else if (event.key !== 'ArrowDown') {
       return
     }
 
-    const firstSuggestionEl = searchEl.nextElementSibling?.firstElementChild?.firstElementChild
+    const firstSuggestionEl = elRef.current.suggestionWrapper?.firstElementChild?.firstElementChild
     if (!(firstSuggestionEl instanceof HTMLElement)) {
       return
     }
@@ -256,19 +246,36 @@ export function Search({ headerRef, className }: Props) {
   }
 
   return (
-    <div className="relative w-20 transition-[width] duration-200 ease-in-out md:w-28">
-      <Input
-        ref={searchRef}
+    <div
+      ref={ref => {
+        elRef.current.mainWrapper = ref
+      }}
+      className="relative w-28 transition-[width] duration-200 ease-in-out md:w-36"
+    >
+      <InputKeybind
+        wrapperRef={ref => {
+          elRef.current.inputWrapper = ref
+        }}
+        ref={ref => {
+          elRef.current.input = ref
+        }}
         onInput={onInputHandler}
         onFocus={onInputFocusHandler}
         onBlur={onBlurHandler}
         onKeyDown={onInputKeydownHandler}
+        keybindId={['global', 'search']}
         type="search"
         placeholder="Cari..."
-        className={`!ring-0 ${className}`}
+        wrapperClassName={className}
+        className="[&::-webkit-search-cancel-button]:hidden"
       />
 
-      <div className="invisible absolute max-h-[calc(100vh-4rem)] w-full overflow-hidden opacity-0 transition-all">
+      <div
+        ref={ref => {
+          elRef.current.suggestionWrapper = ref
+        }}
+        className="invisible absolute max-h-[calc(100vh-4rem)] w-full overflow-hidden opacity-0 transition-all"
+      >
         {searchResults ? (
           <div className="mt-1 flex h-fit flex-col rounded-md border border-input bg-background px-1 py-1 text-sm">
             {searchResults.length ? (

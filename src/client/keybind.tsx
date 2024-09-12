@@ -46,6 +46,7 @@ export const keybindGroupTranslation = (() => {
 export const keybindTranslation = {
   global: {
     search: ['Fokus ke input pencarian'],
+    showKeybindTips: ['Tampilkan petunjuk keybind'],
   },
   animePage: {
     watch: ['Nonton anime'],

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
-import { clientProfileSettingsStore } from '~c/stores'
+import { clientProfileSettingsStore, showKeybindTipsStore } from '~c/stores'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Header } from '@/Header'
 import { Toaster } from '@/ui/toaster'
 
@@ -32,7 +33,7 @@ export const Route = createRootRoute({
 
       updateTheme(theme)
 
-      return clientProfileSettingsStore.subscribe(() => {
+      const unsubscribeSettingsStore = clientProfileSettingsStore.subscribe(() => {
         const newTheme = clientProfileSettingsStore.state.theme
         if (newTheme !== theme) {
           theme = newTheme
@@ -41,6 +42,24 @@ export const Route = createRootRoute({
           updateTheme(theme)
         }
       })
+
+      const removeKeybindHandler = createKeybindHandler('global', 'showKeybindTips', event => {
+        showKeybindTipsStore.setState(() => true)
+
+        const element = event.currentTarget || document.body
+        element.addEventListener(
+          'keyup',
+          () => {
+            showKeybindTipsStore.setState(() => false)
+          },
+          { once: true },
+        )
+      })
+
+      return () => {
+        unsubscribeSettingsStore()
+        removeKeybindHandler()
+      }
     }, [])
 
     return (

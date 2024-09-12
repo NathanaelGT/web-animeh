@@ -50,13 +50,6 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
         return ''
       }
 
-      const isNotValid = combination.every(key => {
-        return (keybindModifiers as unknown as string[]).includes(key)
-      })
-      if (isNotValid) {
-        return 'Kombinasi keybind tidak valid.'
-      }
-
       for (const groupName in profileKeybinds) {
         const groupKeybinds = profileKeybinds[groupName as keyof typeof profileKeybinds] as Record<
           string,

@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
 import { createKeybindHandler } from '~c/utils/eventHandler'
-import { Input } from '@/ui/input'
+import { InputKeybind } from '@/ui/custom/input-keybind'
 
 type Props = {
   animeId: string
@@ -22,6 +22,8 @@ export function SearchInput({ animeId, search }: Props) {
     if (event.key === 'Escape') {
       event.currentTarget.blur()
     } else if (event.key === 'Enter') {
+      event.currentTarget.blur()
+
       const number = event.currentTarget.value.trim()
       if (!number) {
         return
@@ -37,7 +39,7 @@ export function SearchInput({ animeId, search }: Props) {
   }
 
   return (
-    <Input
+    <InputKeybind
       ref={inputRef}
       type="number"
       onInput={e => {
@@ -50,7 +52,11 @@ export function SearchInput({ animeId, search }: Props) {
       onKeyDown={keyDownHandler}
       autoComplete="off"
       placeholder="Cari episode..."
-      className="h-6 border-slate-300 bg-transparent ring-indigo-400/75 placeholder:text-slate-300/75 focus-visible:ring-1 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      keybindId={['watchPage', 'search']}
+      wrapperClassName="h-6 border-slate-300 ring-indigo-400/75 focus-within:ring-1"
+      buttonClassName="px-[.2rem]"
+      tipClassName="h-4 min-w-4 border-slate-300/50 px-[.2rem] py-[.05rem] text-[.6rem]"
+      className="[appearance:textfield] placeholder:text-slate-300/75 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
     />
   )
 }
