@@ -3,7 +3,7 @@ import { useRouter } from '@tanstack/react-router'
 import { episodeListStore } from '~c/stores'
 import { AnimeWatchSessionContext } from '~c/context'
 import { clientProfileSettingsStore } from '~c/stores'
-import { captureKeybindFromEvent } from '~c/utils/keybind'
+import { createKeybindMatcher } from '~c/utils/keybind'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { searchEpisode } from '~/shared/utils/episode'
 import type { InferOutput } from 'valibot'
@@ -151,18 +151,16 @@ export function VideoPlayer({ params }: Props) {
     } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
 
     const removeKeybindHandler = createGlobalKeydownHandler(event => {
-      const capturedCombination = captureKeybindFromEvent(event)
+      const keybindMatch = createKeybindMatcher(event)
 
-      outer: for (const handlerName in keybindHandler) {
+      for (const handlerName in keybindHandler) {
         const combination =
           clientProfileSettingsStore.state.keybind.videoPlayer[
             handlerName as keyof KeybindGroups['videoPlayer']
           ]
 
-        for (let i = 0; i < combination.length; i++) {
-          if (combination[i] !== capturedCombination[i]) {
-            continue outer
-          }
+        if (!keybindMatch(combination)) {
+          continue
         }
 
         event.preventDefault()

@@ -29,7 +29,7 @@ function PengaturanKeybind() {
 
       for (const keybindKey in settings.keybind[group as G]) {
         // @ts-ignore
-        const combination = settings.keybind[group as G][keybindKey] as [string] | [string, string]
+        const combination = settings.keybind[group as G][keybindKey] as string[]
 
         // @ts-ignore
         const [name, note] = keybindTranslation[group as G][keybindKey] as

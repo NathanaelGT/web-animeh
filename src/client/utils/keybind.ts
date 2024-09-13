@@ -3,7 +3,7 @@ import type { AllowedDefaultModifier, AllowedDefaultKey } from '~/shared/profile
 export const keybindModifiers = ['Control', 'Shift', 'Alt'] as const
 
 export const captureKeybindFromEvent = (
-  event: React.KeyboardEvent<HTMLInputElement> | KeyboardEvent,
+  event: React.KeyboardEvent<HTMLElement> | KeyboardEvent,
 ) => {
   const combination: string[] = []
 
@@ -19,6 +19,35 @@ export const captureKeybindFromEvent = (
   }
 
   return combination
+}
+
+export const keybindCombinationsMatch = (
+  keybindCombination: string[],
+  eventCombination: string[],
+) => {
+  if (keybindCombination.length === 0 || keybindCombination.length !== eventCombination.length) {
+    return false
+  }
+
+  for (let i = 0; i < keybindCombination.length; i++) {
+    if (keybindCombination[i] !== eventCombination[i]) {
+      return false
+    }
+  }
+
+  return true
+}
+
+export const createKeybindMatcher = (event: React.KeyboardEvent<HTMLElement> | KeyboardEvent) => {
+  const capturedCombination = captureKeybindFromEvent(event)
+
+  const keybindMatch = ((combinationToMatch: string[]) => {
+    return keybindCombinationsMatch(combinationToMatch, capturedCombination)
+  }) as ((combinationToMatch: string[]) => boolean) & { capturedCombination: string[] }
+
+  keybindMatch.capturedCombination = capturedCombination
+
+  return keybindMatch
 }
 
 export const formatKeybind = (key: string) => {

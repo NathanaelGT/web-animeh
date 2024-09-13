@@ -1,5 +1,5 @@
 import { clientProfileSettingsStore } from '~c/stores'
-import { captureKeybindFromEvent } from '~c/utils/keybind'
+import { captureKeybindFromEvent, keybindCombinationsMatch } from '~c/utils/keybind'
 import type { InferOutput } from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
@@ -38,10 +38,8 @@ export const createKeybindHandler = <TGroup extends keyof KeybindGroups>(
       keybindName
     ] as string[]
 
-    for (let i = 0; i < combination.length; i++) {
-      if (combination[i] !== capturedCombination[i]) {
-        return
-      }
+    if (!keybindCombinationsMatch(combination, capturedCombination)) {
+      return
     }
 
     event.preventDefault()

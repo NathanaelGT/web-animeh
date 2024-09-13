@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { api } from '~c/trpc'
 import { profileStore } from '~c/stores'
 import { keybindTranslation } from '~c/keybind'
-import { keybindModifiers, captureKeybindFromEvent, formatKeybind } from '~c/utils/keybind'
+import { createKeybindMatcher, keybindCombinationsMatch, formatKeybind } from '~c/utils/keybind'
 import { Label } from '@/ui/label'
 import { Input } from '@/ui/input'
 import { Button } from '@/ui/button'
@@ -20,15 +20,6 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
   const [inputError, setInputError] = useState('')
   const updateProfile = api.profile.update.useMutation()
 
-  const combinationsEqual = (combination1: string[], combination2: string[]) => {
-    for (let i = 0; i < combination1.length; i++) {
-      if (combination1[i] !== combination2[i]) {
-        return false
-      }
-    }
-    return true
-  }
-
   const keydownHandler = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') {
       return
@@ -41,12 +32,12 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
 
     event.preventDefault()
 
-    const combination = captureKeybindFromEvent(event)
+    const keybindMatch = createKeybindMatcher(event)
 
     const profileKeybinds = profileStore.state!.settings.keybind
 
     const findConflict = () => {
-      if (combination.length === 0) {
+      if (keybindMatch.capturedCombination.length === 0) {
         return ''
       }
 
@@ -57,12 +48,9 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
         >
 
         for (const currentKeybindKey in groupKeybinds) {
-          if (
-            currentKeybindKey !== keybindKey &&
-            combinationsEqual(groupKeybinds[currentKeybindKey]!, combination)
-          ) {
+          if (currentKeybindKey !== keybindKey && keybindMatch(groupKeybinds[currentKeybindKey]!)) {
             return (
-              (combination.length > 1 ? 'Kombinasi k' : 'K') +
+              (keybindMatch.capturedCombination.length > 1 ? 'Kombinasi k' : 'K') +
               'eybind ini sudah digunakan pada ' +
               // @ts-expect-error
               keybindTranslation[groupName][currentKeybindKey][0].toLowerCase() +
@@ -76,11 +64,11 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
     }
 
     setInputError(findConflict())
-    setCombination(combination)
+    setCombination(keybindMatch.capturedCombination)
   }
 
   const save = () => {
-    if (combinationsEqual(combination, _combination)) {
+    if (keybindCombinationsMatch(combination, _combination)) {
       return
     }
 
@@ -95,7 +83,7 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
     updateProfile.mutate(profile)
   }
 
-  const combinationToShow = combination.map(item => item) // shallow copy
+  const combinationToShow = combination.slice() // shallow copy
   const combinationLastItem = combinationToShow.at(-1)
   if (combinationLastItem?.length === 1) {
     combinationToShow[combinationToShow.length - 1] = formatKeybind(combinationLastItem)
