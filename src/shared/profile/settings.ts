@@ -8,43 +8,76 @@ export const headerPositions = ['static', 'sticky', 'hybrid'] as const
 
 export const episodeDisplayMode = ['Padat', 'Detail', 'Auto'] as const
 
-export const episodeFilterSchema = v.object({
-  displayMode: v.fallback(v.picklist(episodeDisplayMode), 'Auto'),
-  sortLatest: v.fallback(v.boolean(), false),
-  hideFiller: v.fallback(v.boolean(), false),
-  hideRecap: v.fallback(v.boolean(), false),
-  perPage: v.fallback(v.number(), 100),
+export const episodeFilterSchema = object({
+  displayMode: picklist(episodeDisplayMode, 'Auto'),
+  sortLatest: boolean(false),
+  hideFiller: boolean(false),
+  hideRecap: boolean(false),
+  perPage: number(100),
 })
 
-const createKeybind = (() => {
-  const keybindArraySchema = v.pipe(v.array(v.string()), v.minLength(1))
+export const keybindSchema = object({
+  global: object({
+    search: createKeybind('/'),
+    showKeybindTips: createKeybind('Alt'),
+  }),
+  animePage: object({
+    watch: createKeybind('Enter'),
+  }),
+  watchPage: object({
+    search: createKeybind('e'),
+    download: createKeybind('u'),
+  }),
+  videoPlayer: object({
+    back: createKeybind('ArrowLeft'),
+    forward: createKeybind('ArrowRight'),
+    longBack: createKeybind('Control', 'ArrowLeft'),
+    longForward: createKeybind('Control', 'ArrowRight'),
+    volumeUp: createKeybind('ArrowUp'),
+    volumeDown: createKeybind('ArrowDown'),
+    toStart: createKeybind('Home'),
+    toEnd: createKeybind('End'),
+    previous: createKeybind('p'),
+    next: createKeybind('n'),
+    mute: createKeybind('m'),
+    PiP: createKeybind('i'),
+    fullscreen: createKeybind('f'),
+    playPause: createKeybind(' '),
+  }),
+})
 
-  if (import.meta.env.PROD) {
-    return (...defaultKeybind: AllowedDefaultKeybind) => {
-      return v.fallback(keybindArraySchema, defaultKeybind)
-    }
-  }
+export const settingsSchema = v.object({
+  theme: picklist(themes, 'system'),
+  headerPosition: picklist(headerPositions, 'hybrid'),
+  episodeFilter: episodeFilterSchema,
+  keybind: keybindSchema,
+})
 
-  const existingKeybind = new Set<string>()
+export const defaultSettings = () => v.parse(settingsSchema, {})
 
-  return (...defaultKeybind: AllowedDefaultKeybind) => {
-    const keybind = defaultKeybind.join(' ')
+export const parse = (settingsJson: unknown) => {
+  const result = v.safeParse(settingsSchema, settingsJson)
 
-    if (existingKeybind.has(keybind)) {
-      throw new Error(`Keybind "${keybind}" already exists`)
-    }
+  return result.success ? result.output : defaultSettings()
+}
 
-    existingKeybind.add(keybind)
+function boolean(fallback: boolean) {
+  return v.fallback(v.boolean(), fallback)
+}
 
-    return v.fallback(keybindArraySchema, defaultKeybind)
-  }
-})()
+function picklist<TOptions extends v.PicklistOptions>(
+  options: TOptions,
+  fallback: TOptions[number],
+) {
+  return v.fallback(v.picklist(options), fallback)
+}
 
-const optional = <const TWrapped extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
-  wrapped: TWrapped,
-) => {
+function object<
+  TEntries extends v.ObjectEntries,
+  TReturn extends v.ObjectSchema<TEntries, undefined>,
+>(entries: TEntries): TReturn {
   // @ts-ignore
-  const schema = v.optional(wrapped, {}) as TWrapped
+  const schema = v.optional(v.object(entries), {}) as TReturn
 
   if (!import.meta.env.PROD) {
     const result = v.safeParse(schema, {})
@@ -57,57 +90,26 @@ const optional = <const TWrapped extends v.BaseSchema<unknown, unknown, v.BaseIs
   return schema
 }
 
-export const keybindSchema = v.object({
-  global: optional(
-    v.object({
-      search: createKeybind('/'),
-      showKeybindTips: createKeybind('Alt'),
-    }),
-  ),
-  animePage: optional(
-    v.object({
-      watch: createKeybind('Enter'),
-    }),
-  ),
-  watchPage: optional(
-    v.object({
-      search: createKeybind('e'),
-      download: createKeybind('u'),
-    }),
-  ),
-  videoPlayer: optional(
-    v.object({
-      back: createKeybind('ArrowLeft'),
-      forward: createKeybind('ArrowRight'),
-      longBack: createKeybind('Control', 'ArrowLeft'),
-      longForward: createKeybind('Control', 'ArrowRight'),
-      volumeUp: createKeybind('ArrowUp'),
-      volumeDown: createKeybind('ArrowDown'),
-      toStart: createKeybind('Home'),
-      toEnd: createKeybind('End'),
-      previous: createKeybind('p'),
-      next: createKeybind('n'),
-      mute: createKeybind('m'),
-      PiP: createKeybind('i'),
-      fullscreen: createKeybind('f'),
-      playPause: createKeybind(' '),
-    }),
-  ),
-})
+function number(
+  fallback: number,
+  min?: number,
+  max?: number,
+): ReturnType<typeof v.fallback<ReturnType<typeof v.number>, number>> {
+  const pipe = []
 
-export const settingsSchema = v.object({
-  theme: v.fallback(v.picklist(themes), 'system'),
-  headerPosition: v.fallback(v.picklist(headerPositions), 'hybrid'),
-  episodeFilter: optional(episodeFilterSchema),
-  keybind: optional(keybindSchema),
-})
+  if (min !== undefined) {
+    pipe.push(v.minValue(min))
+  }
+  if (max !== undefined) {
+    pipe.push(v.maxValue(max))
+  }
 
-export const defaultSettings = () => v.parse(settingsSchema, {})
+  // @ts-ignore
+  return v.fallback(v.pipe(v.number(), ...pipe), fallback)
+}
 
-export const parse = (settingsJson: unknown) => {
-  const result = v.safeParse(settingsSchema, settingsJson)
-
-  return result.success ? result.output : defaultSettings()
+function createKeybind(...defaultKeybind: AllowedDefaultKeybind) {
+  return v.fallback(v.array(v.string()), defaultKeybind)
 }
 
 export type AllowedDefaultModifier = (typeof keybindModifiers)[number]
