@@ -9,6 +9,8 @@ type KeybindGroupTranslation = {
   [group in keyof KeybindTranslation]: [string, string | ReactNode]
 }
 
+type KeybindGroupConflicts = (keyof KeybindTranslation)[][]
+
 export const keybindGroupTranslation = (() => {
   let skeletonKey = 0
   function Skeleton(width: `w-${string}`) {
@@ -72,3 +74,11 @@ export const keybindTranslation = {
     playPause: ['Play/Pause'],
   },
 } satisfies KeybindTranslation
+
+export const keybindGroupConflicts: KeybindGroupConflicts = [['watchPage', 'videoPlayer']]
+
+for (const group in keybindTranslation) {
+  if (group !== 'global') {
+    keybindGroupConflicts.push(['global', group as keyof typeof keybindTranslation])
+  }
+}

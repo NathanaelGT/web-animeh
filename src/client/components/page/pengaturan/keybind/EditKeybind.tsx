@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { api } from '~c/trpc'
 import { profileStore } from '~c/stores'
-import { keybindTranslation } from '~c/keybind'
+import { keybindGroupConflicts, keybindTranslation } from '~c/keybind'
 import { createKeybindMatcher, keybindCombinationsMatch, formatKeybind } from '~c/utils/keybind'
 import { Label } from '@/ui/label'
 import { Input } from '@/ui/input'
@@ -41,11 +41,19 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
         return ''
       }
 
-      for (const groupName in profileKeybinds) {
-        const groupKeybinds = profileKeybinds[groupName as keyof typeof profileKeybinds] as Record<
-          string,
-          string[]
-        >
+      type Groups = keyof typeof profileKeybinds
+      const keybindGroupsToCheck = new Set<Groups>()
+
+      for (const groups of keybindGroupConflicts) {
+        if (groups.includes(group as Groups)) {
+          for (const group of groups) {
+            keybindGroupsToCheck.add(group)
+          }
+        }
+      }
+
+      for (const groupName of keybindGroupsToCheck) {
+        const groupKeybinds = profileKeybinds[groupName] as Record<string, string[]>
 
         for (const currentKeybindKey in groupKeybinds) {
           if (currentKeybindKey !== keybindKey && keybindMatch(groupKeybinds[currentKeybindKey]!)) {
@@ -102,6 +110,7 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
           value={combinationToShow.join(' + ')}
           autoFocus
           readOnly
+          placeholder="Tanpa keybind"
           className="select-none"
         />
         <p
@@ -113,11 +122,7 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
 
       <DialogFooter>
         <DialogClose asChild>
-          <Button
-            type="submit"
-            disabled={inputError !== '' || combination.length === 0}
-            onClick={save}
-          >
+          <Button type="submit" disabled={inputError !== ''} onClick={save}>
             Simpan
           </Button>
         </DialogClose>

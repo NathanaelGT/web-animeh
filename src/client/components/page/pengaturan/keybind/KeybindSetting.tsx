@@ -45,14 +45,20 @@ export function KeybindSetting(props: Props) {
           >
             <DialogTrigger asChild>
               <div className="flex w-fit cursor-pointer select-none items-center gap-2 rounded-md bg-primary/5 p-2">
-                {combination.map((key, index) => (
-                  <React.Fragment key={index}>
-                    {index > 0 && <span>+</span>}
-                    <div className="w-fit rounded-sm border border-primary/50 px-3 py-1">
-                      {formatKeybind(key)}
-                    </div>
-                  </React.Fragment>
-                ))}
+                {combination.length ? (
+                  combination.map((key, index) => (
+                    <React.Fragment key={index}>
+                      {index > 0 && <span>+</span>}
+                      <div className="w-fit rounded-sm border border-primary/50 px-3 py-1">
+                        {formatKeybind(key)}
+                      </div>
+                    </React.Fragment>
+                  ))
+                ) : (
+                  <span className="border border-transparent px-3 py-1 text-muted-foreground">
+                    Tidak ada
+                  </span>
+                )}
               </div>
             </DialogTrigger>
           </SimpleTooltip>
