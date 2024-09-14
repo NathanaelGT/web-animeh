@@ -56,7 +56,7 @@ export function SearchInput({ animeId, search }: Props) {
       wrapperClassName="h-6 border-slate-300 ring-indigo-400/75 focus-within:ring-1"
       buttonClassName="px-[.2rem]"
       tipClassName="h-4 min-w-4 border-slate-300/50 px-[.2rem] py-[.05rem] text-[.6rem]"
-      className="[appearance:textfield] placeholder:text-slate-300/75 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      className="placeholder:text-slate-300/75"
     />
   )
 }
