@@ -28,6 +28,7 @@ export const keybindGroupTranslation = (() => {
 
   return {
     global: ['Global keybind', 'Keybind untuk disemua halaman'],
+    search: ['Search keybind', 'Keybind untuk input pencarian'],
     animePage: ['Halaman anime', Description(origin + '/anime/', Skeleton('w-12'))],
     watchPage: [
       'Halaman nonton anime',
@@ -49,6 +50,10 @@ export const keybindTranslation = {
   global: {
     search: ['Fokus ke input pencarian'],
     showKeybindTips: ['Tampilkan petunjuk keybind'],
+  },
+  search: {
+    up: ['Pilih hasil pencarian sebelumnya'],
+    down: ['Pilih hasil pencarian selanjutnya'],
   },
   animePage: {
     watch: ['Nonton anime'],

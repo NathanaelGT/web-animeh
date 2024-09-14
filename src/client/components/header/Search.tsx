@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { Link } from '@tanstack/react-router'
 import { api } from '~c/trpc'
+import { clientProfileSettingsStore } from '~c/stores'
+import { createKeybindMatcher } from '~c/utils/keybind'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Image } from '@/Image'
 import { InputKeybind } from '@/ui/custom/input-keybind'
@@ -202,7 +204,10 @@ export function Search({ headerRef, className }: Props) {
       )
     }
 
-    if (event.key === 'ArrowUp') {
+    const keybindMatch = createKeybindMatcher(event)
+    const keybinds = clientProfileSettingsStore.state.keybind.search
+
+    if (keybindMatch(keybinds.up)) {
       moveFocus(
         el => el.previousElementSibling,
         () => {
@@ -212,7 +217,7 @@ export function Search({ headerRef, className }: Props) {
           return --arrowOffsetRef.current
         },
       )
-    } else if (event.key === 'ArrowDown') {
+    } else if (keybindMatch(keybinds.down)) {
       moveFocus(
         el => el.nextElementSibling,
         () => ++arrowOffsetRef.current,
@@ -232,7 +237,7 @@ export function Search({ headerRef, className }: Props) {
       input.blur()
 
       return
-    } else if (event.key !== 'ArrowDown') {
+    } else if (!createKeybindMatcher(event)(clientProfileSettingsStore.state.keybind.search.down)) {
       return
     }
 

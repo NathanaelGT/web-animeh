@@ -21,6 +21,10 @@ export const keybindSchema = object({
     search: createKeybind('/'),
     showKeybindTips: createKeybind('Alt'),
   }),
+  search: object({
+    up: createKeybind('ArrowUp'),
+    down: createKeybind('ArrowDown'),
+  }),
   animePage: object({
     watch: createKeybind('Enter'),
   }),
