@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
 import { Link } from '@tanstack/react-router'
 import { api } from '~c/trpc'
-import { clientProfileSettingsStore } from '~c/stores'
+import { clientProfileSettingsStore, headerSubscribersStore, headerLatestYStore } from '~c/stores'
 import { createKeybindMatcher } from '~c/utils/keybind'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Image } from '@/Image'
@@ -71,6 +71,11 @@ export function Search({ headerRef, className }: Props) {
           },
           { once: true },
         )
+
+        headerSubscribersStore.state.forEach(subscriber => {
+          subscriber.classList.add(...subscriber.dataset.subsHeader!.split(' '))
+        })
+        headerLatestYStore.setState(() => -Infinity)
       } else {
         setFocusToSearchInput()
       }
@@ -111,20 +116,13 @@ export function Search({ headerRef, className }: Props) {
 
   const onBlurHandler = () => {
     requestAnimationFrame(() => {
-      const { input, suggestionWrapper } = elRef.current
-      if (!input || !suggestionWrapper) {
-        return
-      }
-
-      const active = document.activeElement
-      if (active === input) {
-        return
-      } else if (active instanceof HTMLElement && 'searchResult' in active.dataset) {
+      const { suggestionWrapper, mainWrapper } = elRef.current
+      if (!suggestionWrapper || !mainWrapper || mainWrapper.contains(document.activeElement)) {
         return
       }
 
       setTimeout(() => {
-        elRef.current.mainWrapper?.classList.remove('md:w-64', 'lg:w-96')
+        mainWrapper.classList.remove('md:w-64', 'lg:w-96')
       }, 100)
 
       headerRef.current?.classList.remove(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
@@ -140,18 +138,16 @@ export function Search({ headerRef, className }: Props) {
   }
 
   const onSearchResultKeydownHandler = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Escape') {
+      event.currentTarget.blur()
+    } else if (event.key === 'Enter') {
       const child = event.currentTarget.firstElementChild
+
       if (child instanceof HTMLAnchorElement) {
         child.click()
 
-        const activeEl = document.activeElement
-        if (activeEl instanceof HTMLElement) {
-          activeEl.blur()
-        }
+        event.currentTarget.blur()
       }
-
-      return
     }
 
     const moveFocus = (

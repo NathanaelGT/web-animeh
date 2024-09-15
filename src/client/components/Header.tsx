@@ -1,8 +1,8 @@
-import { useRef, useMemo, useEffect } from 'react'
+import { useRef, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
-import { clientProfileSettingsStore, headerChildStore } from '~c/stores'
+import { clientProfileSettingsStore, headerChildStore, headerSubscribersStore, headerLatestYStore } from '~c/stores'
 import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
 import { Button } from '@/ui/button'
@@ -14,7 +14,6 @@ export function Header() {
   const headerChild = useStore(headerChildStore)
   const headerRef = useRef<HTMLElement | null>(null)
   const newSubscriberHandlerRef = useRef<(element: HTMLElement) => void>(() => {})
-  const headerSubscribers = useMemo(() => new Set<HTMLElement>(), [])
 
   const createClassApplier = (method: 'add' | 'remove') => (element: HTMLElement) => {
     element.classList[method](...element.dataset.subsHeader!.split(' '))
@@ -31,7 +30,7 @@ export function Header() {
 
     newSubscriberHandlerRef.current = apply
 
-    headerSubscribers.forEach(apply)
+    headerSubscribersStore.state.forEach(apply)
   }, [headerPosition === 'static'])
 
   useEffect(() => {
@@ -43,7 +42,7 @@ export function Header() {
 
     newSubscriberHandlerRef.current = apply
 
-    headerSubscribers.forEach(apply)
+    headerSubscribersStore.state.forEach(apply)
   }, [headerPosition === 'sticky'])
 
   useEffect(() => {
@@ -55,7 +54,7 @@ export function Header() {
 
     const getWindowY = () => document.body.getBoundingClientRect().y
 
-    let latestY = getWindowY()
+    headerLatestYStore.setState(getWindowY)
     let headerTop = -1
 
     const scrollHandler = () => {
@@ -71,18 +70,18 @@ export function Header() {
       }
 
       const currentY = getWindowY()
-      const top = latestY < currentY ? 0 : header.offsetHeight
+      const top = headerLatestYStore.state < currentY ? 0 : header.offsetHeight
 
       if (headerTop !== top) {
         const getMethod = (condition: boolean) => (condition ? 'remove' : 'add')
 
         header.classList[getMethod(top === 0)](HYBRID_HEADER_CLASS_ON_HIDDEN)
 
-        headerSubscribers.forEach(createClassApplier(getMethod(top !== 0)))
+        headerSubscribersStore.state.forEach(createClassApplier(getMethod(top !== 0)))
       }
 
       headerTop = top
-      latestY = currentY
+      headerLatestYStore.setState(() => currentY)
     }
 
     document.addEventListener('scroll', scrollHandler, { passive: true })
@@ -96,7 +95,7 @@ export function Header() {
     document.body.querySelectorAll('[data-subs-header]').forEach(element => {
       if (element instanceof HTMLElement) {
         newSubscriberHandlerRef.current(element)
-        headerSubscribers.add(element)
+        headerSubscribersStore.state.add(element)
       }
     })
 
@@ -109,7 +108,7 @@ export function Header() {
                 newSubscriberHandlerRef.current(node)
               }
 
-              headerSubscribers[method](node)
+              headerSubscribersStore.state[method](node)
             }
 
             node.querySelectorAll('[data-subs-header]').forEach(element => {
@@ -118,7 +117,7 @@ export function Header() {
                   newSubscriberHandlerRef.current(element)
                 }
 
-                headerSubscribers[method](element)
+                headerSubscribersStore.state[method](element)
               }
             })
           }
