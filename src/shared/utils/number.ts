@@ -7,3 +7,7 @@ export const parseNumber = (value: any) => {
 
   return number
 }
+
+export const clamp = (number: number, min = -Infinity, max = Infinity) => {
+  return Math.min(Math.max(number, min), max)
+}
