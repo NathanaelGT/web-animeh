@@ -4,7 +4,7 @@ import { routeTree } from '~/routeTree.gen'
 export const createRouter = () => {
   return createTanstackRouter({
     routeTree,
-    defaultViewTransition: true,
+    // defaultViewTransition: true,
     defaultPreload: 'intent',
     defaultPreloadDelay: 60_000,
     defaultPreloadStaleTime: 10_000,

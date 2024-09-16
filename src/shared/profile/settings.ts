@@ -16,6 +16,14 @@ export const episodeFilterSchema = object({
   perPage: number(100),
 })
 
+export const videoPlayerSchema = object({
+  jumpSec: number(5, 0.1),
+  longJumpSec: number(87, 0.1),
+  relativeJump: boolean(true),
+  relativeLongJump: boolean(false),
+  volumeStep: number(0.05, 0.01, 1),
+})
+
 export const keybindSchema = object({
   global: object({
     search: createKeybind('/'),
@@ -54,6 +62,7 @@ export const settingsSchema = v.object({
   theme: picklist(themes, 'system'),
   headerPosition: picklist(headerPositions, 'hybrid'),
   episodeFilter: episodeFilterSchema,
+  videoPlayer: videoPlayerSchema,
   keybind: keybindSchema,
 })
 

@@ -19,6 +19,7 @@ import { Route as AnimeIdImport } from './routes/anime/_$id'
 import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
 import { Route as PengaturanPengaturanUnduhanImport } from './routes/_pengaturan/pengaturan/unduhan'
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
+import { Route as PengaturanPengaturanPemutarVideoImport } from './routes/_pengaturan/pengaturan/pemutar-video'
 import { Route as PengaturanPengaturanKeybindImport } from './routes/_pengaturan/pengaturan/keybind'
 import { Route as AnimeIdIdIndexImport } from './routes/anime/_$id/$id/index'
 import { Route as AnimeIdIdEpisodeImport } from './routes/anime/_$id/$id/_episode'
@@ -70,6 +71,12 @@ const PengaturanPengaturanUnduhanRoute =
 const PengaturanPengaturanTampilanRoute =
   PengaturanPengaturanTampilanImport.update({
     path: '/pengaturan/tampilan',
+    getParentRoute: () => PengaturanRoute,
+  } as any)
+
+const PengaturanPengaturanPemutarVideoRoute =
+  PengaturanPengaturanPemutarVideoImport.update({
+    path: '/pengaturan/pemutar-video',
     getParentRoute: () => PengaturanRoute,
   } as any)
 
@@ -134,6 +141,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PengaturanPengaturanKeybindImport
       parentRoute: typeof PengaturanImport
     }
+    '/_pengaturan/pengaturan/pemutar-video': {
+      id: '/_pengaturan/pengaturan/pemutar-video'
+      path: '/pengaturan/pemutar-video'
+      fullPath: '/pengaturan/pemutar-video'
+      preLoaderRoute: typeof PengaturanPengaturanPemutarVideoImport
+      parentRoute: typeof PengaturanImport
+    }
     '/_pengaturan/pengaturan/tampilan': {
       id: '/_pengaturan/pengaturan/tampilan'
       path: '/pengaturan/tampilan'
@@ -192,6 +206,7 @@ export const routeTree = rootRoute.addChildren({
   IndexRoute,
   PengaturanRoute: PengaturanRoute.addChildren({
     PengaturanPengaturanKeybindRoute,
+    PengaturanPengaturanPemutarVideoRoute,
     PengaturanPengaturanTampilanRoute,
     PengaturanPengaturanUnduhanRoute,
     PengaturanPengaturanIndexRoute,
@@ -228,6 +243,7 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "_pengaturan.tsx",
       "children": [
         "/_pengaturan/pengaturan/keybind",
+        "/_pengaturan/pengaturan/pemutar-video",
         "/_pengaturan/pengaturan/tampilan",
         "/_pengaturan/pengaturan/unduhan",
         "/_pengaturan/pengaturan/"
@@ -248,6 +264,10 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_pengaturan/pengaturan/keybind": {
       "filePath": "_pengaturan/pengaturan/keybind.tsx",
+      "parent": "/_pengaturan"
+    },
+    "/_pengaturan/pengaturan/pemutar-video": {
+      "filePath": "_pengaturan/pengaturan/pemutar-video.tsx",
       "parent": "/_pengaturan"
     },
     "/_pengaturan/pengaturan/tampilan": {
