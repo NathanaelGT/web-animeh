@@ -9,8 +9,7 @@ export const createGlobalKeydownHandler = (handler: (event: KeyboardEvent) => vo
 
     if (
       target instanceof HTMLElement &&
-      (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName) ||
-        (target.tabIndex === 0 && target.tagName !== 'VIDEO'))
+      ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName)
     ) {
       return
     }
@@ -43,6 +42,7 @@ export const createKeybindHandler = <TGroup extends keyof KeybindGroups>(
     }
 
     event.preventDefault()
+    event.stopPropagation()
 
     handler(event)
   })

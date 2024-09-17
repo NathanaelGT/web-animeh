@@ -140,13 +140,18 @@ export function Search({ headerRef, className }: Props) {
   const onSearchResultKeydownHandler = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.currentTarget.blur()
+
+      return
     } else if (event.key === 'Enter') {
       const child = event.currentTarget.firstElementChild
 
       if (child instanceof HTMLAnchorElement) {
         child.click()
 
+        event.stopPropagation()
         event.currentTarget.blur()
+
+        return
       }
     }
 
