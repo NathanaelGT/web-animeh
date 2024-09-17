@@ -6,6 +6,7 @@ import { clientProfileSettingsStore } from '~c/stores'
 import { createKeybindMatcher } from '~c/utils/keybind'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { searchEpisode } from '~/shared/utils/episode'
+import { ucFirst } from '~/shared/utils/string'
 import type { InferOutput } from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
@@ -93,24 +94,35 @@ export function VideoPlayer({ params }: Props) {
       }
     }
 
+    const setting = clientProfileSettingsStore.state
+    const getJumpTime = (variant: '' | 'long' = '') => {
+      // @ts-ignore
+      const time = setting.videoPlayer[(variant ? variant + 'J' : 'j') + 'umpSec'] as number
+
+      // @ts-ignore
+      const isRelative = setting.videoPlayer[`relative${ucFirst(variant)}Jump`] as boolean
+
+      return isRelative ? time * video.playbackRate : time
+    }
+
     const keybindHandler: Record<string, () => void> = {
       back() {
-        video.currentTime -= 5
+        video.currentTime -= getJumpTime()
       },
       forward() {
-        video.currentTime += 5
+        video.currentTime += getJumpTime()
       },
       longBack() {
-        video.currentTime -= 87
+        video.currentTime -= getJumpTime('long')
       },
       longForward() {
-        video.currentTime += 87
+        video.currentTime += getJumpTime('long')
       },
       volumeUp() {
-        video.volume = Math.min(1, video.volume + 0.05)
+        video.volume = Math.min(1, video.volume + setting.videoPlayer.volumeStep)
       },
       volumeDown() {
-        video.volume = Math.max(0, video.volume - 0.05)
+        video.volume = Math.max(0, video.volume - setting.videoPlayer.volumeStep)
       },
       toStart() {
         video.currentTime = 0
@@ -155,9 +167,7 @@ export function VideoPlayer({ params }: Props) {
 
       for (const handlerName in keybindHandler) {
         const combination =
-          clientProfileSettingsStore.state.keybind.videoPlayer[
-            handlerName as keyof KeybindGroups['videoPlayer']
-          ]
+          setting.keybind.videoPlayer[handlerName as keyof KeybindGroups['videoPlayer']]
 
         if (!keybindMatch(combination)) {
           continue
