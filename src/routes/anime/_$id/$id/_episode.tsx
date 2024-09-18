@@ -121,12 +121,16 @@ function EpisodeLayout() {
 
     const highlight = () => {
       requestAnimationFrame(async () => {
-        const el = episodeListRef.current?.querySelector(`#episode_${query}`)
+        const episodeList = episodeListRef.current
+        const el = episodeList?.querySelector(`#episode_${query}`)
+
         if (!el) {
           return
         }
 
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        if (episodeList!.scrollHeight > episodeList!.clientHeight) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
 
         const { classList } = el
         const zIndex = 'z-10'
