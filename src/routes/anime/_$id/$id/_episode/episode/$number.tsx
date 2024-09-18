@@ -18,13 +18,13 @@ function EpisodeNumber() {
   })
 
   if (!episode) {
-    return <div>Not found</div>
+    return <main className="m-auto">Episode {params.number} tidak ditemukan</main>
   }
 
-  const status = episode.downloadStatus as string | boolean | undefined
+  const status = episode.downloadStatus as typeof episode.downloadStatus | undefined
 
   return (
-    <main className="mb-auto bg-primary">
+    <main className="mb-auto">
       <div className="flex aspect-video bg-primary-foreground/85">
         {status === undefined ? (
           <p className="m-auto">Sedang memuat data episode</p>

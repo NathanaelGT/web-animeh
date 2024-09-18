@@ -36,7 +36,7 @@ function AnimeId() {
   }, [params.id])
 
   if (!animeData) {
-    return <div>Not found</div>
+    return <main className="flex flex-1 items-center justify-center">Anime tidak ditemukan</main>
   }
 
   const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
