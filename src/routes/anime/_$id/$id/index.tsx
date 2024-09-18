@@ -1,7 +1,8 @@
-import { useContext, useEffect } from 'react'
+import { useEffect } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
-import { AnimeDataContext } from '~c/context'
+import { animeDataStore } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { AnimePoster } from '@/Anime/Poster'
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/anime/_$id/$id/')({
 })
 
 function AnimeId() {
-  const animeData = useContext(AnimeDataContext)
+  const animeData = useStore(animeDataStore)
   const params = Route.useParams()
   const router = useRouter()
 

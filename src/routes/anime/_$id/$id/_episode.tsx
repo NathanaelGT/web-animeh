@@ -1,10 +1,15 @@
-import { useContext, useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
-import { clientProfileSettingsStore, episodeListStore, type EpisodeList } from '~c/stores'
-import { AnimeDataContext, AnimeWatchSessionContext } from '~c/context'
+import {
+  animeDataStore,
+  animeWatchSessionStore,
+  clientProfileSettingsStore,
+  episodeListStore,
+  type EpisodeList,
+} from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
 import { sleep } from '~/shared/utils/time'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
@@ -30,8 +35,7 @@ function EpisodeLayout() {
   const { episodeFilter } = clientProfileSettingsStore.state
   const perPage = useStore(clientProfileSettingsStore, state => state.episodeFilter.perPage)
 
-  const [watchSessionId] = useState(() => Math.random().toString().slice(2))
-  const animeData = useContext(AnimeDataContext)
+  const animeData = useStore(animeDataStore)
   const params = Route.useParams()
   const [displayMode, setDisplayMode] = useState(episodeFilter.displayMode)
   const [sortLatest, setSortLatest] = useState(episodeFilter.sortLatest)
@@ -207,6 +211,12 @@ function EpisodeLayout() {
     },
   })
 
+  // kalo pake useEffect, bakal error karena baru dijalankan setelah rendering
+  // jadi disini ngeabuse useMemo biar callbacknya cuma jalan sekali sebelum rendering
+  useMemo(() => {
+    animeWatchSessionStore.setState(() => ({ id: Math.random().toString().slice(2) }))
+  }, [])
+
   episodeListStore.setState(() => episodeList)
 
   return (
@@ -276,9 +286,7 @@ function EpisodeLayout() {
           </aside>
         )}
 
-        <AnimeWatchSessionContext.Provider value={{ id: watchSessionId }}>
-          <Outlet />
-        </AnimeWatchSessionContext.Provider>
+        <Outlet />
       </div>
     </div>
   )

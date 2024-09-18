@@ -1,6 +1,7 @@
-import { useState, useContext, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import { useStore } from '@tanstack/react-store'
 import { api } from '~c/trpc'
-import { AnimeDataContext } from '~c/context'
+import { animeDataStore } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Button } from '@/ui/button'
 
@@ -12,7 +13,7 @@ type Props = {
 
 export function Download(props: Props) {
   const [placeholder, setPlaceholder] = useState('')
-  const animeData = useContext(AnimeDataContext)
+  const animeData = useStore(animeDataStore)
   const downloadEpisode = api.component.poster.download.useMutation()
 
   const requestDownload = () => {

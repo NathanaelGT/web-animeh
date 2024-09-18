@@ -1,7 +1,7 @@
-import { useRef, useEffect, useContext } from 'react'
+import { useRef, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { episodeListStore } from '~c/stores'
-import { AnimeWatchSessionContext } from '~c/context'
+import { useStore } from '@tanstack/react-store'
+import { animeWatchSessionStore, episodeListStore } from '~c/stores'
 import { clientProfileSettingsStore } from '~c/stores'
 import { createKeybindMatcher } from '~c/utils/keybind'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
@@ -27,7 +27,7 @@ const getSrc = (animeId: string, episodeString: string) => {
 
 export function VideoPlayer({ params }: Props) {
   const router = useRouter()
-  const watchSession = useContext(AnimeWatchSessionContext)
+  const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const gotoEpisodeRef = useRef(params.number)
 
