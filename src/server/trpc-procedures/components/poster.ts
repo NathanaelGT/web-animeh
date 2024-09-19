@@ -92,7 +92,16 @@ export const PosterRouter = router({
       animeVideoRealDirPath(input).then(videoRealDir => {
         return videoRealDir
           ? glob(videoRealDir, '*.mp4').then(episodes => {
-              return episodes.map(episode => parseInt(episode))
+              const downloadedEpisodeList: number[] = []
+
+              for (const episodeFilename of episodes) {
+                const episodeNo = episodeFilename.match(/(\d+).mp4/)?.[1]
+                if (episodeNo) {
+                  downloadedEpisodeList.push(parseInt(episodeNo))
+                }
+              }
+
+              return downloadedEpisodeList
             })
           : []
       }),
