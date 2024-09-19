@@ -23,7 +23,7 @@ export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function Inp
 ) {
   const ref = React.useRef<HTMLInputElement>(null)
 
-  React.useImperativeHandle(forwardedRef, () => ref.current as HTMLInputElement)
+  React.useImperativeHandle(forwardedRef, () => ref.current!)
 
   return (
     <div
@@ -54,6 +54,7 @@ export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function Inp
         onClick={() => {
           ref.current?.focus()
         }}
+        tabIndex={-1}
         className={cn('cursor-text px-2', buttonClassName)}
       >
         <KeybindTip id={keybindId} className={tipClassName} />
