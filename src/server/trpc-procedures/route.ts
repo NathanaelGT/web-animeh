@@ -16,14 +16,15 @@ export const RouteRouter = router({
     .input(
       v.parser(
         v.object({
-          x: v.nullish(v.string()), // x cuma untuk cache busting
+          x: v.nullish(v.number()), // x cuma untuk cache busting
           cursor: v.nullish(v.number()),
           downloaded: v.boolean(),
+          perPage: v.number(),
         }),
       ),
     )
     .query(async ({ ctx, input }) => {
-      const perPage = 48
+      const { cursor, perPage } = input
 
       const ids = input.downloaded
         ? (await glob(videosDirPath, '*', { onlyFiles: false }))
@@ -33,18 +34,21 @@ export const RouteRouter = router({
 
               return Number(id)
             })
-            .filter(id => !isNaN(id))
+            .filter(isFinite)
             .sort((a, b) => b - a)
-            .slice(input.cursor ?? 0, input.cursor ? input.cursor + perPage : perPage)
         : null
 
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
         orderBy: (anime, { desc }) => [desc(anime.id)],
         where: ids
-          ? (anime, { inArray }) => inArray(anime.id, ids)
-          : input.cursor
-            ? (anime, { lt }) => lt(anime.id, input.cursor!)
+          ? (anime, { inArray }) => {
+              const cursorIndex = cursor ? ids.indexOf(cursor) + 1 : 0
+
+              return inArray(anime.id, ids.slice(cursorIndex, cursorIndex + perPage))
+            }
+          : cursor
+            ? (anime, { lt }) => lt(anime.id, cursor)
             : undefined,
         columns: {
           id: true,

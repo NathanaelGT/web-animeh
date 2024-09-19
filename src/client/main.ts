@@ -1,7 +1,13 @@
 import ReactDOM from 'react-dom/client'
 import { App } from '~/App'
 
-ReactDOM.createRoot(document.getElementById('root')!).render(App())
+const root = document.getElementById('root')!
+
+export const scrollbarWidth = root.offsetWidth - root.clientWidth
+
+root.removeAttribute('style')
+
+ReactDOM.createRoot(root).render(App())
 
 setTimeout(() => {
   const videoKeydownHandler = (event: KeyboardEvent) => {
