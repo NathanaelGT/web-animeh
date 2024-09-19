@@ -2,7 +2,12 @@ import { useRef, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
-import { clientProfileSettingsStore, headerChildStore, headerSubscribersStore, headerLatestYStore } from '~c/stores'
+import {
+  clientProfileSettingsStore,
+  headerChildStore,
+  headerSubscribersStore,
+  headerLatestYStore,
+} from '~c/stores'
 import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
 import { Button } from '@/ui/button'
@@ -166,6 +171,7 @@ export function Header() {
 
           <Link
             to="/"
+            preloadDelay={50}
             search={() => ({ terunduh: 'yoi' })}
             activeProps={{ className: 'font-bold' }}
           >
