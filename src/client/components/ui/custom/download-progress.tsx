@@ -16,7 +16,13 @@ export function DownloadProgress({ text }: Props) {
 
   return (
     <>
-      {progressPercentage && <Progress value={Number(progressPercentage)} />}
+      {progressPercentage && (
+        <Progress
+          value={Number(progressPercentage)}
+          // progressnya bakal keupdate setiap 50ms
+          indicatorClassName="duration-50"
+        />
+      )}
 
       <div className="grid gap-x-4 md:grid-cols-3">
         <ConsistentWidthText text={speed} suffix="/s" className="md:mx-0" />
