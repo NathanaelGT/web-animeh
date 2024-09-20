@@ -326,7 +326,8 @@ export const downloadEpisode = async (
 
               signal.removeEventListener('abort', signalAbortHandler)
 
-              if (signal.aborted || receivedLength >= totalLength) {
+              // TODO: cari cara ngedetect unduhannya selesai kalo totalLengthnya engga ada (NaN)
+              if (signal.aborted || (!isNaN(totalLength) && receivedLength >= totalLength)) {
                 break
               }
             }
