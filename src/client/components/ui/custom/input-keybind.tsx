@@ -18,7 +18,15 @@ export interface InputKeybindProps<TGroup extends keyof KeybindGroups>
 }
 
 export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function InputKeybind(
-  { keybindId, className, wrapperRef, wrapperClassName, buttonClassName, tipClassName, ...props },
+  {
+    keybindId,
+    className,
+    wrapperRef,
+    wrapperClassName,
+    buttonClassName,
+    tipClassName,
+    ...props
+  }: InputKeybindProps<keyof KeybindGroups>,
   forwardedRef,
 ) {
   const ref = React.useRef<HTMLInputElement>(null)
