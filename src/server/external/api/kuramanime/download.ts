@@ -197,10 +197,11 @@ export const downloadEpisode = async (
           async () => {
             downloadIsStarted = true
 
-            let receivedLength = tempFile.size
+            const initialLength = tempFile.size
+            let receivedLength = initialLength
 
             downloadProgress.emit(emitKey, {
-              text: (receivedLength ? 'Lanjut' : 'Mulai') + ' mengunduh',
+              text: (initialLength ? 'Lanjut' : 'Mulai') + ' mengunduh',
             })
 
             const prepared = await prepareResponsePromise
@@ -210,7 +211,7 @@ export const downloadEpisode = async (
             const [url, preparedResponse] = prepared
 
             const totalLength =
-              receivedLength + Number(preparedResponse.headers?.get('Content-Length'))
+              initialLength + Number(preparedResponse.headers?.get('Content-Length'))
             const formattedTotalLength = totalLength ? formatBytes(totalLength) : null
 
             formattedTotalLengthCb?.(formattedTotalLength)
@@ -220,7 +221,7 @@ export const downloadEpisode = async (
             const writer = tempFile.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
 
             // https://github.com/oven-sh/bun/issues/5821
-            if (receivedLength > 0) {
+            if (initialLength) {
               const existingData = await Bun.readableStreamToBytes(tempFile.stream())
 
               writer.write(existingData)
@@ -253,7 +254,7 @@ export const downloadEpisode = async (
               }
 
               let text = 'Mengunduh: ' + formatBytes(receivedLength)
-              const speed = '@' + formatBytes(receivedLength / elapsedTime) + '/s'
+              const speed = '@' + formatBytes((receivedLength - initialLength) / elapsedTime) + '/s'
 
               if (totalLength) {
                 text +=
@@ -273,6 +274,14 @@ export const downloadEpisode = async (
             const setSkipIntervalId = setInterval(() => {
               skip = false
             }, 50)
+
+            if (initialLength) {
+              // kalo ini downloadnya adalah lanjutan, pada saat diemit nanti speednya bakal tinggi banget diawal
+              // seharusnya engga gitu karena perhitungannya `receivedLength - initialLength`
+              // jadi untuk ngakalin biar speednya normal, diawal bakal diemit progress kosong
+              // kekurangannya untuk 1/20 detik diawal speednya bakal tulis "0 B/s"
+              emitProgress(new Uint8Array())
+            }
 
             let firstTime = true
             while (true) {
