@@ -31,11 +31,13 @@ export const AnimeRouter = router({
 
     return observable<typeof episodeList>(emit => {
       const handleUpdate = (data: { text: string; done?: boolean }, name: string) => {
-        if (!name.startsWith(animeData.title + ': Episode ')) {
+        if (!(name === animeData.title || name.startsWith(animeData.title + ': Episode '))) {
           return false
         }
 
-        const episodeNumber = parseInt(name.slice(name.indexOf('Episode ') + 'Episode '.length))
+        const episodeIndex = name.lastIndexOf('Episode ')
+        const episodeNumber =
+          episodeIndex > -1 ? parseInt(name.slice(episodeIndex + 'Episode '.length)) : 1
 
         episodeList[episodeNumber] = data.text
 

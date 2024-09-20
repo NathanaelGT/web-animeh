@@ -39,10 +39,10 @@ export const PosterRouter = router({
     }
 
     downloadProgressSnapshot.forEach((_, key) => {
-      const [title, episode] = key.split(': Episode ') as [string, string]
+      const [title, episode] = key.split(': Episode ') as [string, string | undefined]
 
       if (title === animeData.title) {
-        downloadCompleted.set(parseInt(episode), false)
+        downloadCompleted.set(episode ? parseInt(episode) : 1, false)
       }
     })
 
@@ -53,7 +53,7 @@ export const PosterRouter = router({
     .input(v.parser(v.object({ animeId: v.number(), episodeNumber: v.number() })))
     .mutation(async ({ ctx, input }) => {
       const animeData = await ctx.db.query.anime.findFirst({
-        columns: { title: true },
+        columns: { title: true, totalEpisodes: true },
         where: (anime, { eq }) => eq(anime.id, input.animeId),
         with: {
           metadata: {
@@ -70,7 +70,7 @@ export const PosterRouter = router({
       }
 
       return await downloadEpisode(
-        { id: input.animeId, title: animeData.title },
+        { id: input.animeId, title: animeData.title, totalEpisodes: animeData.totalEpisodes },
         animeData.metadata[0],
         input.episodeNumber,
       )
@@ -79,7 +79,7 @@ export const PosterRouter = router({
   downloadAll: procedure.input(v.parser(v.number())).mutation(async ({ ctx, input }) => {
     const [animeData, downloadedEpisodeList] = await Promise.all([
       ctx.db.query.anime.findFirst({
-        columns: { title: true },
+        columns: { title: true, totalEpisodes: true },
         where: (anime, { eq }) => eq(anime.id, input),
         with: {
           metadata: {
@@ -114,10 +114,10 @@ export const PosterRouter = router({
     }
 
     downloadProgressSnapshot.forEach((_, key) => {
-      const [title, episode] = key.split(': Episode ') as [string, string]
+      const [title, episode] = key.split(': Episode ') as [string, string | undefined]
 
       if (title === animeData.title) {
-        downloadedEpisodeList.push(parseInt(episode))
+        downloadedEpisodeList.push(episode ? parseInt(episode) : 1)
       }
     })
 
@@ -135,7 +135,7 @@ export const PosterRouter = router({
     ;(async () => {
       for (const episode of episodes) {
         await downloadEpisode(
-          { id: input, title: animeData.title },
+          { id: input, title: animeData.title, totalEpisodes: animeData.totalEpisodes },
           animeData.metadata[0]!,
           episode.number,
         )

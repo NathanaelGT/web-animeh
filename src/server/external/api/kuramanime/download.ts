@@ -46,7 +46,7 @@ const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
   env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
 
 export const downloadEpisode = async (
-  animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>,
+  animeData: Pick<typeof anime.$inferSelect, 'id' | 'title' | 'totalEpisodes'>,
   metadata: Pick<typeof animeMetadata.$inferSelect, 'providerId' | 'providerSlug'>,
   episodeNumber: number,
   onFinish?: () => void,
@@ -69,6 +69,9 @@ export const downloadEpisode = async (
     }
   }
 
+  const emitKey =
+    animeData.title + (animeData.totalEpisodes === 1 ? '' : `: Episode ${episodeNumber}`)
+
   const abortController = new AbortController()
   const { signal } = abortController
 
@@ -79,12 +82,10 @@ export const downloadEpisode = async (
     downloadProgress.emit(emitKey, { text: 'Unduhan dibatalkan', done: true })
   })
 
+  downloadProgressController.set(emitKey, abortController)
+
   const episodeUrl = new URL('https://kuramanime.' + env.KURAMANIME_TLD)
   episodeUrl.pathname = `/anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
-
-  const emitKey = `${animeData.title}: Episode ${episodeNumber}`
-
-  downloadProgressController.set(emitKey, abortController)
 
   const setCredentials = async () => {
     downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
@@ -417,7 +418,7 @@ export const downloadEpisode = async (
                 if (sizeIndex > -1) {
                   const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
                   // bukan dikalikan 100 untuk ngasih ilusi loadingnya lebih mulus saat nampilin progress palsu
-                  progress = ((sizeKilo * 1024) / videoSize) * 80
+                  progress = ((sizeKilo * 1024) / videoSize) * (intervalId ? 100 : 80)
 
                   emitProgress()
 
@@ -425,7 +426,8 @@ export const downloadEpisode = async (
                   // jadi biar progressnya ga stuck, dibuat progress palsu
                   if (!intervalId && progress > 72.8) {
                     intervalId = setInterval(() => {
-                      progress += (100 - progress) / 2
+                      // 1.7 angka magic yang kira kira pas
+                      progress += (100 - progress) / 1.7
 
                       emitProgress()
                     }, 500) // ffmpeg nampilin progressnya tiap 500ms
