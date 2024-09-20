@@ -8,6 +8,7 @@
   "plugins": ["prettier-plugin-tailwindcss"],
   "tailwindAttributes": [
     "data-subs-header",
+    "indicatorClassName",
     "childrenClassName",
     "wrapperClassName",
     "tipClassName"

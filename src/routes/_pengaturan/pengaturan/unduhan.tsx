@@ -4,6 +4,7 @@ import { DownloadIcon, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-re
 import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
 import { DownloadProgress } from '@/ui/custom/download-progress'
+import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
 import { CancelButton } from '@/page/pengaturan/unduhan/CancelButton'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan')({
@@ -31,11 +32,14 @@ function PengaturanUnduhan() {
             data={downloadList}
             onEmpty={() => 'Sedang tidak mengunduh apapun'}
             cb={([name, text]) => {
+              const isDownloading = text.startsWith('Mengunduh: ')
+              const isOptimizing = !isDownloading && text.startsWith('Mengoptimalisasi video')
+
               return (
                 <div key={name} className="grid gap-3">
                   <div className="flex gap-4">
                     <div className="my-auto w-6">
-                      {text.startsWith('Mengunduh: ') ? (
+                      {isDownloading ? (
                         <DownloadIcon className="w-6" />
                       ) : text.startsWith('Menunggu') ? (
                         <Hourglass />
@@ -48,11 +52,13 @@ function PengaturanUnduhan() {
 
                     <p className="my-auto flex-1">{name}</p>
 
-                    {text !== 'Mengoptimalisasi video' && <CancelButton name={name} />}
+                    {!isOptimizing && <CancelButton name={name} />}
                   </div>
 
-                  {text.startsWith('Mengunduh: ') ? (
+                  {isDownloading ? (
                     <DownloadProgress text={text} />
+                  ) : isOptimizing ? (
+                    <OptimalizationProgress text={text} />
                   ) : (
                     <p>{text}</p>
                   )}
