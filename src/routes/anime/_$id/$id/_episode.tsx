@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from 'react'
-import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { useState, useMemo, useRef, useEffect } from 'react'
+import { createFileRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
@@ -16,6 +16,8 @@ import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
 import { SearchInput } from '@/page/anime/episodeLayout/SearchInput'
 import { EpisodeSelector } from '@/page/anime/episodeLayout/EpisodeSelector'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
+import { createKeybindHandler } from '~/client/utils/eventHandler'
+import { combineFunction } from '~/shared/utils/function'
 
 let latestAnimeId = ''
 
@@ -37,6 +39,7 @@ function EpisodeLayout() {
 
   const animeData = useStore(animeDataStore)
   const params = Route.useParams()
+  const router = useRouter()
   const [displayMode, setDisplayMode] = useState(episodeFilter.displayMode)
   const [sortLatest, setSortLatest] = useState(episodeFilter.sortLatest)
   const [hideFiller, setHideFiller] = useState(episodeFilter.hideFiller)
@@ -197,6 +200,27 @@ function EpisodeLayout() {
       })
     })
   }
+
+  useEffect(() => {
+    if (episodeList.length === 0) {
+      return
+    }
+
+    const createGotoHandler = (episode: EpisodeList[number]) => () => {
+      search(episode.number)
+
+      router.navigate({
+        to: '/anime/$id/episode/$number',
+        params: { id: params.id, number: episode.number.toString() },
+      })
+    }
+
+    return combineFunction(
+      createKeybindHandler('watchPage', 'first', createGotoHandler(episodeList[0]!)),
+
+      createKeybindHandler('watchPage', 'last', createGotoHandler(episodeList.at(-1)!)),
+    )
+  }, [episodeList, params.id])
 
   api.anime.episodes.useSubscription(Number(params.id), {
     onData(data) {
