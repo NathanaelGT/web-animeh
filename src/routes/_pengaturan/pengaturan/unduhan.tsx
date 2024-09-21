@@ -5,7 +5,7 @@ import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
 import { DownloadProgress } from '@/ui/custom/download-progress'
 import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
-import { CancelButton } from '@/page/pengaturan/unduhan/CancelButton'
+import { DownloadDropdown } from '@/page/pengaturan/unduhan/DownloadDropdown'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan')({
   component: PengaturanUnduhan,
@@ -52,7 +52,7 @@ function PengaturanUnduhan() {
 
                     <p className="my-auto flex-1">{name}</p>
 
-                    {!isOptimizing && <CancelButton name={name} />}
+                    {!isOptimizing && <DownloadDropdown downloadName={name} />}
                   </div>
 
                   {isDownloading ? (

@@ -75,11 +75,16 @@ export const downloadEpisode = async (
   const abortController = new AbortController()
   const { signal } = abortController
 
-  signal.addEventListener('abort', () => {
-    fs.rm(tempFilePath, { force: true })
-    fs.rm(filePath, { force: true })
+  signal.addEventListener('abort', event => {
+    if (event.target instanceof AbortSignal && event.target.reason === 'pause') {
+      downloadProgress.emit(emitKey, { text: 'Unduhan dijeda', done: true })
+    } else {
+      // defaultnya cancel
+      fs.rm(tempFilePath, { force: true })
+      fs.rm(filePath, { force: true })
 
-    downloadProgress.emit(emitKey, { text: 'Unduhan dibatalkan', done: true })
+      downloadProgress.emit(emitKey, { text: 'Unduhan dibatalkan', done: true })
+    }
   })
 
   downloadProgressController.set(emitKey, abortController)
@@ -145,8 +150,9 @@ export const downloadEpisode = async (
     downloadProgress.emit(emitKey, { text: initialEmitText })
 
     const handleError = (error: any) => {
-      // engga tau undefined dari yang mana, tapi penyebabnya dari signal
-      if (!(error === undefined || error instanceof DOMException)) {
+      // kalo "error"nya dari `AbortController.abort`, variabel error nilainya sesuai parameternya
+      // untuk sekarang parameternya antara undefined (default) atau string
+      if (!(error === undefined || typeof error === 'string' || error instanceof DOMException)) {
         downloadProgress.emit(emitKey, { text: 'Terjadi kesalahan', done: true })
 
         throw error

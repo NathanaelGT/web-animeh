@@ -45,15 +45,17 @@ export const DownloadRouter = router({
     })
   }),
 
-  cancel: procedure.input(v.parser(v.string())).mutation(async ({ input }) => {
-    const controller = downloadProgressController.get(input)
+  stop: procedure
+    .input(v.parser(v.object({ name: v.string(), type: v.picklist(['cancel', 'pause']) })))
+    .mutation(async ({ input }) => {
+      const controller = downloadProgressController.get(input.name)
 
-    if (controller) {
-      controller.abort()
+      if (controller) {
+        controller.abort(input.type)
 
-      return true
-    } else {
-      return false
-    }
-  }),
+        return true
+      } else {
+        return false
+      }
+    }),
 })
