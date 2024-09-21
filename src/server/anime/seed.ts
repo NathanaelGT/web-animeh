@@ -1,16 +1,7 @@
 import path from 'path'
 import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
-import {
-  anime,
-  animeMetadata,
-  animeToGenres,
-  genres,
-  animeToStudios,
-  studios,
-  animeSynonyms,
-  studioSynonyms,
-} from '~s/db/schema'
+import { anime, animeMetadata, genres, studios, studioSynonyms } from '~s/db/schema'
 import { basePath, glob } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
 import { fetchAll } from '~s/external/api/kuramanime'
@@ -150,7 +141,6 @@ export const populate = async () => {
         id,
         anilistId: parseNumber(slicedAnilistUrl),
         title: animeData.title,
-        synopsis: animeData.synopsis,
         totalEpisodes: animeData.total_episodes,
         airedFrom: parseKuramanimeDate(animeData.aired_from),
         airedTo: animeData.aired_to ? parseKuramanimeDate(animeData.aired_to) : null,
@@ -181,76 +171,6 @@ export const populate = async () => {
     for (const animeData of insertedAnimeList) {
       jikanQueue.add(async () => {
         const { data } = await jikanClient.anime.getAnimeFullById(animeData.id)
-
-        // ada beberapa sinonim yang duplikat, judulnya sama persis, cuma beda "type"
-        const synonymList: (typeof animeSynonyms.$inferInsert)[] = []
-        const existingSynonyms = new Set<string>([data.titles[0]!.title])
-        for (let i = 1; i < data.titles.length; i++) {
-          const { title, type } = data.titles[i]!
-          if (existingSynonyms.has(title)) {
-            continue
-          }
-
-          existingSynonyms.add(title)
-          synonymList.push({
-            animeId: animeData.id,
-            synonym: title,
-            type,
-          })
-        }
-
-        if (synonymList.length) {
-          db.insert(animeSynonyms).values(synonymList).execute()
-        }
-
-        const genreList: (typeof animeToGenres.$inferInsert)[] = [
-          data.genres,
-          data.explicit_genres,
-          data.themes,
-          data.demographics,
-        ].flatMap(genreList => {
-          return genreList.map(genre => ({
-            animeId: animeData.id,
-            genreId: genre.mal_id,
-          }))
-        })
-
-        if (genreList.length) {
-          db.insert(animeToGenres).values(genreList).execute()
-        }
-
-        const existingCombination = new Set<string>()
-        const studioList: (typeof animeToStudios.$inferInsert)[] = (
-          [
-            [data.studios, 'studio'],
-            [data.producers, 'producer'],
-            [data.licensors, 'licensor'],
-          ] as const
-        ).flatMap(([studioList, type]) => {
-          const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
-
-          for (const studio of studioList) {
-            // entah kenapa ada beberapa yang duplikat
-            const key = animeData.id + type + studio.mal_id
-            if (existingCombination.has(key)) {
-              continue
-            }
-
-            existingCombination.add(key)
-
-            filteredStudioList.push({
-              animeId: animeData.id,
-              studioId: studio.mal_id,
-              type,
-            })
-          }
-
-          return filteredStudioList
-        })
-
-        if (studioList.length) {
-          db.insert(animeToStudios).values(studioList).execute()
-        }
 
         update(animeData.id, data, {
           updateImage:

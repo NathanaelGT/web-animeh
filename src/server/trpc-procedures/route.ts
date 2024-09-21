@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
+import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
 import { glob, videosDirPath } from '~s/utils/path'
@@ -10,6 +11,7 @@ import type {
   AnyRouter,
   CreateRouterOptions,
 } from '@trpc/server/unstable-core-do-not-import'
+import { promiseMap } from '../map'
 
 export const RouteRouter = router({
   '/': procedure
@@ -68,76 +70,112 @@ export const RouteRouter = router({
       return animeList
     }),
 
-  '/anime/_$id': procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
-    const animeData = await ctx.db.query.anime.findFirst({
-      where: (anime, { eq }) => eq(anime.id, input),
-      columns: {
-        title: true,
-        japaneseTitle: true,
-        englishTitle: true,
-        synopsis: true,
-        totalEpisodes: true,
-        airedFrom: true,
-        airedTo: true,
-        score: true,
-        rating: true,
-        duration: true,
-        type: true,
-        imageExtension: true,
-        episodeUpdatedAt: true,
-      },
-      with: {
-        synonyms: {
-          columns: {
-            synonym: true,
-          },
+  '/anime/_$id': procedure
+    .input(v.parser(v.object({ id: v.number(), ref: v.optional(v.number()) })))
+    .query(async ({ ctx, input }) => {
+      const mapKey = (ref: number) => `/anime/_$id:${ref}`
+
+      if (input.ref) {
+        const key = mapKey(input.ref)
+        const refPromise = promiseMap.get(key)
+
+        if (refPromise) {
+          promiseMap.delete(key)
+
+          await refPromise
+        }
+      }
+
+      const animeData = await ctx.db.query.anime.findFirst({
+        where: (anime, { eq }) => eq(anime.id, input.id),
+        columns: {
+          title: true,
+          japaneseTitle: true,
+          englishTitle: true,
+          synopsis: true,
+          totalEpisodes: true,
+          airedFrom: true,
+          airedTo: true,
+          score: true,
+          rating: true,
+          duration: true,
+          type: true,
+          imageExtension: true,
+          episodeUpdatedAt: true,
         },
-        animeToGenres: {
-          columns: {},
-          with: {
-            genre: {
-              columns: {
-                name: true,
+        with: {
+          synonyms: {
+            columns: {
+              synonym: true,
+            },
+          },
+          animeToGenres: {
+            columns: {},
+            with: {
+              genre: {
+                columns: {
+                  name: true,
+                },
+              },
+            },
+          },
+          animeToStudios: {
+            columns: {
+              type: true,
+            },
+            with: {
+              studio: {
+                columns: {
+                  name: true,
+                },
               },
             },
           },
         },
-        animeToStudios: {
-          columns: {
-            type: true,
-          },
-          with: {
-            studio: {
-              columns: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    })
+      })
 
-    if (!animeData) {
-      throw new Error('404')
-    }
+      if (!animeData) {
+        throw new Error('404')
+      }
 
-    ctx.loadAnimePoster({
-      id: input,
-      imageExtension: animeData.imageExtension,
-    })
+      if (!input.ref) {
+        ctx.loadAnimePoster({
+          id: input.id,
+          imageExtension: animeData.imageExtension,
+        })
 
-    updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt })
+        updateEpisode({ id: input.id, episodeUpdatedAt: animeData.episodeUpdatedAt })
+      }
 
-    return {
-      ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
-      synonyms: animeData.synonyms.map(({ synonym }) => synonym),
-      genres: animeData.animeToGenres.map(({ genre }) => genre.name),
-      studios: animeData.animeToStudios.map(({ studio, type }) => ({
-        name: studio?.name || null,
-        type,
-      })),
-    }
-  }),
+      let shouldUpdateData = animeData.synopsis === null
+
+      const result = {
+        ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
+        synonyms: animeData.synonyms.map(({ synonym }) => synonym),
+        genres: animeData.animeToGenres.map(({ genre }) => genre.name),
+        studios: animeData.animeToStudios.map(({ studio, type }) => {
+          let name: string | null
+          if (studio) {
+            name = studio.name
+          } else {
+            name = null
+            shouldUpdateData = true
+          }
+
+          return { name, type }
+        }),
+      }
+
+      if (shouldUpdateData) {
+        const nextRef = input.id + Math.random()
+
+        promiseMap.set(mapKey(nextRef), fetchAndUpdate(input))
+
+        return [result, nextRef] as const
+      }
+
+      return [result] as const
+    }),
 
   '/anime/_$id/$id/_episode': procedure
     .input(v.parser(v.number()))

@@ -2,6 +2,7 @@ import path from 'path'
 import ky from 'ky'
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
+import { animeToGenres, animeToStudios, animeSynonyms } from '~s/db/schema'
 import { basePath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
@@ -47,7 +48,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime) => {
 type ExtraDataWhenUpdatingImage = { imageUrl: string; imageExtension: string }
 
 export const update = async <TConfig extends UpdateConfig>(
-  localAnimeId: number,
+  animeId: number,
   jikanAnimeData: JikanAnime,
   config: TConfig = {} as TConfig,
 ): Promise<
@@ -76,12 +77,82 @@ export const update = async <TConfig extends UpdateConfig>(
 
     promises.push(
       (async () => {
-        await Bun.write(imageDir + localAnimeId + '.' + ext, await request)
+        await Bun.write(imageDir + animeId + '.' + ext, await request)
       })(),
     )
   }
 
-  promises.push(db.update(anime).set(updateData).where(eq(anime.id, localAnimeId)).execute())
+  // ada beberapa sinonim yang duplikat, judulnya sama persis, cuma beda "type"
+  const synonymList: (typeof animeSynonyms.$inferInsert)[] = []
+  const existingSynonyms = new Set<string>([jikanAnimeData.titles[0]!.title])
+  for (let i = 1; i < jikanAnimeData.titles.length; i++) {
+    const { title, type } = jikanAnimeData.titles[i]!
+    if (existingSynonyms.has(title)) {
+      continue
+    }
+
+    existingSynonyms.add(title)
+    synonymList.push({
+      animeId: animeId,
+      synonym: title,
+      type,
+    })
+  }
+
+  if (synonymList.length) {
+    promises.push(db.insert(animeSynonyms).values(synonymList).onConflictDoNothing().execute())
+  }
+
+  const genreList: (typeof animeToGenres.$inferInsert)[] = [
+    jikanAnimeData.genres,
+    jikanAnimeData.explicit_genres,
+    jikanAnimeData.themes,
+    jikanAnimeData.demographics,
+  ].flatMap(genreList => {
+    return genreList.map(genre => ({
+      animeId: animeId,
+      genreId: genre.mal_id,
+    }))
+  })
+
+  if (genreList.length) {
+    promises.push(db.insert(animeToGenres).values(genreList).onConflictDoNothing().execute())
+  }
+
+  const existingCombination = new Set<string>()
+  const studioList: (typeof animeToStudios.$inferInsert)[] = (
+    [
+      [jikanAnimeData.studios, 'studio'],
+      [jikanAnimeData.producers, 'producer'],
+      [jikanAnimeData.licensors, 'licensor'],
+    ] as const
+  ).flatMap(([studioList, type]) => {
+    const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
+
+    for (const studio of studioList) {
+      // entah kenapa ada beberapa yang duplikat
+      const key = animeId + type + studio.mal_id
+      if (existingCombination.has(key)) {
+        continue
+      }
+
+      existingCombination.add(key)
+
+      filteredStudioList.push({
+        animeId: animeId,
+        studioId: studio.mal_id,
+        type,
+      })
+    }
+
+    return filteredStudioList
+  })
+
+  if (studioList.length) {
+    promises.push(db.insert(animeToStudios).values(studioList).onConflictDoNothing().execute())
+  }
+
+  promises.push(db.update(anime).set(updateData).where(eq(anime.id, animeId)).execute())
 
   await Promise.all(promises)
 

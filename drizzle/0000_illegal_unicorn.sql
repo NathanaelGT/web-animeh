@@ -29,10 +29,10 @@ CREATE TABLE `anime_metadata` (
 );
 --> statement-breakpoint
 CREATE TABLE `anime_synonyms` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`anime_id` integer NOT NULL,
 	`synonym` text NOT NULL,
 	`type` text NOT NULL,
+	PRIMARY KEY(`anime_id`, `synonym`, `type`),
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint

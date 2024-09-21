@@ -200,13 +200,6 @@
     "anime_synonyms": {
       "name": "anime_synonyms",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
         "anime_id": {
           "name": "anime_id",
           "type": "integer",
@@ -245,7 +238,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "anime_synonyms_anime_id_synonym_type_pk": {
+          "columns": [
+            "anime_id",
+            "synonym",
+            "type"
+          ],
+          "name": "anime_synonyms_anime_id_synonym_type_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "anime_to_anime_genres": {

@@ -60,14 +60,19 @@ export const anime = sqliteTable('anime', {
   episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
 })
 
-export const animeSynonyms = sqliteTable('anime_synonyms', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  animeId: integer('anime_id')
-    .notNull()
-    .references(() => anime.id, { onDelete: 'cascade' }),
-  synonym: text('synonym').notNull(),
-  type: text('type').notNull(),
-})
+export const animeSynonyms = sqliteTable(
+  'anime_synonyms',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    synonym: text('synonym').notNull(),
+    type: text('type').notNull(),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.animeId, t.synonym, t.type] }),
+  }),
+)
 
 export const animeMetadata = sqliteTable('anime_metadata', {
   id: integer('id').primaryKey({ autoIncrement: true }),

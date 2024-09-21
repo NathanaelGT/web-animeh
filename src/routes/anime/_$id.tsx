@@ -1,16 +1,17 @@
-import { useEffect } from 'react'
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { useMemo, useEffect } from 'react'
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
 import { Image } from '@/Image'
 import { animeDataStore, headerChildStore } from '~c/stores'
 
 let latestAnimeId = ''
+let latestRef: number | undefined
 
 export const Route = createFileRoute('/anime/_$id')({
   component: AnimeIdLayout,
   async loader({ params }: { params: { id: string } }) {
     try {
-      return await fetchRouteData('/anime/_$id', Number(params.id))
+      return await fetchRouteData('/anime/_$id', { id: Number(params.id), ref: latestRef })
     } finally {
       latestAnimeId = params.id
     }
@@ -19,8 +20,17 @@ export const Route = createFileRoute('/anime/_$id')({
 })
 
 function AnimeIdLayout() {
-  const animeData = Route.useLoaderData()
+  const [animeData, ref] = Route.useLoaderData()
   const params = Route.useParams()
+  const router = useRouter()
+
+  useMemo(() => {
+    latestRef = ref
+
+    if (ref) {
+      router.invalidate()
+    }
+  }, [ref])
 
   useEffect(() => {
     headerChildStore.setState(() => (

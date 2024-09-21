@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
@@ -35,26 +35,40 @@ function AnimeId() {
     })
   }, [params.id])
 
-  if (!animeData) {
-    return <main className="flex flex-1 items-center justify-center">Anime tidak ditemukan</main>
-  }
-
   const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 
-  const studios: string[] = []
-  const producers: string[] = []
-  const licensors: string[] = []
+  const [studios, producers, licensors] = useMemo(() => {
+    const studios: (string | JSX.Element)[] = []
+    const producers: (string | JSX.Element)[] = []
+    const licensors: (string | JSX.Element)[] = []
 
-  for (const studio of animeData.studios) {
-    const name = studio.name ?? `<span class="text-slate-400 ${SHADOW}">Loading</span>`
+    let loadingPlaceholderKey = 0
+    for (const studio of animeData.studios) {
+      const name = studio.name ?? (
+        <span key={++loadingPlaceholderKey} className={`text-slate-400 ${SHADOW}`}>
+          Loading
+        </span>
+      )
 
-    if (studio.type === 'studio') {
-      studios.push(name)
-    } else if (studio.type === 'producer') {
-      producers.push(name)
-    } else {
-      licensors.push(name)
+      if (studio.type === 'studio') {
+        studios.push(name, ', ')
+      } else if (studio.type === 'producer') {
+        producers.push(name, ', ')
+      } else {
+        licensors.push(name, ', ')
+      }
     }
+
+    // untuk ngehilangin koma terakhir
+    studios.pop()
+    producers.pop()
+    licensors.pop()
+
+    return [studios, producers, licensors]
+  }, [animeData.studios])
+
+  if (!animeData) {
+    return <main className="flex flex-1 items-center justify-center">Anime tidak ditemukan</main>
   }
 
   const dateFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -123,11 +137,13 @@ function AnimeId() {
           </div>
         </div>
 
-        {animeData.synopsis && (
+        {animeData.synopsis ? (
           <p
             dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
             className="whitespace-pre text-wrap text-justify"
           />
+        ) : (
+          <p className="text-muted-foreground">Loading</p>
         )}
       </div>
 
@@ -169,20 +185,17 @@ function AnimeId() {
         )}
         {studios.length > 0 && (
           <div>
-            <span className="font-bold">Studio</span>:{' '}
-            <span dangerouslySetInnerHTML={{ __html: studios.join(', ') }} />
+            <span className="font-bold">Studio</span>: <span>{studios}</span>
           </div>
         )}
         {producers.length > 0 && (
           <div>
-            <span className="font-bold">Produser</span>:{' '}
-            <span dangerouslySetInnerHTML={{ __html: producers.join(', ') }} />
+            <span className="font-bold">Produser</span>: <span>{producers}</span>
           </div>
         )}
         {licensors.length > 0 && (
           <div>
-            <span className="font-bold">Lisensor</span>:{' '}
-            <span dangerouslySetInnerHTML={{ __html: licensors.join(', ') }} />
+            <span className="font-bold">Lisensor</span>: <span>{licensors}</span>
           </div>
         )}
       </div>

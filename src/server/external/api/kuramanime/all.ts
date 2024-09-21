@@ -32,7 +32,7 @@ const animeSchema = v.object({
   id: v.number(),
   title: v.string(),
   slug: v.string(),
-  synopsis: v.nullable(v.string()),
+  // synopsis: v.nullable(v.string()),
   // synopsis_short: v.nullable(v.string()),
   total_episodes: v.nullable(v.number()),
   aired_from: v.string(),
