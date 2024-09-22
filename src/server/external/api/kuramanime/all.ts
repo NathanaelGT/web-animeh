@@ -111,7 +111,7 @@ export const fetchAll = (callback: (animeList: Anime[]) => void) => {
           `order_by=latest&name=JP&page=${page}&need_json=true`,
       )
 
-      const parsedData = v.parse(listResultSchema, response.json())
+      const parsedData = v.parse(listResultSchema, await response.json())
       maxPage = parsedData.animes.last_page
 
       callback(parsedData.animes.data)
