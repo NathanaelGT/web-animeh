@@ -38,10 +38,18 @@ const basicUpdateData = (jikanAnimeData: JikanAnime) => {
     synopsis: jikanAnimeData.synopsis ?? '', // ada anime yang gapunya sinopsis
     totalEpisodes: jikanAnimeData.episodes,
     airedFrom: new Date(jikanAnimeData.aired.from),
-    airedTo: jikanAnimeData.aired.to ? new Date(jikanAnimeData.aired.to) : null,
+    airedTo: jikanAnimeData.aired.to
+      ? new Date(jikanAnimeData.aired.to)
+      : jikanAnimeData.episodes === 1
+        ? new Date(jikanAnimeData.aired.from)
+        : null,
     score: jikanAnimeData.score,
+    scoredBy: jikanAnimeData.scored_by,
     rating: jikanAnimeData.rating.slice(0, jikanAnimeData.rating.indexOf(' ')),
     duration: parseMalDuration(jikanAnimeData.duration),
+    rank: jikanAnimeData.rank,
+    popularity: jikanAnimeData.popularity,
+    members: jikanAnimeData.members,
   } satisfies SQLiteUpdateSetSource<typeof anime>
 }
 

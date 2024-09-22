@@ -77,6 +77,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "scored_by": {
+          "name": "scored_by",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "rating": {
           "name": "rating",
           "type": "text",
@@ -86,6 +93,27 @@
         },
         "duration": {
           "name": "duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rank": {
+          "name": "rank",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "popularity": {
+          "name": "popularity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "members": {
+          "name": "members",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
