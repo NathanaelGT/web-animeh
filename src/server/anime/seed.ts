@@ -10,7 +10,7 @@ import { fetchAll } from '~s/external/api/kuramanime'
 import { limitRequest } from '~s/external/limit'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { extension } from '~/shared/utils/file'
-import { update } from './update'
+import { fetchAndUpdate } from './update'
 import { isProduction } from '~s/env' with { type: 'macro' }
 
 const globalForSeed = globalThis as unknown as {
@@ -26,18 +26,41 @@ export const seed = () => {
     globalForSeed.isRan = true
   }
 
-  db.query.anime.findFirst({ columns: { id: true } }).then(firstAnime => {
-    if (firstAnime === undefined) {
-      populate()
+  db.query.anime.findFirst({ columns: { id: true } }).then(async firstAnime => {
+    const imageDirPath = path.join(basePath, 'images/')
+
+    if (firstAnime) {
+      while (true) {
+        const animeList = await db.query.anime.findMany({
+          where: (anime, { isNull }) => isNull(anime.synopsis),
+          columns: { id: true, imageExtension: true },
+          limit: 10,
+        })
+
+        if (animeList.length === 0) {
+          break
+        }
+
+        for (const animeData of animeList) {
+          await fetchAndUpdate(animeData, {
+            updateImage:
+              animeData.imageExtension !== 'webp' ||
+              (await Bun.file(
+                imageDirPath + animeData.id + '.' + animeData.imageExtension,
+              ).exists()),
+            priority: 0,
+          })
+        }
+      }
+    } else {
+      populate(imageDirPath)
     }
   })
 
   metadata.get('lastStudioPage').then(fetchStudio)
 }
 
-export const populate = async () => {
-  const imageDirPath = path.join(basePath, 'images/')
-
+export const populate = async (imageDirPath: string) => {
   const imageListPromise = glob(imageDirPath, '*')
 
   let populateGenrePromise: Promise<void> | null = jikanQueue.add(async () => {
@@ -187,21 +210,17 @@ export const populate = async () => {
     const hasImages = new Set<number>()
 
     for (const animeData of insertedAnimeList) {
-      jikanQueue.add(async () => {
-        const { data } = await jikanClient.anime.getAnimeFullById(animeData.id)
-
-        update(animeData.id, data, {
-          updateImage:
-            !hasImages.has(animeData.id) || extension(animeData.imageUrl ?? '') !== 'webp',
-        })
-      })
-
       imageResponsePromiseMap.get(animeData.imageUrl!)?.then(([ext, response]) => {
         if (response.ok || response.status === 304) {
           Bun.write(imageDirPath + animeData.id + '.' + ext, response)
 
           hasImages.add(animeData.id)
         }
+      })
+
+      fetchAndUpdate(animeData, {
+        updateImage: !hasImages.has(animeData.id) || extension(animeData.imageUrl ?? '') !== 'webp',
+        priority: 0,
       })
     }
   })

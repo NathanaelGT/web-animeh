@@ -142,6 +142,8 @@ function AnimeId() {
             dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
             className="whitespace-pre text-wrap text-justify"
           />
+        ) : animeData.synopsis === '' ? (
+          <p className="text-muted-foreground">Tidak ada sinopsis</p>
         ) : (
           <p className="text-muted-foreground">Loading</p>
         )}

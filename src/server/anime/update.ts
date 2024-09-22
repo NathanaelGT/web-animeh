@@ -35,7 +35,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime) => {
     updatedAt: new Date(),
     japaneseTitle: jikanAnimeData.title_japanese,
     englishTitle: jikanAnimeData.title_english,
-    synopsis: jikanAnimeData.synopsis,
+    synopsis: jikanAnimeData.synopsis ?? '', // ada anime yang gapunya sinopsis
     totalEpisodes: jikanAnimeData.episodes,
     airedFrom: new Date(jikanAnimeData.aired.from),
     airedTo: jikanAnimeData.aired.to ? new Date(jikanAnimeData.aired.to) : null,
@@ -159,13 +159,15 @@ export const update = async <TConfig extends UpdateConfig>(
   return updateData
 }
 
-export const fetchAndUpdate = async <TConfig extends UpdateConfig>(
+type FetchAndUpdateConfig = UpdateConfig & { priority?: number }
+
+export const fetchAndUpdate = async <TConfig extends FetchAndUpdateConfig>(
   localAnime: Pick<Anime, 'id'>,
   config: TConfig = {} as TConfig,
 ) => {
   const { data } = await jikanQueue.add(() => jikanClient.anime.getAnimeFullById(localAnime.id), {
     throwOnTimeout: true,
-    priority: 2,
+    priority: config.priority ?? 2,
   })
 
   return await update(localAnime.id, data, config)
