@@ -69,6 +69,11 @@ CREATE TABLE `genres` (
 	`name` text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `metadata` (
+	`key` text PRIMARY KEY NOT NULL,
+	`value` text NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE `profiles` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,

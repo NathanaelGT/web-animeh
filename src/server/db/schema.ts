@@ -153,6 +153,11 @@ export const episodes = sqliteTable(
   }),
 )
 
+export const metadata = sqliteTable('metadata', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+})
+
 export const animeRelations = relations(anime, ({ many }) => ({
   synonyms: many(animeSynonyms),
   metadata: many(animeMetadata),

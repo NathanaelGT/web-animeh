@@ -2,19 +2,37 @@ import path from 'path'
 import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
 import { anime, animeMetadata, genres, studios, studioSynonyms } from '~s/db/schema'
+import { metadata } from '~s/metadata'
 import { basePath, glob } from '~s/utils/path'
+import { buildConflictUpdateColumns } from '~s/utils/db'
 import { parseNumber } from '~/shared/utils/number'
 import { fetchAll } from '~s/external/api/kuramanime'
 import { limitRequest } from '~s/external/limit'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { extension } from '~/shared/utils/file'
 import { update } from './update'
+import { isProduction } from '~s/env' with { type: 'macro' }
 
-export const seed = async () => {
-  const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
-  if (firstAnime === undefined) {
-    populate()
+const globalForSeed = globalThis as unknown as {
+  isRan?: boolean
+}
+
+export const seed = () => {
+  if (!isProduction()) {
+    if (globalForSeed.isRan) {
+      return
+    }
+
+    globalForSeed.isRan = true
   }
+
+  db.query.anime.findFirst({ columns: { id: true } }).then(firstAnime => {
+    if (firstAnime === undefined) {
+      populate()
+    }
+  })
+
+  metadata.get('lastStudioPage').then(fetchStudio)
 }
 
 export const populate = async () => {
@@ -187,75 +205,83 @@ export const populate = async () => {
       })
     }
   })
+}
 
-  const registeredStudios = new Set<number>()
+async function fetchStudio(startPage: number) {
+  const producers = await jikanQueue.add(
+    () => {
+      return producerClient.getProducers({
+        page: startPage,
+      })
+    },
+    { priority: 1, throwOnTimeout: true },
+  )
 
-  const fetchStudio = (page: number) => {
-    jikanQueue.add(
-      async () => {
-        const producers = await producerClient.getProducers({
-          page,
-          order_by: 'count',
-          sort: 'desc',
-        })
+  const start = performance.now()
 
-        if (producers.pagination.has_next_page) {
-          // https://jikan.docs.apiary.io/#introduction/information/rate-limiting
-          setTimeout(() => {
-            fetchStudio(page + 1)
-          }, 4000)
-        }
+  const promises: Promise<unknown>[] = []
 
-        type Synonym = (typeof producers.data)[number]['titles'][number]
-        const synonymsMap = new Map<number, Synonym[]>()
+  type Synonym = (typeof producers.data)[number]['titles'][number]
+  const synonymsMap = new Map<number, Synonym[]>()
 
-        const studioList: (typeof studios.$inferInsert)[] = []
-        for (const producer of producers.data) {
-          // ada data duplikat dari jikan
-          if (registeredStudios.has(producer.mal_id)) {
-            continue
-          }
+  const studioList: (typeof studios.$inferInsert)[] = []
+  for (const producer of producers.data) {
+    const synonyms = producer.titles.slice(1)
+    if (synonyms.length) {
+      synonymsMap.set(producer.mal_id, synonyms)
+    }
 
-          registeredStudios.add(producer.mal_id)
+    const imageUrl = producer.images.jpg.image_url
 
-          const synonyms = producer.titles.slice(1)
-          if (synonyms.length) {
-            synonymsMap.set(producer.mal_id, synonyms)
-          }
-
-          const imageUrl = producer.images.jpg.image_url
-
-          studioList.push({
-            id: producer.mal_id,
-            name: producer.titles[0]!.title,
-            imageUrl:
-              imageUrl === 'https://cdn.myanimelist.net/images/company_no_picture.png'
-                ? null
-                : imageUrl,
-            establishedAt: producer.established ? new Date(producer.established) : null,
-          })
-        }
-
-        db.insert(studios).values(studioList).execute()
-
-        const synonymList: (typeof studioSynonyms.$inferInsert)[] = []
-        for (const [producerId, synonyms] of synonymsMap) {
-          for (const { title, type } of synonyms) {
-            synonymList.push({
-              studioId: producerId,
-              synonym: title,
-              type,
-            })
-          }
-        }
-
-        if (synonymList.length) {
-          db.insert(studioSynonyms).values(synonymList).execute()
-        }
-      },
-      { priority: 1 },
-    )
+    studioList.push({
+      id: producer.mal_id,
+      name: producer.titles[0]!.title,
+      imageUrl:
+        imageUrl === 'https://cdn.myanimelist.net/images/company_no_picture.png' ? null : imageUrl,
+      establishedAt: producer.established ? new Date(producer.established) : null,
+      about: producer.about,
+    })
   }
 
-  fetchStudio(1)
+  promises.push(
+    db
+      .insert(studios)
+      .values(studioList)
+      .onConflictDoUpdate({
+        target: studios.id,
+        set: buildConflictUpdateColumns(studios, ['name', 'imageUrl', 'establishedAt', 'about']),
+      })
+      .execute(),
+  )
+
+  const synonymList: (typeof studioSynonyms.$inferInsert)[] = []
+  for (const [producerId, synonyms] of synonymsMap) {
+    for (const { title, type } of synonyms) {
+      synonymList.push({
+        studioId: producerId,
+        synonym: title,
+        type,
+      })
+    }
+  }
+
+  if (synonymList.length) {
+    promises.push(db.insert(studioSynonyms).values(synonymList).execute())
+  }
+
+  await Promise.all(promises)
+
+  await metadata.set('lastStudioPage', startPage)
+
+  if (producers.pagination.has_next_page) {
+    const end = performance.now()
+
+    // https://jikan.docs.apiary.io/#introduction/information/rate-limiting
+    setTimeout(
+      () => {
+        fetchStudio(startPage + 1)
+      },
+      4000 - (end - start),
+    )
+  }
 }
