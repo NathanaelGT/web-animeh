@@ -19,8 +19,9 @@ export const Route = createFileRoute('/anime/_$id/$id/')({
 
 function AnimeId() {
   const animeData = useStore(animeDataStore)
-  const params = Route.useParams()
   const router = useRouter()
+
+  const { id } = animeData
 
   useEffect(() => {
     if (!animeData) {
@@ -30,10 +31,10 @@ function AnimeId() {
     return createKeybindHandler('animePage', 'watch', () => {
       router.navigate({
         to: '/anime/$id/episode/$number',
-        params: { id: params.id, number: '1' },
+        params: { id: id.toString(), number: '1' },
       })
     })
-  }, [params.id])
+  }, [id])
 
   const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 
@@ -92,14 +93,14 @@ function AnimeId() {
           animeData.title,
         ]}
         itemClassName={SHADOW}
-        viewTransitionPrefix={params.id}
+        viewTransitionPrefix={id}
         className="[grid-area:bread]"
       />
 
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
         <AnimePoster
           anime={{
-            id: Number(params.id),
+            id,
             title: animeData.title,
             imageExtension: animeData.imageExtension,
           }}
@@ -112,7 +113,7 @@ function AnimeId() {
             variant="sky"
             className="gap-2 text-lg font-bold shadow shadow-foreground/25"
           >
-            <Link to="/anime/$id/episode/$number" params={{ id: params.id, number: '1' }}>
+            <Link to="/anime/$id/episode/$number" params={{ id: id.toString(), number: '1' }}>
               <Play />
               Nonton
             </Link>

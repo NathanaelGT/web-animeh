@@ -151,6 +151,7 @@ export const RouteRouter = router({
 
       const result = {
         ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
+        id: input.id,
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),
         genres: animeData.animeToGenres.map(({ genre }) => genre.name),
         studios: animeData.animeToStudios.map(({ studio, type }) => {
@@ -164,17 +165,14 @@ export const RouteRouter = router({
 
           return { name, type }
         }),
+        ref: shouldUpdateData ? input.id + Math.random() : null,
       }
 
-      if (shouldUpdateData) {
-        const nextRef = input.id + Math.random()
-
-        promiseMap.set(mapKey(nextRef), fetchAndUpdate(input))
-
-        return [result, nextRef] as const
+      if (result.ref) {
+        promiseMap.set(mapKey(result.ref), fetchAndUpdate(input))
       }
 
-      return [result] as const
+      return result
     }),
 
   '/anime/_$id/$id/_episode': procedure

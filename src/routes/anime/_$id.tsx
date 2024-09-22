@@ -1,17 +1,16 @@
-import { useMemo, useEffect } from 'react'
-import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router'
+import { useLayoutEffect } from 'react'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { fetchRouteData } from '~c/route'
 import { Image } from '@/Image'
 import { animeDataStore, headerChildStore } from '~c/stores'
 
 let latestAnimeId = ''
-let latestRef: number | undefined
 
 export const Route = createFileRoute('/anime/_$id')({
   component: AnimeIdLayout,
   async loader({ params }: { params: { id: string } }) {
     try {
-      return await fetchRouteData('/anime/_$id', { id: Number(params.id), ref: latestRef })
+      return await fetchRouteData('/anime/_$id', { id: Number(params.id) })
     } finally {
       latestAnimeId = params.id
     }
@@ -20,19 +19,10 @@ export const Route = createFileRoute('/anime/_$id')({
 })
 
 function AnimeIdLayout() {
-  const [animeData, ref] = Route.useLoaderData()
+  const animeData = Route.useLoaderData()
   const params = Route.useParams()
-  const router = useRouter()
 
-  useMemo(() => {
-    latestRef = ref
-
-    if (ref) {
-      router.invalidate()
-    }
-  }, [ref])
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     headerChildStore.setState(() => (
       <div className="fixed -z-50 h-16 overflow-hidden">
         <Image src={params.id} className="h-screen w-screen opacity-40 blur-xl" />
@@ -44,7 +34,19 @@ function AnimeIdLayout() {
     }
   }, [params.id])
 
-  animeDataStore.setState(() => animeData)
+  useLayoutEffect(() => {
+    animeDataStore.setState(() => animeData)
+
+    return () => {
+      animeDataStore.setState(() => null as never)
+    }
+  }, [animeData])
+
+  // pas pertama render, animeDataStore bakal null
+  // useLayoutEffect baru kejalan setelah initial render
+  if (animeDataStore.state === null) {
+    animeDataStore.setState(() => animeData)
+  }
 
   return (
     <>
