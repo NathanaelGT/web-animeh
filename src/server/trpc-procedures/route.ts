@@ -6,6 +6,7 @@ import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
 import { prepareStudioData } from '~s/studio/prepare'
+import { isMoreThanOneDay } from '~s/utils/time'
 import { glob, videosDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { jikanQueue, producerClient } from '~s/external/api/jikan'
@@ -101,10 +102,15 @@ export const RouteRouter = router({
           airedFrom: true,
           airedTo: true,
           score: true,
+          scoredBy: true,
           rating: true,
           duration: true,
+          rank: true,
+          popularity: true,
+          members: true,
           type: true,
           imageExtension: true,
+          updatedAt: true,
           episodeUpdatedAt: true,
         },
         with: {
@@ -154,13 +160,20 @@ export const RouteRouter = router({
 
       const ref = input.id + Math.random()
 
-      let shouldUpdateData = animeData.synopsis === null
-      if (shouldUpdateData) {
+      let shouldFetchData = animeData.synopsis === null
+      if (shouldFetchData) {
         promiseMap.set(mapKey(ref), fetchAndUpdate(input))
       }
 
       const result = {
-        ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
+        ...omit(
+          animeData,
+          'synonyms',
+          'animeToGenres',
+          'animeToStudios',
+          'updatedAt',
+          'episodeUpdatedAt',
+        ),
         id: input.id,
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),
         genres: animeData.animeToGenres.map(({ genre }) => genre.name),
@@ -171,8 +184,8 @@ export const RouteRouter = router({
           } else {
             name = null
 
-            if (!shouldUpdateData) {
-              shouldUpdateData = true
+            if (!shouldFetchData) {
+              shouldFetchData = true
 
               promiseMap.set(
                 mapKey(ref),
@@ -211,7 +224,13 @@ export const RouteRouter = router({
 
           return { name, type }
         }),
-        ref: shouldUpdateData ? ref : null,
+        ref: shouldFetchData ? ref : null,
+      }
+
+      if (!result.ref && isMoreThanOneDay(animeData.updatedAt)) {
+        result.ref = ref
+
+        promiseMap.set(mapKey(ref), fetchAndUpdate(input))
       }
 
       return result

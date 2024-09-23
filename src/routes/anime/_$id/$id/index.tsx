@@ -2,6 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
+import BaseTextTransition, { presets } from 'react-text-transition'
 import { animeDataStore } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
@@ -164,14 +165,30 @@ function AnimeId() {
 
         <Stat
           title="Skor"
-          stat={animeData.score?.toLocaleString('id-ID')}
+          stat={<Transition text={animeData.score?.toLocaleString('id-ID')} />}
           suffix={
-            animeData.scoredBy && ` (dari ${animeData.scoredBy.toLocaleString('id-ID')} pengguna)`
+            animeData.scoredBy && (
+              <span>
+                {' '}
+                (dari <Transition text={animeData.scoredBy.toLocaleString('id-ID')} /> pengguna)
+              </span>
+            )
           }
         />
-        <Stat title="Peringkat" stat={animeData.rank} prefix="#" />
-        <Stat title="Popularitas" stat={animeData.popularity} prefix="#" />
-        <Stat title="Penonton" stat={animeData.members?.toLocaleString('id-ID')} />
+        <Stat
+          title="Peringkat"
+          stat={<Transition text={animeData.rank?.toString()} />}
+          prefix="#"
+        />
+        <Stat
+          title="Popularitas"
+          stat={<Transition text={animeData.popularity?.toString()} />}
+          prefix="#"
+        />
+        <Stat
+          title="Penonton"
+          stat={<Transition text={animeData.members?.toLocaleString('id-ID')} />}
+        />
 
         {animeData.genres.length > 0 && (
           <>
@@ -217,6 +234,29 @@ function Stat({ title, stat, prefix, suffix }: StatProps) {
       <span className="font-bold">{title}</span>: {prefix}
       {stat}
       {suffix}
+    </div>
+  )
+}
+
+type TransitionProps = {
+  text: string | undefined | null
+}
+
+function Transition({ text }: TransitionProps) {
+  if (!text) {
+    return null
+  }
+
+  return (
+    <div className="relative inline-block">
+      <span className="invisible">{text}</span>
+      <div className="absolute left-0 top-0 flex">
+        {text.split('').map((char, i) => (
+          <BaseTextTransition key={i} springConfig={presets.wobbly}>
+            {char}
+          </BaseTextTransition>
+        ))}
+      </div>
     </div>
   )
 }

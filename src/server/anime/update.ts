@@ -9,7 +9,7 @@ import { limitRequest } from '~s/external/limit'
 import { extension } from '~/shared/utils/file'
 import { jikanQueue, jikanClient } from '~s/external/api/jikan'
 import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
-import type { Anime as JikanAnime } from '@tutkli/jikan-ts'
+import type { Anime as JikanAnime, JikanResponseFull } from '@tutkli/jikan-ts'
 
 const imageDir = path.join(basePath, 'images/')
 
@@ -30,9 +30,9 @@ type UpdateConfig = Partial<{
   updateImage: boolean
 }>
 
-const basicUpdateData = (jikanAnimeData: JikanAnime) => {
+const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<any>['header']) => {
   return {
-    updatedAt: new Date(),
+    updatedAt: new Date(header.get('Last-Modified')),
     japaneseTitle: jikanAnimeData.title_japanese,
     englishTitle: jikanAnimeData.title_english,
     synopsis: jikanAnimeData.synopsis ?? '', // ada anime yang gapunya sinopsis
@@ -58,6 +58,7 @@ type ExtraDataWhenUpdatingImage = { imageUrl: string; imageExtension: string }
 export const update = async <TConfig extends UpdateConfig>(
   animeId: number,
   jikanAnimeData: JikanAnime,
+  header: JikanResponseFull<any>['header'],
   config: TConfig = {} as TConfig,
 ): Promise<
   ReturnType<typeof basicUpdateData> &
@@ -69,7 +70,7 @@ export const update = async <TConfig extends UpdateConfig>(
 
   const promises: Promise<unknown>[] = []
 
-  const updateData = basicUpdateData(jikanAnimeData) as TReturn<TConfig['updateImage']>
+  const updateData = basicUpdateData(jikanAnimeData, header) as TReturn<TConfig['updateImage']>
 
   const updatingImage = (_updateData: any): _updateData is TReturn<true> => {
     return config?.updateImage === true
@@ -173,10 +174,13 @@ export const fetchAndUpdate = async <TConfig extends FetchAndUpdateConfig>(
   localAnime: Pick<Anime, 'id'>,
   config: TConfig = {} as TConfig,
 ) => {
-  const { data } = await jikanQueue.add(() => jikanClient.anime.getAnimeFullById(localAnime.id), {
-    throwOnTimeout: true,
-    priority: config.priority ?? 3,
-  })
+  const { data, header } = await jikanQueue.add(
+    () => jikanClient.anime.getAnimeFullById(localAnime.id),
+    {
+      throwOnTimeout: true,
+      priority: config.priority ?? 3,
+    },
+  )
 
-  return await update(localAnime.id, data, config)
+  return await update(localAnime.id, data, header, config)
 }
