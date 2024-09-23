@@ -20,6 +20,24 @@ export const jikanQueue = new PQueue({
 
 export const jikanClient = new JikanClient(kyJikan)
 
+export type Producer = {
+  mal_id: number
+  url: string
+  titles: {
+    type: string
+    title: string
+  }[]
+  images: {
+    jpg: {
+      image_url: string
+    }
+  }
+  favorites: number
+  established: string | null
+  about: string | null
+  count: number
+}
+
 type GetProducerSearchParams = Partial<{
   page: number
   limit: number
@@ -29,25 +47,13 @@ type GetProducerSearchParams = Partial<{
   letter: string
 }>
 
-type ProcuderResponse = {
+type ProcudersResponse = {
   pagination: JikanPagination
-  data: {
-    mal_id: number
-    url: string
-    titles: {
-      type: string
-      title: string
-    }[]
-    images: {
-      jpg: {
-        image_url: string
-      }
-    }
-    favorites: number
-    established: string | null
-    about: string | null
-    count: number
-  }[]
+  data: Producer[]
+}
+
+export type ProcuderByIdResponse = {
+  data: Producer
 }
 
 export const producerClient = {
@@ -56,6 +62,12 @@ export const producerClient = {
       searchParams,
     })
 
-    return response.json<ProcuderResponse>()
+    return response.json<ProcudersResponse>()
+  },
+
+  async getProducerById(id: number) {
+    const response = await kyJikan.get(`producers/${id}`)
+
+    return response.json<ProcuderByIdResponse>()
   },
 }

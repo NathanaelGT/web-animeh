@@ -1,9 +1,14 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
+import { studios, studioSynonyms } from '~s/db/schema'
+import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
+import { prepareStudioData } from '~s/studio/prepare'
 import { glob, videosDirPath } from '~s/utils/path'
+import { buildConflictUpdateColumns } from '~s/utils/db'
+import { jikanQueue, producerClient } from '~s/external/api/jikan'
 import { omit } from '~/shared/utils/object'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
@@ -11,7 +16,6 @@ import type {
   AnyRouter,
   CreateRouterOptions,
 } from '@trpc/server/unstable-core-do-not-import'
-import { promiseMap } from '../map'
 
 export const RouteRouter = router({
   '/': procedure
@@ -121,6 +125,7 @@ export const RouteRouter = router({
           },
           animeToStudios: {
             columns: {
+              studioId: true,
               type: true,
             },
             with: {
@@ -147,29 +152,66 @@ export const RouteRouter = router({
         updateEpisode({ id: input.id, episodeUpdatedAt: animeData.episodeUpdatedAt })
       }
 
+      const ref = input.id + Math.random()
+
       let shouldUpdateData = animeData.synopsis === null
+      if (shouldUpdateData) {
+        promiseMap.set(mapKey(ref), fetchAndUpdate(input))
+      }
 
       const result = {
         ...omit(animeData, 'synonyms', 'animeToGenres', 'animeToStudios', 'episodeUpdatedAt'),
         id: input.id,
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),
         genres: animeData.animeToGenres.map(({ genre }) => genre.name),
-        studios: animeData.animeToStudios.map(({ studio, type }) => {
+        studios: animeData.animeToStudios.map(({ studio, type, studioId }) => {
           let name: string | null
           if (studio) {
             name = studio.name
           } else {
             name = null
-            shouldUpdateData = true
+
+            if (!shouldUpdateData) {
+              shouldUpdateData = true
+
+              promiseMap.set(
+                mapKey(ref),
+                (async () => {
+                  const producerResponse = await jikanQueue.add(
+                    () => producerClient.getProducerById(studioId),
+                    { priority: 2, throwOnTimeout: true },
+                  )
+
+                  const [studio, synonymList] = prepareStudioData(producerResponse.data)
+
+                  if (synonymList.length) {
+                    ctx.db
+                      .insert(studioSynonyms)
+                      .values(synonymList)
+                      .onConflictDoNothing()
+                      .execute()
+                  }
+
+                  await ctx.db
+                    .insert(studios)
+                    .values(studio)
+                    .onConflictDoUpdate({
+                      target: studios.id,
+                      set: buildConflictUpdateColumns(studios, [
+                        'name',
+                        'imageUrl',
+                        'establishedAt',
+                        'about',
+                      ]),
+                    })
+                })(),
+              )
+            }
           }
 
           return { name, type }
         }),
-        ref: shouldUpdateData ? input.id + Math.random() : null,
-      }
-
-      if (result.ref) {
-        promiseMap.set(mapKey(result.ref), fetchAndUpdate(input))
+        ref: shouldUpdateData ? ref : null,
       }
 
       return result

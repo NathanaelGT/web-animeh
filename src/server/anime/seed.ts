@@ -3,6 +3,7 @@ import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
 import { anime, animeMetadata, genres, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
+import { prepareStudioData } from '~s/studio/prepare'
 import { basePath, glob } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { parseNumber } from '~/shared/utils/number'
@@ -240,52 +241,30 @@ async function fetchStudio(startPage: number) {
 
   const promises: Promise<unknown>[] = []
 
-  type Synonym = (typeof producers.data)[number]['titles'][number]
-  const synonymsMap = new Map<number, Synonym[]>()
-
   const studioList: (typeof studios.$inferInsert)[] = []
+  const synonymList: (typeof studioSynonyms.$inferInsert)[] = []
   for (const producer of producers.data) {
-    const synonyms = producer.titles.slice(1)
-    if (synonyms.length) {
-      synonymsMap.set(producer.mal_id, synonyms)
-    }
+    const [studio, synonyms] = prepareStudioData(producer)
 
-    const imageUrl = producer.images.jpg.image_url
-
-    studioList.push({
-      id: producer.mal_id,
-      name: producer.titles[0]!.title,
-      imageUrl:
-        imageUrl === 'https://cdn.myanimelist.net/images/company_no_picture.png' ? null : imageUrl,
-      establishedAt: producer.established ? new Date(producer.established) : null,
-      about: producer.about,
-    })
+    studioList.push(studio)
+    synonymList.push(...synonyms)
   }
 
-  promises.push(
-    db
-      .insert(studios)
-      .values(studioList)
-      .onConflictDoUpdate({
-        target: studios.id,
-        set: buildConflictUpdateColumns(studios, ['name', 'imageUrl', 'establishedAt', 'about']),
-      })
-      .execute(),
-  )
-
-  const synonymList: (typeof studioSynonyms.$inferInsert)[] = []
-  for (const [producerId, synonyms] of synonymsMap) {
-    for (const { title, type } of synonyms) {
-      synonymList.push({
-        studioId: producerId,
-        synonym: title,
-        type,
-      })
-    }
+  if (studioList.length) {
+    promises.push(
+      db
+        .insert(studios)
+        .values(studioList)
+        .onConflictDoUpdate({
+          target: studios.id,
+          set: buildConflictUpdateColumns(studios, ['name', 'imageUrl', 'establishedAt', 'about']),
+        })
+        .execute(),
+    )
   }
 
   if (synonymList.length) {
-    promises.push(db.insert(studioSynonyms).values(synonymList).execute())
+    promises.push(db.insert(studioSynonyms).values(synonymList).onConflictDoNothing().execute())
   }
 
   await Promise.all(promises)

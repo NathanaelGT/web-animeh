@@ -175,7 +175,7 @@ export const fetchAndUpdate = async <TConfig extends FetchAndUpdateConfig>(
 ) => {
   const { data } = await jikanQueue.add(() => jikanClient.anime.getAnimeFullById(localAnime.id), {
     throwOnTimeout: true,
-    priority: config.priority ?? 2,
+    priority: config.priority ?? 3,
   })
 
   return await update(localAnime.id, data, config)
