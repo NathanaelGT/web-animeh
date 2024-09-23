@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
@@ -151,25 +151,32 @@ function AnimeId() {
       </div>
 
       <div className="flex flex-col gap-3 [grid-area:info] lg:-mb-10 lg:-mr-12 lg:-mt-[6.5rem] lg:bg-primary/10 lg:pb-10 lg:pl-4 lg:pr-12 lg:pt-[6.5rem]">
-        {animeData.synonyms.length > 0 && <div>Sinonim: {animeData.synonyms.join(', ')}</div>}
+        <Stat title="Sinonim" stat={animeData.synonyms.join(', ')} />
+
         {animeData.airedFrom &&
           (animeData.totalEpisodes === 1 ? (
-            <div>
-              <span className="font-bold">Tanggal tayang</span>:{' '}
-              {dateFormatter.format(animeData.airedFrom)}
-            </div>
+            <Stat title="Tanggal tayang" stat={dateFormatter.format(animeData.airedFrom)} />
           ) : (
             <>
-              <div>
-                <span className="font-bold">Tayang mulai</span>:{' '}
-                {dateFormatter.format(animeData.airedFrom)}
-              </div>
-              <div>
-                <span className="font-bold">Tayang sampai</span>:{' '}
-                {animeData.airedTo ? dateFormatter.format(animeData.airedTo) : '?'}
-              </div>
+              <Stat title="Tanggal mulai" stat={dateFormatter.format(animeData.airedFrom)} />
+              <Stat
+                title="Tanggal sampai"
+                stat={animeData.airedTo ? dateFormatter.format(animeData.airedTo) : '?'}
+              />
             </>
           ))}
+
+        <Stat
+          title="Skor"
+          stat={animeData.score?.toLocaleString('id-ID')}
+          suffix={
+            animeData.scoredBy && ` (dari ${animeData.scoredBy.toLocaleString('id-ID')} pengguna)`
+          }
+        />
+        <Stat title="Peringkat" stat={animeData.rank} prefix="#" />
+        <Stat title="Popularitas" stat={animeData.popularity} prefix="#" />
+        <Stat title="Penonton" stat={animeData.members?.toLocaleString('id-ID')} />
+
         {animeData.genres.length > 0 && (
           <>
             <Separator className="bg-primary/20" />
@@ -186,22 +193,34 @@ function AnimeId() {
             <Separator className="bg-primary/20" />
           </>
         )}
-        {studios.length > 0 && (
-          <div>
-            <span className="font-bold">Studio</span>: <span>{studios}</span>
-          </div>
-        )}
-        {producers.length > 0 && (
-          <div>
-            <span className="font-bold">Produser</span>: <span>{producers}</span>
-          </div>
-        )}
-        {licensors.length > 0 && (
-          <div>
-            <span className="font-bold">Lisensor</span>: <span>{licensors}</span>
-          </div>
-        )}
+
+        <Stat title="Studio" stat={studios} />
+        <Stat title="Produser" stat={producers} />
+        <Stat title="Lisensor" stat={licensors} />
       </div>
     </main>
+  )
+}
+
+type StatProps = {
+  title: string
+  stat: ReactNode
+  prefix?: ReactNode
+  suffix?: ReactNode
+}
+
+function Stat({ title, stat, prefix, suffix }: StatProps) {
+  if (!stat && stat !== 0) {
+    return null
+  } else if ((stat as { length: number }).length < 1) {
+    return null
+  }
+
+  return (
+    <div>
+      <span className="font-bold">{title}</span>: {prefix}
+      {stat}
+      {suffix}
+    </div>
   )
 }
