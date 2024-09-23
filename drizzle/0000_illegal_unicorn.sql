@@ -75,7 +75,8 @@ CREATE TABLE `genres` (
 --> statement-breakpoint
 CREATE TABLE `metadata` (
 	`key` text PRIMARY KEY NOT NULL,
-	`value` text NOT NULL
+	`json` text NOT NULL,
+	`meta` text
 );
 --> statement-breakpoint
 CREATE TABLE `profiles` (

@@ -1,6 +1,7 @@
 import { customType, text, integer, real, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 import type * as v from 'valibot'
+import type { SuperJSONResult } from 'superjson'
 import type { settingsSchema } from '~/shared/profile/settings'
 
 const dateDiv100 = customType<{ data: Date }>({
@@ -159,7 +160,8 @@ export const episodes = sqliteTable(
 
 export const metadata = sqliteTable('metadata', {
   key: text('key').primaryKey(),
-  value: text('value').notNull(),
+  json: text('json', { mode: 'json' }).$type<SuperJSONResult['json']>().notNull(),
+  meta: text('meta', { mode: 'json' }).$type<NonNullable<SuperJSONResult['meta']>>(),
 })
 
 export const animeRelations = relations(anime, ({ many }) => ({

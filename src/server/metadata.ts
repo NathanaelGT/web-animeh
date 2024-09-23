@@ -1,57 +1,42 @@
-import * as v from 'valibot'
-import SuperJSON from 'superjson'
+import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { metadata as metadataTable } from '~s/db/schema'
 import { db } from './db'
 import { buildConflictUpdateColumns } from './utils/db'
 
-const metadataSchema = {
-  lastStudioPage: number(1),
+const defaultMetadata = {
+  lastStudioPage: 1,
 }
 
-type Metadata = typeof metadataSchema
+type Metadata = typeof defaultMetadata
 
 export const metadata = {
-  async get<TKey extends keyof Metadata>(key: TKey): Promise<v.InferOutput<Metadata[TKey]>> {
+  async get<TKey extends keyof Metadata>(key: TKey): Promise<Metadata[TKey]> {
     const result = await db.query.metadata.findFirst({
       where: (metadata, { eq }) => eq(metadata.key, key),
       columns: {
-        value: true,
+        json: true,
+        meta: true,
       },
     })
 
-    const value = result ? SuperJSON.parse(result.value) : undefined
+    if (result) {
+      return SuperJSON.deserialize(result as SuperJSONResult) as Metadata[TKey]
+    }
 
-    return v.parse(metadataSchema[key], value)
+    return defaultMetadata[key]
   },
 
-  async set<TKey extends keyof Metadata>(key: TKey, value: v.InferInput<Metadata[TKey]>) {
+  async set<TKey extends keyof Metadata>(key: TKey, value: Metadata[TKey]) {
+    const serialized = SuperJSON.serialize(value) as typeof metadataTable.$inferInsert
+
+    serialized.key = key
+
     await db
       .insert(metadataTable)
-      .values({
-        key,
-        value: SuperJSON.stringify(value),
-      })
+      .values(serialized)
       .onConflictDoUpdate({
         target: metadataTable.key,
-        set: buildConflictUpdateColumns(metadataTable, ['value']),
+        set: buildConflictUpdateColumns(metadataTable, ['json', 'meta']),
       })
   },
-}
-
-function number(
-  fallback: number,
-  min?: number,
-  max?: number,
-): ReturnType<typeof v.fallback<ReturnType<typeof v.number>, number>> {
-  const pipe = []
-
-  if (min !== undefined) {
-    pipe.push(v.minValue(min))
-  }
-  if (max !== undefined) {
-    pipe.push(v.maxValue(max))
-  }
-
-  // @ts-ignore
-  return v.fallback(v.pipe(v.number(), ...pipe), fallback)
 }
