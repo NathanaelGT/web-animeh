@@ -21,10 +21,9 @@ function AnimeId() {
   const animeData = useStore(animeDataStore)
   const router = useRouter()
 
-  const { id } = animeData
-
   useEffect(() => {
-    if (!animeData) {
+    const id = animeData?.id
+    if (!id) {
       return
     }
 
@@ -34,7 +33,7 @@ function AnimeId() {
         params: { id: id.toString(), number: '1' },
       })
     })
-  }, [id])
+  }, [animeData?.id])
 
   const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 
@@ -78,6 +77,7 @@ function AnimeId() {
 
   return (
     <main
+      key={animeData.id}
       className={[
         "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'bread''poster''main''info']",
         "sm:grid-cols-[225px_1fr] sm:grid-rows-[auto_auto_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_bread''poster_main''info_main']",
@@ -93,19 +93,12 @@ function AnimeId() {
           animeData.title,
         ]}
         itemClassName={SHADOW}
-        viewTransitionPrefix={id}
+        viewTransitionPrefix={animeData.id}
         className="[grid-area:bread]"
       />
 
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
-        <AnimePoster
-          anime={{
-            id,
-            title: animeData.title,
-            imageExtension: animeData.imageExtension,
-          }}
-          className="shadow shadow-foreground/50"
-        />
+        <AnimePoster anime={animeData} className="shadow shadow-foreground/50" />
 
         <div className="grid w-[225px] gap-3">
           <Button
@@ -113,7 +106,10 @@ function AnimeId() {
             variant="sky"
             className="gap-2 text-lg font-bold shadow shadow-foreground/25"
           >
-            <Link to="/anime/$id/episode/$number" params={{ id: id.toString(), number: '1' }}>
+            <Link
+              to="/anime/$id/episode/$number"
+              params={{ id: animeData.id.toString(), number: '1' }}
+            >
               <Play />
               Nonton
             </Link>
