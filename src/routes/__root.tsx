@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react'
+import React, { useLayoutEffect } from 'react'
 import { clientProfileSettingsStore, showKeybindTipsStore } from '~c/stores'
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Header } from '@/Header'
 import { Toaster } from '@/ui/toaster'
@@ -15,7 +15,7 @@ const TanStackRouterDevtools = import.meta.env.PROD
 
 export const Route = createRootRoute({
   component: function Component() {
-    useEffect(() => {
+    useLayoutEffect(() => {
       const rootClassList = document.documentElement.classList
       let theme = clientProfileSettingsStore.state.theme
 
@@ -66,6 +66,7 @@ export const Route = createRootRoute({
       <div className="flex min-h-screen flex-col">
         <Header />
 
+        <ScrollToTop />
         <Outlet />
 
         <Toaster />
@@ -75,3 +76,13 @@ export const Route = createRootRoute({
     )
   },
 })
+
+function ScrollToTop(): undefined {
+  const router = useRouter()
+
+  useLayoutEffect(() => {
+    return router.subscribe('onResolved', () => {
+      scrollTo(0, 0)
+    })
+  }, [router])
+}

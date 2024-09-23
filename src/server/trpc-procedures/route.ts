@@ -50,9 +50,9 @@ export const RouteRouter = router({
         orderBy: (anime, { desc }) => [desc(anime.id)],
         where: ids
           ? (anime, { inArray }) => {
-              const cursorIndex = cursor ? ids.indexOf(cursor) + 1 : 0
+              const cursorIndex = (ids as (typeof cursor)[]).indexOf(cursor) + 1
 
-              return inArray(anime.id, ids.slice(cursorIndex, cursorIndex + perPage))
+              return inArray(anime.id, ids.slice(cursorIndex))
             }
           : cursor
             ? (anime, { lt }) => lt(anime.id, cursor)
@@ -227,7 +227,7 @@ export const RouteRouter = router({
         ref: shouldFetchData ? ref : null,
       }
 
-      if (!result.ref && isMoreThanOneDay(animeData.updatedAt)) {
+      if (!input.ref && !result.ref && isMoreThanOneDay(animeData.updatedAt)) {
         result.ref = ref
 
         promiseMap.set(mapKey(ref), fetchAndUpdate(input))

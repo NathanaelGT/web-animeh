@@ -64,11 +64,17 @@ function Index() {
   })
 
   useEffect(() => {
-    setTimeout(() => {
+    let timeoutId: Timer | null = setTimeout(() => {
+      timeoutId = null
+
       animeListQuery.fetchNextPage()
-    }, 100)
+    }, 200)
 
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+
       animeListPages.setState(() => null as never)
     }
   }, [])
