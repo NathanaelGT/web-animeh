@@ -4,7 +4,7 @@ import { EditKeybind } from './EditKeybind'
 import { Dialog, DialogTrigger } from '@/ui/dialog'
 import { SimpleTooltip } from '@/ui/tooltip'
 
-type Props = Parameters<typeof EditKeybind>[0] & {
+type Props = Omit<Parameters<typeof EditKeybind>[0], 'close'> & {
   note: string | undefined
 }
 
@@ -83,7 +83,13 @@ export function KeybindSetting(props: Props) {
             </SimpleTooltip>
           </div>
 
-          <EditKeybind key={dialogStateResetter + combination.join('__')} {...props} />
+          <EditKeybind
+            key={dialogStateResetter + combination.join('__')}
+            close={() => {
+              setOpen(false)
+            }}
+            {...props}
+          />
         </Dialog>
       </div>
     </div>

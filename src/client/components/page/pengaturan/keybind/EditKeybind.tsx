@@ -13,9 +13,10 @@ type Props = {
   keybindKey: string
   name: string
   combination: string[]
+  close: () => void
 }
 
-export function EditKeybind({ group, keybindKey, name, combination: _combination }: Props) {
+export function EditKeybind({ group, keybindKey, name, combination: _combination, close }: Props) {
   const [combination, setCombination] = useState<string[]>(_combination)
   const [inputError, setInputError] = useState('')
   const updateProfile = api.profile.update.useMutation()
@@ -28,6 +29,19 @@ export function EditKeybind({ group, keybindKey, name, combination: _combination
       setInputError('')
 
       return
+    }
+
+    if (combination.length) {
+      if (event.key === 'Enter') {
+        event.stopPropagation()
+
+        save()
+        close()
+
+        return
+      } else if (event.key === 'Tab') {
+        return
+      }
     }
 
     event.preventDefault()
