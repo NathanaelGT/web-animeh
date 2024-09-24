@@ -1,6 +1,6 @@
 import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
-import { DownloadIcon, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
+import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { episodeListStore } from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
 import { DownloadProgress } from '@/ui/custom/download-progress'
@@ -58,8 +58,10 @@ function StringStatus({ status }: StringStatusProps) {
       <div className="mx-auto flex gap-2">
         <div className="w-6">
           {isDownloading ? (
-            <DownloadIcon className="w-6" />
-          ) : status === 'Menunggu unduhan sebelumnya' ? (
+            <DownloadIcon />
+          ) : isOptimizing ? (
+            <Wand />
+          ) : status.startsWith('Menunggu') ? (
             <Hourglass />
           ) : status === 'Video selesai diunduh' ? (
             <CircleCheckBig />
@@ -68,7 +70,9 @@ function StringStatus({ status }: StringStatusProps) {
           )}
         </div>
 
-        {!isOptimizing && <p className="flex-1">{isDownloading ? 'Mengunduh' : status}</p>}
+        <p className="flex-1">
+          {isDownloading ? 'Mengunduh' : isOptimizing ? 'Mengoptimalisasi video' : status}
+        </p>
       </div>
 
       {isDownloading ? (

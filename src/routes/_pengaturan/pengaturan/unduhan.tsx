@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { DownloadIcon, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
+import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { api } from '~c/trpc'
 import { MapArray } from '@/logic/MapArray'
 import { DownloadProgress } from '@/ui/custom/download-progress'
@@ -40,7 +40,9 @@ function PengaturanUnduhan() {
                   <div className="flex gap-4">
                     <div className="my-auto w-6">
                       {isDownloading ? (
-                        <DownloadIcon className="w-6" />
+                        <DownloadIcon />
+                      ) : isOptimizing ? (
+                        <Wand />
                       ) : text.startsWith('Menunggu') ? (
                         <Hourglass />
                       ) : text === 'Video selesai diunduh' ? (
@@ -58,7 +60,9 @@ function PengaturanUnduhan() {
                   {isDownloading ? (
                     <DownloadProgress text={text} />
                   ) : isOptimizing ? (
-                    <OptimalizationProgress text={text} />
+                    <OptimalizationProgress text={text}>
+                      <p className="text-center">Mengoptimalisasi video</p>
+                    </OptimalizationProgress>
                   ) : (
                     <p>{text}</p>
                   )}

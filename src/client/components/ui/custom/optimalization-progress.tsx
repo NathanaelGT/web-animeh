@@ -1,10 +1,11 @@
 import { Progress } from '@/ui/progress'
+import type { PropsWithChildren } from 'react'
 
-type Props = {
+type Props = PropsWithChildren<{
   text: string
-}
+}>
 
-export function OptimalizationProgress({ text }: Props) {
+export function OptimalizationProgress({ text, children }: Props) {
   const progressPercentage = text.slice(text.indexOf('(') + 1, -2)
 
   return (
@@ -15,7 +16,7 @@ export function OptimalizationProgress({ text }: Props) {
         indicatorClassName="duration-500"
       />
 
-      <p className="text-center">Mengoptimalisasi video</p>
+      {children}
     </>
   )
 }
