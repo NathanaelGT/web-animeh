@@ -16,7 +16,7 @@ animeDataStore.subscribe(async () => {
   if (ref) {
     const newAnimeData = await fetchRouteData('/anime/_$id', { id: animeData.id, ref })
 
-    if (animeDataStore?.state.id === newAnimeData.id) {
+    if (animeDataStore.state?.id === newAnimeData.id) {
       animeDataStore.setState(() => newAnimeData)
     }
   }
