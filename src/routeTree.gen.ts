@@ -202,26 +202,175 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({
-  IndexRoute,
-  PengaturanRoute: PengaturanRoute.addChildren({
-    PengaturanPengaturanKeybindRoute,
-    PengaturanPengaturanPemutarVideoRoute,
-    PengaturanPengaturanTampilanRoute,
-    PengaturanPengaturanUnduhanRoute,
-    PengaturanPengaturanIndexRoute,
-  }),
-  AnimeRoute: AnimeRoute.addChildren({
-    AnimeIdRoute: AnimeIdRoute.addChildren({
-      AnimeIdIdRoute: AnimeIdIdRoute.addChildren({
-        AnimeIdIdEpisodeRoute: AnimeIdIdEpisodeRoute.addChildren({
-          AnimeIdIdEpisodeEpisodeNumberRoute,
-        }),
-        AnimeIdIdIndexRoute,
-      }),
-    }),
-  }),
-})
+interface PengaturanRouteChildren {
+  PengaturanPengaturanKeybindRoute: typeof PengaturanPengaturanKeybindRoute
+  PengaturanPengaturanPemutarVideoRoute: typeof PengaturanPengaturanPemutarVideoRoute
+  PengaturanPengaturanTampilanRoute: typeof PengaturanPengaturanTampilanRoute
+  PengaturanPengaturanUnduhanRoute: typeof PengaturanPengaturanUnduhanRoute
+  PengaturanPengaturanIndexRoute: typeof PengaturanPengaturanIndexRoute
+}
+
+const PengaturanRouteChildren: PengaturanRouteChildren = {
+  PengaturanPengaturanKeybindRoute: PengaturanPengaturanKeybindRoute,
+  PengaturanPengaturanPemutarVideoRoute: PengaturanPengaturanPemutarVideoRoute,
+  PengaturanPengaturanTampilanRoute: PengaturanPengaturanTampilanRoute,
+  PengaturanPengaturanUnduhanRoute: PengaturanPengaturanUnduhanRoute,
+  PengaturanPengaturanIndexRoute: PengaturanPengaturanIndexRoute,
+}
+
+const PengaturanRouteWithChildren = PengaturanRoute._addFileChildren(
+  PengaturanRouteChildren,
+)
+
+interface AnimeIdIdEpisodeRouteChildren {
+  AnimeIdIdEpisodeEpisodeNumberRoute: typeof AnimeIdIdEpisodeEpisodeNumberRoute
+}
+
+const AnimeIdIdEpisodeRouteChildren: AnimeIdIdEpisodeRouteChildren = {
+  AnimeIdIdEpisodeEpisodeNumberRoute: AnimeIdIdEpisodeEpisodeNumberRoute,
+}
+
+const AnimeIdIdEpisodeRouteWithChildren =
+  AnimeIdIdEpisodeRoute._addFileChildren(AnimeIdIdEpisodeRouteChildren)
+
+interface AnimeIdIdRouteChildren {
+  AnimeIdIdEpisodeRoute: typeof AnimeIdIdEpisodeRouteWithChildren
+  AnimeIdIdIndexRoute: typeof AnimeIdIdIndexRoute
+}
+
+const AnimeIdIdRouteChildren: AnimeIdIdRouteChildren = {
+  AnimeIdIdEpisodeRoute: AnimeIdIdEpisodeRouteWithChildren,
+  AnimeIdIdIndexRoute: AnimeIdIdIndexRoute,
+}
+
+const AnimeIdIdRouteWithChildren = AnimeIdIdRoute._addFileChildren(
+  AnimeIdIdRouteChildren,
+)
+
+interface AnimeIdRouteChildren {
+  AnimeIdIdRoute: typeof AnimeIdIdRouteWithChildren
+}
+
+const AnimeIdRouteChildren: AnimeIdRouteChildren = {
+  AnimeIdIdRoute: AnimeIdIdRouteWithChildren,
+}
+
+const AnimeIdRouteWithChildren =
+  AnimeIdRoute._addFileChildren(AnimeIdRouteChildren)
+
+interface AnimeRouteChildren {
+  AnimeIdRoute: typeof AnimeIdRouteWithChildren
+}
+
+const AnimeRouteChildren: AnimeRouteChildren = {
+  AnimeIdRoute: AnimeIdRouteWithChildren,
+}
+
+const AnimeRouteWithChildren = AnimeRoute._addFileChildren(AnimeRouteChildren)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '': typeof PengaturanRouteWithChildren
+  '/anime': typeof AnimeIdRouteWithChildren
+  '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
+  '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
+  '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
+  '/pengaturan/unduhan': typeof PengaturanPengaturanUnduhanRoute
+  '/pengaturan': typeof PengaturanPengaturanIndexRoute
+  '/anime/$id': typeof AnimeIdIdEpisodeRouteWithChildren
+  '/anime/$id/': typeof AnimeIdIdIndexRoute
+  '/anime/$id/episode/$number': typeof AnimeIdIdEpisodeEpisodeNumberRoute
+}
+
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '': typeof PengaturanRouteWithChildren
+  '/anime': typeof AnimeIdRouteWithChildren
+  '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
+  '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
+  '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
+  '/pengaturan/unduhan': typeof PengaturanPengaturanUnduhanRoute
+  '/pengaturan': typeof PengaturanPengaturanIndexRoute
+  '/anime/$id': typeof AnimeIdIdIndexRoute
+  '/anime/$id/episode/$number': typeof AnimeIdIdEpisodeEpisodeNumberRoute
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/_pengaturan': typeof PengaturanRouteWithChildren
+  '/anime': typeof AnimeRouteWithChildren
+  '/anime/_$id': typeof AnimeIdRouteWithChildren
+  '/_pengaturan/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
+  '/_pengaturan/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
+  '/_pengaturan/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
+  '/_pengaturan/pengaturan/unduhan': typeof PengaturanPengaturanUnduhanRoute
+  '/_pengaturan/pengaturan/': typeof PengaturanPengaturanIndexRoute
+  '/anime/_$id/$id': typeof AnimeIdIdRouteWithChildren
+  '/anime/_$id/$id/_episode': typeof AnimeIdIdEpisodeRouteWithChildren
+  '/anime/_$id/$id/': typeof AnimeIdIdIndexRoute
+  '/anime/_$id/$id/_episode/episode/$number': typeof AnimeIdIdEpisodeEpisodeNumberRoute
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | ''
+    | '/anime'
+    | '/pengaturan/keybind'
+    | '/pengaturan/pemutar-video'
+    | '/pengaturan/tampilan'
+    | '/pengaturan/unduhan'
+    | '/pengaturan'
+    | '/anime/$id'
+    | '/anime/$id/'
+    | '/anime/$id/episode/$number'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | ''
+    | '/anime'
+    | '/pengaturan/keybind'
+    | '/pengaturan/pemutar-video'
+    | '/pengaturan/tampilan'
+    | '/pengaturan/unduhan'
+    | '/pengaturan'
+    | '/anime/$id'
+    | '/anime/$id/episode/$number'
+  id:
+    | '__root__'
+    | '/'
+    | '/_pengaturan'
+    | '/anime'
+    | '/anime/_$id'
+    | '/_pengaturan/pengaturan/keybind'
+    | '/_pengaturan/pengaturan/pemutar-video'
+    | '/_pengaturan/pengaturan/tampilan'
+    | '/_pengaturan/pengaturan/unduhan'
+    | '/_pengaturan/pengaturan/'
+    | '/anime/_$id/$id'
+    | '/anime/_$id/$id/_episode'
+    | '/anime/_$id/$id/'
+    | '/anime/_$id/$id/_episode/episode/$number'
+  fileRoutesById: FileRoutesById
+}
+
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  PengaturanRoute: typeof PengaturanRouteWithChildren
+  AnimeRoute: typeof AnimeRouteWithChildren
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  PengaturanRoute: PengaturanRouteWithChildren,
+  AnimeRoute: AnimeRouteWithChildren,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* prettier-ignore-end */
 

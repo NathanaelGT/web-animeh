@@ -83,8 +83,9 @@ function onImageLoad(callback: ImageLoadListener, identifier?: string) {
 
 export { onImageLoad }
 
-wsClient.request(
-  {
+wsClient.request({
+  lastEventId: undefined,
+  op: {
     type: 'subscription',
     path: 'images',
     id: 'images' as unknown as number,
@@ -92,7 +93,7 @@ wsClient.request(
     context: {},
     signal: null,
   },
-  {
+  callbacks: {
     complete() {},
     error() {},
     next(message) {
@@ -119,4 +120,4 @@ wsClient.request(
       }
     },
   },
-)
+})

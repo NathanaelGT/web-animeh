@@ -12,8 +12,9 @@ export const profileStore = new Store<Profile | null>(null)
 // store ini diimport sama module yang ngehandle wsClient
 // untuk menghindari wsClient belum didefine, jadi didelay sebentar requestnya
 queueMicrotask(() => {
-  wsClient.request(
-    {
+  wsClient.request({
+    lastEventId: undefined,
+    op: {
       type: 'subscription',
       path: 'profile.subs',
       id: 'profile.subs' as unknown as number,
@@ -21,7 +22,7 @@ queueMicrotask(() => {
       context: {},
       signal: null,
     },
-    {
+    callbacks: {
       complete() {},
       error() {},
       next(message) {
@@ -42,5 +43,5 @@ queueMicrotask(() => {
         profileStore.setState(() => profile)
       },
     },
-  )
+  })
 })

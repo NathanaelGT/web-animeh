@@ -29,8 +29,9 @@ const log = (
     context.client_stacktraces = stackTraces
   }
 
-  wsClient.request(
-    {
+  wsClient.request({
+    lastEventId: undefined,
+    op: {
       type: 'mutation',
       path: 'log',
       id: ('log' + ++logId) as unknown as number,
@@ -38,12 +39,12 @@ const log = (
       context: {},
       signal: null,
     },
-    {
+    callbacks: {
       complete() {},
       error() {},
       next() {},
     },
-  )
+  })
 
   console[level](message, context)
 }

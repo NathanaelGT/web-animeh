@@ -17,8 +17,9 @@ export const fetchRouteData = <
     : [path: TPath, input: TRoute['input']]
 ) => {
   return new Promise<TRoute['output']>((resolve, reject) => {
-    wsClient.request(
-      {
+    wsClient.request({
+      lastEventId: undefined,
+      op: {
         type: 'query',
         path: `route.${path}`,
         id: --loaderRequestId,
@@ -26,7 +27,7 @@ export const fetchRouteData = <
         context: {},
         signal: null,
       },
-      {
+      callbacks: {
         complete() {},
         error() {},
         next(message) {
@@ -39,6 +40,6 @@ export const fetchRouteData = <
           }
         },
       },
-    )
+    })
   })
 }
