@@ -2,7 +2,7 @@ import path from 'path'
 import ky from 'ky'
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
-import { animeToGenres, animeToStudios, animeSynonyms } from '~s/db/schema'
+import { animeToGenres, animeToStudios, animeSynonyms, studios } from '~s/db/schema'
 import { basePath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
@@ -128,6 +128,8 @@ export const update = async <TConfig extends UpdateConfig>(
     promises.push(db.insert(animeToGenres).values(genreList).onConflictDoNothing().execute())
   }
 
+  const studioInsertList: (typeof studios.$inferInsert)[] = []
+
   const existingCombination = new Set<string>()
   const studioList: (typeof animeToStudios.$inferInsert)[] = (
     [
@@ -139,6 +141,11 @@ export const update = async <TConfig extends UpdateConfig>(
     const filteredStudioList: (typeof animeToStudios.$inferInsert)[] = []
 
     for (const studio of studioList) {
+      studioInsertList.push({
+        id: studio.mal_id,
+        name: studio.name,
+      })
+
       // entah kenapa ada beberapa yang duplikat
       const key = animeId + type + studio.mal_id
       if (existingCombination.has(key)) {
@@ -156,6 +163,10 @@ export const update = async <TConfig extends UpdateConfig>(
 
     return filteredStudioList
   })
+
+  if (studioInsertList.length) {
+    promises.push(db.insert(studios).values(studioInsertList).onConflictDoNothing().execute())
+  }
 
   if (studioList.length) {
     promises.push(db.insert(animeToStudios).values(studioList).onConflictDoNothing().execute())
