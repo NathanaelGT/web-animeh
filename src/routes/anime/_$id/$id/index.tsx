@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode, type ReactElement } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
@@ -227,6 +227,10 @@ function Stat({ title, stat, prefix, suffix }: StatProps) {
     return null
   } else if ((stat as { length: number }).length < 1) {
     return null
+  } else if ((stat as ReactElement).props) {
+    if (!((stat as ReactElement).props as TransitionProps).text) {
+      return null
+    }
   }
 
   return (
