@@ -4,7 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { api } from '~c/trpc'
 import { clientProfileSettingsStore, headerSubscribersStore, headerLatestYStore } from '~c/stores'
 import { createKeybindMatcher } from '~c/utils/keybind'
-import { createKeybindHandler } from '~c/utils/eventHandler'
+import { createKeybindHandler, globalKeydownHandlerState } from '~c/utils/eventHandler'
 import { Image } from '@/Image'
 import { InputKeybind } from '@/ui/custom/input-keybind'
 import { SimpleTooltip } from '@/ui/tooltip'
@@ -238,7 +238,12 @@ export function Search({ headerRef, className }: Props) {
       input.blur()
 
       return
-    } else if (!createKeybindMatcher(event)(clientProfileSettingsStore.state.keybind.search.down)) {
+    } else if (
+      !(
+        globalKeydownHandlerState.enabled &&
+        createKeybindMatcher(event)(clientProfileSettingsStore.state.keybind.search.down)
+      )
+    ) {
       return
     }
 

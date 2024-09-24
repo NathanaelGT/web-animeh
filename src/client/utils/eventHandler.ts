@@ -3,18 +3,22 @@ import { captureKeybindFromEvent, keybindCombinationsMatch } from '~c/utils/keyb
 import type { InferOutput } from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
+export const globalKeydownHandlerState = {
+  enabled: true,
+}
+
+export const shouldSkipEvent = ({ target }: KeyboardEvent) => {
+  return (
+    target instanceof HTMLElement &&
+    ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName)
+  )
+}
+
 export const createGlobalKeydownHandler = (handler: (event: KeyboardEvent) => void) => {
   const keybindHandler = (event: KeyboardEvent) => {
-    const { target } = event
-
-    if (
-      target instanceof HTMLElement &&
-      ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(target.tagName)
-    ) {
-      return
+    if (globalKeydownHandlerState.enabled && !shouldSkipEvent(event)) {
+      handler(event)
     }
-
-    handler(event)
   }
 
   document.body.addEventListener('keydown', keybindHandler)
