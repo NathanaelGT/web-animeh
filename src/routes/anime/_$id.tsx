@@ -13,13 +13,12 @@ export const Route = createFileRoute('/anime/_$id')({
 
 function AnimeIdLayout() {
   const animeData = Route.useLoaderData()
-  const params = Route.useParams()
   const router = useRouter()
 
   useLayoutEffect(() => {
     headerChildStore.setState(() => (
       <div className="fixed -z-50 h-16 overflow-hidden">
-        <Image src={params.id} className="h-screen w-screen opacity-40 blur-xl" />
+        <Image src={animeData.id} className="h-screen w-screen opacity-40 blur-xl" />
       </div>
     ))
 
@@ -27,7 +26,7 @@ function AnimeIdLayout() {
       router.invalidate()
       headerChildStore.setState(() => null)
     }
-  }, [router, params.id])
+  }, [router, animeData.id])
 
   useLayoutEffect(() => {
     animeDataStore.setState(() => animeData)
@@ -46,7 +45,7 @@ function AnimeIdLayout() {
   return (
     <>
       <div className="fixed -z-50 h-auto overflow-hidden">
-        <Image src={params.id} className="h-screen w-screen opacity-40 blur-xl" />
+        <Image src={animeData.id} className="h-screen w-screen opacity-40 blur-xl" />
       </div>
       <Outlet />
     </>
