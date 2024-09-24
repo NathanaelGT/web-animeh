@@ -159,10 +159,19 @@ export const RouteRouter = router({
       }
 
       const ref = input.id + Math.random()
+      const storeRefPromise = (promise: Promise<unknown>) => {
+        const key = mapKey(ref)
+
+        promiseMap.set(key, promise)
+
+        setTimeout(() => {
+          promiseMap.delete(key)
+        }, 30_000)
+      }
 
       let shouldFetchData = animeData.synopsis === null
       if (shouldFetchData) {
-        promiseMap.set(mapKey(ref), fetchAndUpdate(input))
+        storeRefPromise(fetchAndUpdate(input))
       }
 
       const result = {
@@ -187,8 +196,7 @@ export const RouteRouter = router({
             if (!shouldFetchData) {
               shouldFetchData = true
 
-              promiseMap.set(
-                mapKey(ref),
+              storeRefPromise(
                 (async () => {
                   const producerResponse = await jikanQueue.add(
                     () => producerClient.getProducerById(studioId),
@@ -230,7 +238,7 @@ export const RouteRouter = router({
       if (!input.ref && !result.ref && isMoreThanOneDay(animeData.updatedAt)) {
         result.ref = ref
 
-        promiseMap.set(mapKey(ref), fetchAndUpdate(input))
+        storeRefPromise(fetchAndUpdate(input))
       }
 
       return result
