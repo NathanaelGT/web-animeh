@@ -270,10 +270,10 @@ if (firstTime) {
       process.send?.('ready')
     })
   }
+
+  seed()
 }
 
 if (!argv.log) {
   log('server', 'Silent Mode')
 }
-
-seed()

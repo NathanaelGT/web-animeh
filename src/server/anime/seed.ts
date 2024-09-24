@@ -12,21 +12,8 @@ import { limitRequest } from '~s/external/limit'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { extension } from '~/shared/utils/file'
 import { fetchAndUpdate } from './update'
-import { isProduction } from '~s/env' with { type: 'macro' }
-
-const globalForSeed = globalThis as unknown as {
-  isRan?: boolean
-}
 
 export const seed = () => {
-  if (!isProduction()) {
-    if (globalForSeed.isRan) {
-      return
-    }
-
-    globalForSeed.isRan = true
-  }
-
   db.query.anime.findFirst({ columns: { id: true } }).then(async firstAnime => {
     const imageDirPath = path.join(basePath, 'images/')
 
