@@ -7,6 +7,7 @@ import { websocket, httpHandler } from '~s/handler'
 import { fill, maxWidth } from '~s/utils/cli'
 import { formatNs } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
+import { getStackTraces } from '~s/utils/error'
 import { format } from '~/shared/utils/date'
 import { isObject } from '~/shared/utils/object'
 import { seed } from '~s/anime/seed'
@@ -204,7 +205,7 @@ if (firstTime) {
 
     logger.error('Uncaught Exception: ' + error.message, {
       error,
-      stacktraces: error.stack?.split('\n'),
+      stacktraces: getStackTraces(error),
     })
   })
 
@@ -217,7 +218,7 @@ if (firstTime) {
 
     let message = 'Unhandled Rejection'
     if (reason instanceof Error) {
-      context.stacktraces = reason.stack?.split('\n')
+      context.stacktraces = getStackTraces(reason)
 
       message += ': ' + reason.message
     } else if (!isProduction() && reason instanceof BuildMessage) {

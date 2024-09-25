@@ -105,31 +105,20 @@ const log = (
   fileLogPath = logPath,
   stringifyFn = stringify,
 ) => {
-  const stackTraces = (context.stacktraces ?? new Error().stack?.split('\n'))
-    ?.filter((caller, index) => {
-      if ((!context.stacktraces && index < 3) || caller.includes('moduleEvaluation')) {
-        return false
-      }
+  const stackTraces = context.stacktraces?.map(caller => {
+    caller = caller.replace(basePath, '').trim()
+    if (caller.startsWith('at ')) {
+      caller = caller.slice('at '.length)
+    }
+    if (path.sep !== '/') {
+      caller = caller.replaceAll(path.sep, '/')
+    }
 
-      return isProduction() ? true : !caller.includes('node_modules')
-    })
-    .map(caller => {
-      caller = caller.slice('    at '.length).replaceAll(basePath, '').replaceAll(path.sep, '/')
-
-      if (caller.startsWith('<anonymous>')) {
-        return caller.slice(13, -1)
-      }
-
-      return caller.replace(/([a-zA-Z0-9_]+) \((.*)\)/, '$1@$2')
-    })
-    .filter(caller => caller && !caller.endsWith('@native'))
+    return caller.replace(/(\.[a-zA-Z]+):/, '$1@')
+  })
 
   if (stackTraces) {
-    if (stackTraces.at(-1)?.startsWith('processTicksAndRejections')) {
-      context.stacktraces = stackTraces.slice(0, -1)
-    } else {
-      context.stacktraces = stackTraces
-    }
+    context.stacktraces = stackTraces
   }
 
   const date = now()
