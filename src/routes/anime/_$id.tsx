@@ -14,7 +14,14 @@ export const Route = createFileRoute('/anime/_$id')({
 
 function AnimeIdLayout() {
   const animeData = Route.useLoaderData()
+  const params = Route.useParams()
   const router = useRouter()
+
+  useLayoutEffect(() => {
+    return () => {
+      router.invalidate()
+    }
+  }, [params.id])
 
   useLayoutEffect(() => {
     headerChildStore.setState(() => (
@@ -24,7 +31,6 @@ function AnimeIdLayout() {
     ))
 
     return () => {
-      router.invalidate()
       headerChildStore.setState(() => null)
     }
   }, [router, animeData.id])
