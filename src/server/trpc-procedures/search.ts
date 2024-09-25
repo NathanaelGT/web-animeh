@@ -31,37 +31,49 @@ export const SearchProcedure = procedure
       },
       limit,
       offset: input.offset,
-      where(anime, { or, like, inArray }) {
-        return or(
-          like(anime.title, `%${q}%`),
-          like(anime.englishTitle, `%${q}%`),
-          like(anime.japaneseTitle, `%${q}%`),
-          like(anime.synopsis, `%${q}%`),
-          inArray(
-            anime.id,
-            ctx.db
-              .selectDistinct({ id: animeSynonyms.animeId })
-              .from(animeSynonyms)
-              .where(like(animeSynonyms.synonym, `%${q}%`))
-              .limit(limit),
-          ),
-          inArray(
-            anime.id,
-            ctx.db
-              .selectDistinct({ id: animeToGenres.animeId })
-              .from(animeToGenres)
-              .where(
-                inArray(
-                  animeToGenres.genreId,
-                  ctx.db
-                    .selectDistinct({ id: genres.id })
-                    .from(genres)
-                    .where(like(genres.name, `%${q}%`))
-                    .limit(limit),
+      where(anime, { and, eq, or, like, inArray }) {
+        const qLike = `%${q}%`
+
+        const mainQuery = and(
+          eq(anime.isVisible, true),
+          or(
+            like(anime.title, qLike),
+            like(anime.englishTitle, qLike),
+            like(anime.japaneseTitle, qLike),
+            like(anime.synopsis, qLike),
+            inArray(
+              anime.id,
+              ctx.db
+                .selectDistinct({ id: animeSynonyms.animeId })
+                .from(animeSynonyms)
+                .where(like(animeSynonyms.synonym, qLike))
+                .limit(limit),
+            ),
+            inArray(
+              anime.id,
+              ctx.db
+                .selectDistinct({ id: animeToGenres.animeId })
+                .from(animeToGenres)
+                .where(
+                  inArray(
+                    animeToGenres.genreId,
+                    ctx.db
+                      .selectDistinct({ id: genres.id })
+                      .from(genres)
+                      .where(like(genres.name, qLike))
+                      .limit(limit),
+                  ),
                 ),
-              ),
+            ),
           ),
         )
+
+        const asNumber = Number(q)
+        if (isNaN(asNumber)) {
+          return mainQuery
+        }
+
+        return or(eq(anime.id, asNumber), mainQuery)
       },
     })
 
