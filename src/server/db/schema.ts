@@ -1,4 +1,4 @@
-import { customType, text, integer, real, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
+import { customType, text, integer, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 import type * as v from 'valibot'
 import type { SuperJSONResult } from 'superjson'
@@ -166,7 +166,7 @@ export const episodes = sqliteTable(
     title: text('title'),
     japaneseTitle: text('japanese_title'),
     romanjiTitle: text('romanji_title'),
-    score: real('score'),
+    score: score('score'),
     is_filler: integer('is_filler', { mode: 'boolean' }),
     is_recap: integer('is_recap', { mode: 'boolean' }),
   },

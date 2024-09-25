@@ -1,7 +1,7 @@
 import path from 'path'
 import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
-import { anime, animeMetadata, genres, studios, studioSynonyms } from '~s/db/schema'
+import { anime, animeMetadata, episodes, genres, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
 import { prepareStudioData } from '~s/studio/prepare'
 import { basePath, glob } from '~s/utils/path'
@@ -102,6 +102,7 @@ export const populate = async (imageDirPath: string) => {
   fetchAll(async animeList => {
     const animeDataList: (typeof anime.$inferInsert)[] = []
     const animeMetadataList: (typeof animeMetadata.$inferInsert)[] = []
+    const episodeList: (typeof episodes.$inferInsert)[] = []
 
     for (const animeData of animeList) {
       if (
@@ -184,6 +185,17 @@ export const populate = async (imageDirPath: string) => {
         isVisible: true,
         updatedAt: now,
       })
+
+      for (const post of animeData.posts) {
+        if (post.type !== 'Episode' || post.episode_decimal === null) {
+          continue
+        }
+
+        episodeList.push({
+          animeId: id,
+          number: parseInt(post.episode_decimal),
+        })
+      }
     }
 
     const insertedAnimeList = await db
@@ -192,6 +204,7 @@ export const populate = async (imageDirPath: string) => {
       .returning({ id: anime.id, imageUrl: anime.imageUrl })
 
     db.insert(animeMetadata).values(animeMetadataList).execute()
+    db.insert(episodes).values(episodeList).execute()
 
     if (populateGenrePromise) {
       await populateGenrePromise

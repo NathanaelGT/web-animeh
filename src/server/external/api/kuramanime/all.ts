@@ -4,29 +4,29 @@ import { env } from '~/env'
 import { logger } from '~s/utils/logger'
 import { limitRequest } from '~s/external/limit'
 
-// const postSchema = v.object({
-//   id: v.number(),
-//   admin_id: v.number(),
-//   anime_id: v.number(),
-//   title: v.string(),
-//   episode: v.number(),
-//   credit: v.string(),
-//   latest_comment_at: v.nullable(v.string()),
-//   created_at: v.string(),
-//   updated_at: v.string(),
-//   deleted_at: v.nullable(v.string()),
-//   type: v.string(),
-//   episode_batch: v.nullable(v.string()),
-//   version_name: v.nullable(v.string()),
-//   episode_decimal: v.nullable(v.string()),
-//   is_published: v.number(),
-//   release_type: v.nullable(v.string()),
-//   latest_comment_id: v.nullable(v.number()),
-//   latest_comment_reply_id: v.nullable(v.number()),
-//   notes: v.nullable(v.string()),
-//   views: v.number(),
-//   last_added_views: v.number(),
-// })
+const postSchema = v.object({
+  // id: v.number(),
+  // admin_id: v.number(),
+  // anime_id: v.number(),
+  // title: v.string(),
+  // episode: v.number(),
+  // credit: v.string(),
+  // latest_comment_at: v.nullable(v.string()),
+  // created_at: v.string(),
+  // updated_at: v.string(),
+  // deleted_at: v.nullable(v.string()),
+  type: v.string(),
+  // episode_batch: v.nullable(v.string()),
+  // version_name: v.nullable(v.string()),
+  episode_decimal: v.nullable(v.string()),
+  // is_published: v.number(),
+  // release_type: v.nullable(v.string()),
+  // latest_comment_id: v.nullable(v.number()),
+  // latest_comment_reply_id: v.nullable(v.number()),
+  // notes: v.nullable(v.string()),
+  // views: v.number(),
+  // last_added_views: v.number(),
+})
 
 const animeSchema = v.object({
   id: v.number(),
@@ -48,7 +48,7 @@ const animeSchema = v.object({
   // status: v.string(),
   image_portrait_url: v.pipe(v.string(), v.url()),
   // image_landscape_url: v.pipe(v.string(), v.url()),
-  mal_url: v.pipe(v.nullable(v.string()), v.url()),
+  mal_url: v.nullable(v.pipe(v.string(), v.url())),
   // latest_post_at: v.string(),
   // created_at: v.string(),
   // updated_at: v.string(),
@@ -57,7 +57,7 @@ const animeSchema = v.object({
   // folder_name: v.string(),
   // source: v.string(),
   // season_id: v.number(),
-  anilist_url: v.pipe(v.nullable(v.string()), v.url()),
+  anilist_url: v.nullable(v.pipe(v.string(), v.url())),
   // data_source: v.string(),
   // popularity: v.nullable(v.number()),
   // members: v.nullable(v.number()),
@@ -71,7 +71,7 @@ const animeSchema = v.object({
   // duplicate_id: v.nullable(v.number()),
   // scheduled_date: v.nullable(v.string()),
   // on_hold: v.number(),
-  // posts: v.array(postSchema),
+  posts: v.array(postSchema),
 })
 
 const listResultSchema = v.object({
@@ -84,15 +84,15 @@ const listResultSchema = v.object({
     // last_page_url: v.pipe(v.string(), v.url()),
     // links: v.array(
     //   v.object({
-    //     url: v.pipe(v.nullable(v.string()), v.url()),
+    //     url: v.nullable(v.pipe(v.string(), v.url())),
     //     label: v.string(),
     //     active: v.boolean(),
     //   }),
     // ),
-    // next_page_url: v.pipe(v.nullable(v.string()), v.url()),
+    // next_page_url: v.nullable(v.pipe(v.string(), v.url())),
     // path: v.pipe(v.string(), v.url()),
     // per_page: v.number(),
-    // prev_page_url: v.pipe(v.nullable(v.string()), v.url()),
+    // prev_page_url: v.nullable(v.pipe(v.string(), v.url())),
     // to: v.number(),
     // total: v.number(),
   }),

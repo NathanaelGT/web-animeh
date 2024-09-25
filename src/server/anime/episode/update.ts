@@ -91,12 +91,6 @@ export const updateEpisode = async (
       return {
         animeId: animeData.id,
         number,
-        title: null,
-        japaneseTitle: null,
-        romanjiTitle: null,
-        score: null,
-        is_filler: null,
-        is_recap: null,
       } satisfies typeof episodes.$inferInsert
     }
     const episodeNumbers: ReturnType<typeof createEpisodeData>[] = []

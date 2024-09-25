@@ -501,7 +501,7 @@
         },
         "score": {
           "name": "score",
-          "type": "real",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

@@ -72,7 +72,7 @@ CREATE TABLE `episodes` (
 	`title` text,
 	`japanese_title` text,
 	`romanji_title` text,
-	`score` real,
+	`score` integer,
 	`is_filler` integer,
 	`is_recap` integer,
 	PRIMARY KEY(`anime_id`, `number`)
