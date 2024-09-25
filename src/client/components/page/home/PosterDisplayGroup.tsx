@@ -21,7 +21,6 @@ export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Pr
         <Link
           to="/anime/$id"
           params={{ id: animeData.id.toString() }}
-          preload={false}
           className="mt-1 block truncate text-sm font-bold"
         >
           {animeData.title}
