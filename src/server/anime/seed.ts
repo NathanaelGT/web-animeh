@@ -20,7 +20,9 @@ export const seed = () => {
     if (firstAnime) {
       while (true) {
         const animeList = await db.query.anime.findMany({
-          where: (anime, { isNull }) => isNull(anime.synopsis),
+          where(anime, { and, eq, isNull }) {
+            return and(eq(anime.isVisible, true), isNull(anime.synopsis))
+          },
           columns: { id: true, imageExtension: true },
           limit: 10,
         })
@@ -179,6 +181,7 @@ export const populate = async (imageDirPath: string) => {
         type: animeData.type,
         imageUrl: imageFetchUrl,
         imageExtension: ext,
+        isVisible: true,
         updatedAt: now,
       })
     }

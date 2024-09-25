@@ -123,7 +123,7 @@
           "name": "type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "image_url": {
@@ -136,6 +136,13 @@
         "image_extension": {
           "name": "image_extension",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_visible": {
+          "name": "is_visible",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -223,6 +230,71 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "anime_relationships": {
+      "name": "anime_relationships",
+      "columns": {
+        "anime_id": {
+          "name": "anime_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "related_id": {
+          "name": "related_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anime_relationships_anime_id_anime_id_fk": {
+          "name": "anime_relationships_anime_id_anime_id_fk",
+          "tableFrom": "anime_relationships",
+          "tableTo": "anime",
+          "columnsFrom": [
+            "anime_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "anime_relationships_related_id_anime_id_fk": {
+          "name": "anime_relationships_related_id_anime_id_fk",
+          "tableFrom": "anime_relationships",
+          "tableTo": "anime",
+          "columnsFrom": [
+            "related_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anime_relationships_anime_id_related_id_pk": {
+          "columns": [
+            "anime_id",
+            "related_id"
+          ],
+          "name": "anime_relationships_anime_id_related_id_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "anime_synonyms": {

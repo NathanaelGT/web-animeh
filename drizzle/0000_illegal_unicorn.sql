@@ -15,9 +15,10 @@ CREATE TABLE `anime` (
 	`rank` integer,
 	`popularity` integer,
 	`members` integer,
-	`type` text NOT NULL,
+	`type` text,
 	`image_url` text,
 	`image_extension` text,
+	`is_visible` integer,
 	`updated_at` integer NOT NULL,
 	`episode_updated_at` integer
 );
@@ -30,6 +31,15 @@ CREATE TABLE `anime_metadata` (
 	`provider_slug` text,
 	`provider_data` text,
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `anime_relationships` (
+	`anime_id` integer NOT NULL,
+	`related_id` integer NOT NULL,
+	`type` text NOT NULL,
+	PRIMARY KEY(`anime_id`, `related_id`),
+	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`related_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `anime_synonyms` (

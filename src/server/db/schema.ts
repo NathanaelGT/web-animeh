@@ -58,9 +58,10 @@ export const anime = sqliteTable('anime', {
   rank: integer('rank'),
   popularity: integer('popularity'),
   members: integer('members'),
-  type: text('type').$type<AnimeType>().notNull(),
+  type: text('type').$type<AnimeType>(),
   imageUrl: text('image_url'),
   imageExtension: text('image_extension'),
+  isVisible: integer('is_visible', { mode: 'boolean' }),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
   episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
 })
@@ -89,6 +90,22 @@ export const animeMetadata = sqliteTable('anime_metadata', {
   providerSlug: text('provider_slug'),
   providerData: text('provider_data'),
 })
+
+export const animeRelationships = sqliteTable(
+  'anime_relationships',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    relatedId: integer('related_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.animeId, t.relatedId] }),
+  }),
+)
 
 export const genres = sqliteTable('genres', {
   id: integer('id').primaryKey(),

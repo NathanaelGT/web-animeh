@@ -48,15 +48,16 @@ export const RouteRouter = router({
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
         orderBy: (anime, { desc }) => [desc(anime.id)],
-        where: ids
-          ? (anime, { inArray }) => {
-              const cursorIndex = (ids as (typeof cursor)[]).indexOf(cursor) + 1
+        where(anime, { and, eq, inArray, lt }) {
+          const isVisible = eq(anime.isVisible, true)
+          const otherCondition = ids
+            ? inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
+            : cursor
+              ? lt(anime.id, cursor)
+              : undefined
 
-              return inArray(anime.id, ids.slice(cursorIndex))
-            }
-          : cursor
-            ? (anime, { lt }) => lt(anime.id, cursor)
-            : undefined,
+          return otherCondition ? and(isVisible, otherCondition) : isVisible
+        },
         columns: {
           id: true,
           title: true,
@@ -110,6 +111,7 @@ export const RouteRouter = router({
           members: true,
           type: true,
           imageExtension: true,
+          isVisible: true,
           updatedAt: true,
           episodeUpdatedAt: true,
         },

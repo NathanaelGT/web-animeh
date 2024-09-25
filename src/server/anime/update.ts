@@ -2,7 +2,13 @@ import path from 'path'
 import ky from 'ky'
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
-import { animeToGenres, animeToStudios, animeSynonyms, studios } from '~s/db/schema'
+import {
+  animeToGenres,
+  animeToStudios,
+  animeSynonyms,
+  animeRelationships,
+  studios,
+} from '~s/db/schema'
 import { basePath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
@@ -35,7 +41,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<a
     updatedAt: new Date(header.get('Last-Modified')),
     japaneseTitle: jikanAnimeData.title_japanese,
     englishTitle: jikanAnimeData.title_english,
-    synopsis: jikanAnimeData.synopsis ?? '', // ada anime yang gapunya sinopsis
+    synopsis: jikanAnimeData.synopsis ?? '', // @JIKAN_TYPE ada anime yang gapunya sinopsis
     totalEpisodes: jikanAnimeData.episodes,
     airedFrom: new Date(jikanAnimeData.aired.from),
     airedTo: jikanAnimeData.aired.to
@@ -45,7 +51,9 @@ const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<a
         : null,
     score: jikanAnimeData.score,
     scoredBy: jikanAnimeData.scored_by,
-    rating: jikanAnimeData.rating.slice(0, jikanAnimeData.rating.indexOf(' ')),
+    rating: jikanAnimeData.rating
+      ? jikanAnimeData.rating.slice(0, jikanAnimeData.rating.indexOf(' '))
+      : null, // @JIKAN_TYPE ada rating yang null
     duration: parseMalDuration(jikanAnimeData.duration),
     rank: jikanAnimeData.rank,
     popularity: jikanAnimeData.popularity,
@@ -164,13 +172,39 @@ export const update = async <TConfig extends UpdateConfig>(
     return filteredStudioList
   })
 
-  if (studioInsertList.length) {
-    promises.push(db.insert(studios).values(studioInsertList).onConflictDoNothing().execute())
-  }
+  const relationshipInsertList: (typeof animeRelationships.$inferInsert)[] = []
+  const relatedInsertList: (typeof anime.$inferInsert)[] = []
+  jikanAnimeData.relations?.forEach(({ relation, entry: entries }) => {
+    for (const entry of entries) {
+      if (entry.type !== 'anime') {
+        continue
+      }
 
-  if (studioList.length) {
-    promises.push(db.insert(animeToStudios).values(studioList).onConflictDoNothing().execute())
-  }
+      relationshipInsertList.push({
+        animeId,
+        relatedId: entry.mal_id,
+        type: relation,
+      })
+
+      relatedInsertList.push({
+        id: entry.mal_id,
+        title: entry.name,
+        updatedAt: updateData.updatedAt,
+      })
+    }
+  })
+  ;(
+    [
+      [studios, studioInsertList],
+      [animeToStudios, studioList],
+      [animeRelationships, relationshipInsertList],
+      [anime, relatedInsertList],
+    ] as const
+  ).forEach(([table, insertList]) => {
+    if (insertList.length) {
+      promises.push(db.insert(table).values(insertList).onConflictDoNothing().execute())
+    }
+  })
 
   promises.push(db.update(anime).set(updateData).where(eq(anime.id, animeId)).execute())
 
