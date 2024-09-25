@@ -101,21 +101,23 @@ function AnimeId() {
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
         <AnimePoster anime={animeData} className="shadow shadow-foreground/50" />
 
-        <div className="grid w-[225px] gap-3">
-          <Button
-            asChild
-            variant="sky"
-            className="gap-2 text-lg font-bold shadow shadow-foreground/25"
-          >
-            <Link
-              to="/anime/$id/episode/$number"
-              params={{ id: animeData.id.toString(), number: '1' }}
+        {animeData.isVisible && (
+          <div className="grid w-[225px] gap-3">
+            <Button
+              asChild
+              variant="sky"
+              className="gap-2 text-lg font-bold shadow shadow-foreground/25"
             >
-              <Play />
-              Nonton
-            </Link>
-          </Button>
-        </div>
+              <Link
+                to="/anime/$id/episode/$number"
+                params={{ id: animeData.id.toString(), number: '1' }}
+              >
+                <Play />
+                Nonton
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col items-center gap-3 [grid-area:main] sm:items-start">
