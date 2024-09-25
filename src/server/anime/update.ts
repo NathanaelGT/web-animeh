@@ -58,6 +58,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<a
     rank: jikanAnimeData.rank,
     popularity: jikanAnimeData.popularity,
     members: jikanAnimeData.members,
+    type: jikanAnimeData.type,
   } satisfies SQLiteUpdateSetSource<typeof anime>
 }
 
