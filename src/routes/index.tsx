@@ -45,7 +45,6 @@ export const Route = createFileRoute('/')({
           (posterHeightPx + posterTextHeightPx + wrapperGapY),
       )
 
-    params.x = Math.random()
     params.downloaded = Boolean(deps?.terunduh)
 
     return [params, getScrollThresholdPx(4), await fetchRouteData('/', params)] as const
@@ -63,18 +62,26 @@ function Index() {
     },
   })
 
+  const id = `${params.perPage}_${params.downloaded}`
+
   useEffect(() => {
     let timeoutId: Timer | null = setTimeout(() => {
       timeoutId = null
 
-      animeListQuery.fetchNextPage()
+      if (animeListQuery.data.pages.length === 1) {
+        animeListQuery.fetchNextPage()
+      }
     }, 200)
 
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId)
       }
+    }
+  }, [id])
 
+  useEffect(() => {
+    return () => {
       animeListPages.setState(() => null as never)
     }
   }, [])
@@ -96,7 +103,7 @@ function Index() {
         className="grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6 px-12 py-10"
       >
         {pages.map((_, index) => (
-          <PosterDisplayGroup key={index} index={index} />
+          <PosterDisplayGroup key={id + index} index={index} />
         ))}
       </InfiniteScroll>
     </main>

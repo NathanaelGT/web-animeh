@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { animeListPages } from '~c/stores'
 import { SimpleTooltip } from '@/ui/tooltip'
@@ -13,7 +13,41 @@ type Props = {
 }
 
 export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Props) {
-  return animeListPages.state[index]!.map(animeData => (
+  const [shouldRender, setShouldRender] = useState(
+    index === 0 || (animeListPages.state ?? []).length - 1 === index,
+  )
+
+  useEffect(() => {
+    if (shouldRender) {
+      return
+    }
+
+    let timeoutId: Timer | null = setTimeout(() => {
+      timeoutId = null
+
+      setShouldRender(true)
+    }, index * 80)
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [shouldRender])
+
+  if (animeListPages.state === null) {
+    return []
+  }
+
+  const animeDataList = animeListPages.state[index]!
+
+  if (!shouldRender) {
+    return animeDataList.map(animeData => (
+      <div key={animeData.id} className="h-[calc(229px+2.5rem)] max-w-[162px]" />
+    ))
+  }
+
+  return animeDataList.map(animeData => (
     <div key={animeData.id} className="mx-auto max-w-[162px]">
       <AnimePoster small asLink anime={animeData} tabIndex={-1} />
 

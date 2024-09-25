@@ -81,7 +81,7 @@ function ScrollToTop(): undefined {
   const router = useRouter()
 
   useLayoutEffect(() => {
-    return router.subscribe('onResolved', () => {
+    return router.subscribe('onLoad', () => {
       scrollTo(0, 0)
     })
   }, [router])
