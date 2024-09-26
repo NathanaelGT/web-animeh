@@ -62,7 +62,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<a
   } satisfies SQLiteUpdateSetSource<typeof anime>
 }
 
-type ExtraDataWhenUpdatingImage = { imageUrl: string; imageExtension: string }
+type ExtraDataWhenUpdatingImage = { imageUrl: string }
 
 export const update = async <TConfig extends UpdateConfig>(
   animeId: number,
@@ -91,7 +91,6 @@ export const update = async <TConfig extends UpdateConfig>(
     const ext = extension(url)
 
     updateData.imageUrl = url
-    updateData.imageExtension = ext
 
     promises.push(
       (async () => {

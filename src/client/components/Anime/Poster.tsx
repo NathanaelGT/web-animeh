@@ -24,7 +24,6 @@ type Props = PropsWithChildren<{
   anime: {
     id: number
     title: string
-    imageExtension: string | null
   }
   tabIndex?: number
   className?: string

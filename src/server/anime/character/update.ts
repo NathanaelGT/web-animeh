@@ -42,20 +42,16 @@ export const updateCharacter = async (
     for (const { character, role, favorites, voice_actors } of data) {
       let imageUrl: string | null =
         character.images.webp?.image_url || character.images.jpg.image_url
-      let imageExtension: string | null
 
       if (imageUrl.startsWith('https://cdn.myanimelist.net/images/questionmark')) {
         imageUrl = null
-        imageExtension = null
       } else {
         const queryParamsSeparatorIndex = imageUrl.indexOf('?')
         if (queryParamsSeparatorIndex > -1) {
           imageUrl = imageUrl.slice(0, queryParamsSeparatorIndex)
         }
 
-        imageExtension = extension(imageUrl)
-
-        const imagePath = `${basePath}images/characters/${character.mal_id}.${imageExtension}`
+        const imagePath = `${basePath}images/characters/${character.mal_id}.${extension(imageUrl)}`
         promises.push(
           Bun.file(imagePath)
             .exists()
@@ -74,7 +70,6 @@ export const updateCharacter = async (
         name: character.name,
         favorites,
         imageUrl,
-        imageExtension,
       })
 
       animeToCharacterList.push({
@@ -103,12 +98,7 @@ export const updateCharacter = async (
         .values(characterList)
         .onConflictDoUpdate({
           target: characters.id,
-          set: buildConflictUpdateColumns(characters, [
-            'name',
-            'favorites',
-            'imageUrl',
-            'imageExtension',
-          ]),
+          set: buildConflictUpdateColumns(characters, ['name', 'favorites', 'imageUrl']),
         })
         .execute(),
 

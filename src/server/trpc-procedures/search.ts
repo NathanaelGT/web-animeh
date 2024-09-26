@@ -1,6 +1,7 @@
 import * as v from 'valibot'
 import { procedure } from '~s/trpc'
 import { animeSynonyms, animeToGenres, genres } from '~s/db/schema'
+import { omit } from '~/shared/utils/object'
 
 export const SearchProcedure = procedure
   .input(
@@ -27,7 +28,7 @@ export const SearchProcedure = procedure
         rating: true,
         duration: true,
         totalEpisodes: true,
-        imageExtension: true,
+        imageUrl: true,
       },
       limit,
       offset: input.offset,
@@ -81,5 +82,5 @@ export const SearchProcedure = procedure
       ctx.loadAnimePoster(animeData)
     }
 
-    return animeList
+    return animeList.map(anime => omit(anime, 'imageUrl'))
   })

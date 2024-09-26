@@ -32,8 +32,79 @@ const score = customType<{ data: number }>({
   },
 })
 
+const createRepetitivePrefixColumnType = (repetitivePrefix: string) => {
+  return customType<{ data: string }>({
+    dataType() {
+      return 'text'
+    },
+
+    fromDriver(value): string {
+      return (value as string).startsWith('http') ? (value as string) : repetitivePrefix + value
+    },
+
+    toDriver(value): string {
+      return value.startsWith(repetitivePrefix) ? value.slice(repetitivePrefix.length) : value
+    },
+  })
+}
+
+const malAnimeImage = createRepetitivePrefixColumnType('https://cdn.myanimelist.net/images/anime/')
+const malStudioImage = createRepetitivePrefixColumnType(
+  'https://cdn.myanimelist.net/s/common/company_logos/',
+)
+const malCharacterImage = createRepetitivePrefixColumnType(
+  'https://cdn.myanimelist.net/images/characters/',
+)
+
+// FIX TYPE
+const createRepetitiveStringsColumnType = <TStringList extends string[]>(
+  stringList: TStringList,
+) => {
+  return customType<{ data: [string & {}, ...TStringList][number] }>({
+    dataType() {
+      return 'text'
+    },
+
+    fromDriver(value): string {
+      const index = parseInt(value as string)
+
+      return isNaN(index) ? (value as string) : stringList[index]!
+    },
+
+    toDriver(value): string {
+      const index = stringList.indexOf(value)
+
+      return index > -1 ? index.toString() : value
+    },
+  })
+}
+
+const malAnimeRelationType = createRepetitiveStringsColumnType([
+  'Other',
+  'Sequel',
+  'Prequel',
+  'Side Story',
+  'Parent Story',
+  'Alternative Setting',
+  'Summary',
+  'Alternative Version',
+  'Character',
+  'Spin-Off',
+  'Full Story',
+])
+
+const malStudioSynonymType = createRepetitiveStringsColumnType(['Japanese', 'Synonym'])
+
 type Settings = v.InferInput<typeof settingsSchema>
-export type AnimeType = 'Movie' | 'TV' | 'ONA' | 'Special' | 'TV Special' | 'OVA' | (string & {})
+export type AnimeType =
+  | 'TV'
+  | 'Movie'
+  | 'ONA'
+  | 'OVA'
+  | 'Special'
+  | 'TV Special'
+  | 'PV'
+  | (string & {})
 
 export const profiles = sqliteTable('profiles', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -59,8 +130,7 @@ export const anime = sqliteTable('anime', {
   popularity: integer('popularity'),
   members: integer('members'),
   type: text('type').$type<AnimeType>(),
-  imageUrl: text('image_url'),
-  imageExtension: text('image_extension'),
+  imageUrl: malAnimeImage('image_url'),
   isVisible: integer('is_visible', { mode: 'boolean' }),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
   episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
@@ -101,7 +171,7 @@ export const animeRelationships = sqliteTable(
     relatedId: integer('related_id')
       .notNull()
       .references(() => anime.id, { onDelete: 'cascade' }),
-    type: text('type').notNull(),
+    type: malAnimeRelationType('type').notNull(),
   },
   t => ({
     pk: primaryKey({ columns: [t.animeId, t.relatedId] }),
@@ -132,7 +202,7 @@ export const studios = sqliteTable('studios', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
   about: text('about'),
-  imageUrl: text('image_url'),
+  imageUrl: malStudioImage('image_url'),
   establishedAt: dateDiv100('established_at'),
 })
 
@@ -142,7 +212,7 @@ export const studioSynonyms = sqliteTable('studio_synonyms', {
     .notNull()
     .references(() => studios.id, { onDelete: 'cascade' }),
   synonym: text('synonym').notNull(),
-  type: text('type').notNull(),
+  type: malStudioSynonymType('type').notNull(),
 })
 
 export const animeToStudios = sqliteTable(
@@ -180,8 +250,7 @@ export const characters = sqliteTable('characters', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
   favorites: integer('favorites'),
-  imageUrl: text('image_url'),
-  imageExtension: text('image_extension'),
+  imageUrl: malCharacterImage('image_url'),
 })
 
 export const persons = sqliteTable('persons', {

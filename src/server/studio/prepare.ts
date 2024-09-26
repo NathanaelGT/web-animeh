@@ -9,8 +9,12 @@ export const prepareStudioData = (data: Producer) => {
   const studio = {
     id: data.mal_id,
     name: data.titles[0]!.title,
-    imageUrl:
-      imageUrl === 'https://cdn.myanimelist.net/images/company_no_picture.png' ? null : imageUrl,
+    imageUrl: [
+      'https://cdn.myanimelist.net/images/company_no_picture.png',
+      'https://cdn.myanimelist.net/images/company/placeholder.png',
+    ].includes(imageUrl)
+      ? null
+      : imageUrl,
     establishedAt: data.established ? new Date(data.established) : null,
     about: data.about,
   } satisfies typeof studios.$inferInsert

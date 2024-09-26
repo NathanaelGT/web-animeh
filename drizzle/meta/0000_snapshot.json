@@ -133,13 +133,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "image_extension": {
-          "name": "image_extension",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "is_visible": {
           "name": "is_visible",
           "type": "integer",
@@ -624,13 +617,6 @@
         },
         "image_url": {
           "name": "image_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "image_extension": {
-          "name": "image_extension",
           "type": "text",
           "primaryKey": false,
           "notNull": false,

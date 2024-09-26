@@ -17,7 +17,6 @@ CREATE TABLE `anime` (
 	`members` integer,
 	`type` text,
 	`image_url` text,
-	`image_extension` text,
 	`is_visible` integer,
 	`updated_at` integer NOT NULL,
 	`episode_updated_at` integer,
@@ -89,8 +88,7 @@ CREATE TABLE `characters` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
 	`favorites` integer,
-	`image_url` text,
-	`image_extension` text
+	`image_url` text
 );
 --> statement-breakpoint
 CREATE TABLE `episodes` (

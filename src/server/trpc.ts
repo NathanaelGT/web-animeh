@@ -8,6 +8,7 @@ import { fetchAndUpdate } from '~s/anime/update'
 import { handleReadImageError, readImage, type Image } from '~s/utils/image'
 import { imageEmitterMap, pendingImageEmitterMap, type ImageEmitterParam } from '~s/emits/loadImage'
 import { getMimeType } from '~s/utils/mime'
+import { extension } from '~/shared/utils/file'
 import type { ServerWebSocket } from 'bun'
 import type { CreateBunContextOptions } from 'trpc-bun-adapter'
 import type { anime } from '~s/db/schema'
@@ -80,17 +81,16 @@ export const createTRPCContext = (opts: ContextOpts) => {
         })
     },
     loadAnimePoster(
-      animeData: Parameters<typeof fetchAndUpdate>[0] &
-        Pick<typeof anime.$inferSelect, 'imageExtension'>,
+      animeData: Parameters<typeof fetchAndUpdate>[0] & Pick<typeof anime.$inferSelect, 'imageUrl'>,
     ) {
       const handleNoImage = async () => {
         const updateData = await fetchAndUpdate(animeData, { updateImage: true })
 
-        this.loadImage([animeData.id, updateData.imageExtension])
+        this.loadImage([animeData.id, extension(updateData.imageUrl)])
       }
 
-      if (animeData.imageExtension) {
-        this.loadImage([animeData.id, animeData.imageExtension], handleNoImage)
+      if (animeData.imageUrl) {
+        this.loadImage([animeData.id, extension(animeData.imageUrl)], handleNoImage)
       } else {
         handleNoImage()
       }

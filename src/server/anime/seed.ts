@@ -23,7 +23,7 @@ export const seed = () => {
           where(anime, { and, eq, isNull }) {
             return and(eq(anime.isVisible, true), isNull(anime.synopsis))
           },
-          columns: { id: true, imageExtension: true },
+          columns: { id: true, imageUrl: true },
           limit: 10,
         })
 
@@ -32,12 +32,11 @@ export const seed = () => {
         }
 
         for (const animeData of animeList) {
+          const ext = animeData.imageUrl ? extension(animeData.imageUrl) : null
+
           await fetchAndUpdate(animeData, {
             updateImage:
-              animeData.imageExtension !== 'webp' ||
-              (await Bun.file(
-                imageDirPath + animeData.id + '.' + animeData.imageExtension,
-              ).exists()),
+              ext !== 'webp' || (await Bun.file(imageDirPath + animeData.id + '.' + ext).exists()),
             priority: 0,
           })
         }
@@ -181,7 +180,6 @@ export const populate = async (imageDirPath: string) => {
         duration,
         type: animeData.type,
         imageUrl: imageFetchUrl,
-        imageExtension: ext,
         isVisible: true,
         updatedAt: now,
       })

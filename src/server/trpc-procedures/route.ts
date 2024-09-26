@@ -66,7 +66,7 @@ export const RouteRouter = router({
           rating: true,
           duration: true,
           totalEpisodes: true,
-          imageExtension: true,
+          imageUrl: true,
         },
       })
 
@@ -74,7 +74,7 @@ export const RouteRouter = router({
         ctx.loadAnimePoster(animeData)
       }
 
-      return animeList
+      return animeList.map(anime => omit(anime, 'imageUrl'))
     }),
 
   '/anime/_$id': procedure
@@ -96,6 +96,7 @@ export const RouteRouter = router({
       const animeData = await ctx.db.query.anime.findFirst({
         where: (anime, { eq }) => eq(anime.id, input.id),
         columns: {
+          id: true,
           title: true,
           japaneseTitle: true,
           englishTitle: true,
@@ -111,7 +112,7 @@ export const RouteRouter = router({
           popularity: true,
           members: true,
           type: true,
-          imageExtension: true,
+          imageUrl: true,
           isVisible: true,
           updatedAt: true,
           episodeUpdatedAt: true,
@@ -154,13 +155,10 @@ export const RouteRouter = router({
       }
 
       if (!input.ref) {
-        ctx.loadAnimePoster({
-          id: input.id,
-          imageExtension: animeData.imageExtension,
-        })
+        ctx.loadAnimePoster(animeData)
 
-        updateEpisode({ id: input.id, episodeUpdatedAt: animeData.episodeUpdatedAt })
-        updateCharacter({ id: input.id, characterUpdatedAt: animeData.characterUpdatedAt })
+        updateEpisode(animeData)
+        updateCharacter(animeData)
       }
 
       const ref = input.id + Math.random()
@@ -182,9 +180,11 @@ export const RouteRouter = router({
       const result = {
         ...omit(
           animeData,
+          'id',
           'synonyms',
           'animeToGenres',
           'animeToStudios',
+          'imageUrl',
           'updatedAt',
           'episodeUpdatedAt',
           'characterUpdatedAt',
