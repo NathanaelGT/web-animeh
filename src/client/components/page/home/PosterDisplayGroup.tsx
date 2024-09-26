@@ -43,12 +43,12 @@ export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Pr
 
   if (!shouldRender) {
     return animeDataList.map(animeData => (
-      <div key={animeData.id} className="h-[calc(229px+2.5rem)] max-w-[162px]" />
+      <div key={animeData.id} className="h-[calc(229px+2.5rem)] w-[162px]" />
     ))
   }
 
   return animeDataList.map(animeData => (
-    <div key={animeData.id} className="mx-auto max-w-[162px]">
+    <div key={animeData.id} className="mx-auto w-[162px]">
       <AnimePoster small asLink anime={animeData} tabIndex={-1} />
 
       <SimpleTooltip title={animeData.title}>
