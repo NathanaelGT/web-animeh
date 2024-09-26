@@ -9,8 +9,11 @@ import { basePath } from '~s/utils/path'
 import { limitRequest } from '~s/external/limit'
 import { extension } from '~/shared/utils/file'
 
+type Config = { priority?: number }
+
 export const updateCharacter = async (
   animeData: Pick<typeof anime.$inferSelect, 'id' | 'characterUpdatedAt'>,
+  config: Config = {},
 ) => {
   if (!isMoreThanOneMinute(animeData.characterUpdatedAt)) {
     return
@@ -22,7 +25,7 @@ export const updateCharacter = async (
 
     const result = await jikanQueue.add(() => jikanClient.anime.getAnimeCharacters(animeData.id), {
       throwOnTimeout: true,
-      priority: 1,
+      priority: config.priority ?? 1,
     })
 
     // @JIKAN_TYPE response dari API ada `favorites`, tapi dari docsnya engga ada

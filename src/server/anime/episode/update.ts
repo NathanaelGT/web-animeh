@@ -8,8 +8,11 @@ import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { fetchText } from '~s/utils/fetch'
 import { dedupeEpisodes } from './dedupe'
 
+type Config = { priority?: number }
+
 export const updateEpisode = async (
   animeData: Pick<typeof anime.$inferSelect, 'id' | 'episodeUpdatedAt'>,
+  config: Config = {},
 ) => {
   if (!isMoreThanOneMinute(animeData.episodeUpdatedAt)) {
     return []
@@ -22,7 +25,7 @@ export const updateEpisode = async (
     const walkJikan = async (page: number) => {
       const result = await jikanQueue.add(
         () => jikanClient.anime.getAnimeEpisodes(animeData.id, page),
-        { throwOnTimeout: true, priority: page === 1 ? 2 : 1 },
+        { throwOnTimeout: true, priority: config.priority ?? (page === 1 ? 2 : 1) },
       )
 
       if (result.pagination?.has_next_page) {

@@ -12,35 +12,19 @@ import { limitRequest } from '~s/external/limit'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { extension } from '~/shared/utils/file'
 import { fetchAndUpdate } from './update'
+import { updateEpisode } from './episode/update'
+import { updateCharacter } from './character/update'
 
 export const seed = () => {
   db.query.anime.findFirst({ columns: { id: true } }).then(async firstAnime => {
     const imageDirPath = path.join(basePath, 'images/')
 
     if (firstAnime) {
-      while (true) {
-        const animeList = await db.query.anime.findMany({
-          where(anime, { and, eq, isNull }) {
-            return and(eq(anime.isVisible, true), isNull(anime.synopsis))
-          },
-          columns: { id: true, imageUrl: true },
-          limit: 10,
-        })
+      await updateIncompleteAnimeData(imageDirPath)
 
-        if (animeList.length === 0) {
-          break
-        }
+      await updateIncompleteAnimeEpisodes()
 
-        for (const animeData of animeList) {
-          const ext = animeData.imageUrl ? extension(animeData.imageUrl) : null
-
-          await fetchAndUpdate(animeData, {
-            updateImage:
-              ext !== 'webp' || (await Bun.file(imageDirPath + animeData.id + '.' + ext).exists()),
-            priority: 0,
-          })
-        }
-      }
+      await updateIncompleteAnimeCharacters()
     } else {
       populate(imageDirPath)
     }
@@ -49,7 +33,7 @@ export const seed = () => {
   metadata.get('lastStudioPage').then(fetchStudio)
 }
 
-export const populate = async (imageDirPath: string) => {
+const populate = async (imageDirPath: string) => {
   const imageListPromise = glob(imageDirPath, '*')
 
   let populateGenrePromise: Promise<void> | null = jikanQueue.add(async () => {
@@ -282,5 +266,87 @@ async function fetchStudio(startPage: number) {
       },
       4000 - (end - start),
     )
+  }
+}
+
+const updateIncompleteAnimeData = async (imageDirPath: string) => {
+  while (true) {
+    const animeList = await db.query.anime.findMany({
+      where(anime, { and, eq, isNull }) {
+        return and(eq(anime.isVisible, true), isNull(anime.synopsis))
+      },
+      columns: { id: true, imageUrl: true },
+      limit: 10,
+    })
+
+    if (animeList.length === 0) {
+      break
+    }
+
+    for (const animeData of animeList) {
+      const ext = animeData.imageUrl ? extension(animeData.imageUrl) : null
+
+      await fetchAndUpdate(animeData, {
+        updateImage:
+          ext !== 'webp' || (await Bun.file(imageDirPath + animeData.id + '.' + ext).exists()),
+        priority: 0,
+      })
+    }
+  }
+}
+
+const updateIncompleteAnimeEpisodes = async () => {
+  while (true) {
+    const animeList = await db.query.anime.findMany({
+      where(anime, { and, eq, isNull }) {
+        return and(eq(anime.isVisible, true), isNull(anime.episodeUpdatedAt))
+      },
+      columns: { id: true },
+      limit: 10,
+    })
+
+    if (animeList.length === 0) {
+      break
+    }
+
+    for (const animeData of animeList) {
+      await updateEpisode(
+        {
+          id: animeData.id,
+          episodeUpdatedAt: null,
+        },
+        {
+          priority: 0,
+        },
+      )
+    }
+  }
+}
+
+const updateIncompleteAnimeCharacters = async () => {
+  while (true) {
+    const animeList = await db.query.anime.findMany({
+      where(anime, { and, eq, isNull }) {
+        return and(eq(anime.isVisible, true), isNull(anime.characterUpdatedAt))
+      },
+      columns: { id: true },
+      limit: 10,
+    })
+
+    if (animeList.length === 0) {
+      break
+    }
+
+    for (const animeData of animeList) {
+      await updateCharacter(
+        {
+          id: animeData.id,
+          characterUpdatedAt: null,
+        },
+        {
+          priority: 0,
+        },
+      )
+    }
   }
 }
