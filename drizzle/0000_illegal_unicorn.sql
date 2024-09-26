@@ -20,7 +20,8 @@ CREATE TABLE `anime` (
 	`image_extension` text,
 	`is_visible` integer,
 	`updated_at` integer NOT NULL,
-	`episode_updated_at` integer
+	`episode_updated_at` integer,
+	`character_updated_at` integer
 );
 --> statement-breakpoint
 CREATE TABLE `anime_metadata` (
@@ -50,6 +51,15 @@ CREATE TABLE `anime_synonyms` (
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `anime_to_characters` (
+	`anime_id` integer NOT NULL,
+	`character_id` integer NOT NULL,
+	`is_main` integer,
+	PRIMARY KEY(`anime_id`, `character_id`),
+	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`character_id`) REFERENCES `characters`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `anime_to_anime_genres` (
 	`anime_id` integer NOT NULL,
 	`genre_id` integer NOT NULL,
@@ -64,6 +74,23 @@ CREATE TABLE `anime_to_anime_studios` (
 	`type` text NOT NULL,
 	PRIMARY KEY(`anime_id`, `studio_id`, `type`),
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `character_to_persons` (
+	`character_id` integer NOT NULL,
+	`person_id` integer NOT NULL,
+	`language` text NOT NULL,
+	PRIMARY KEY(`character_id`, `person_id`),
+	FOREIGN KEY (`character_id`) REFERENCES `characters`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`person_id`) REFERENCES `persons`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE TABLE `characters` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`favorites` integer,
+	`image_url` text,
+	`image_extension` text
 );
 --> statement-breakpoint
 CREATE TABLE `episodes` (
@@ -87,6 +114,11 @@ CREATE TABLE `metadata` (
 	`key` text PRIMARY KEY NOT NULL,
 	`json` text NOT NULL,
 	`meta` text
+);
+--> statement-breakpoint
+CREATE TABLE `persons` (
+	`id` integer PRIMARY KEY NOT NULL,
+	`name` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `profiles` (

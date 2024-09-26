@@ -5,6 +5,7 @@ import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { dedupeEpisodes } from '~s/anime/episode/dedupe'
+import { updateCharacter } from '~s/anime/character/update'
 import { prepareStudioData } from '~s/studio/prepare'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { glob, videosDirPath } from '~s/utils/path'
@@ -114,6 +115,7 @@ export const RouteRouter = router({
           isVisible: true,
           updatedAt: true,
           episodeUpdatedAt: true,
+          characterUpdatedAt: true,
         },
         with: {
           synonyms: {
@@ -158,6 +160,7 @@ export const RouteRouter = router({
         })
 
         updateEpisode({ id: input.id, episodeUpdatedAt: animeData.episodeUpdatedAt })
+        updateCharacter({ id: input.id, characterUpdatedAt: animeData.characterUpdatedAt })
       }
 
       const ref = input.id + Math.random()
@@ -184,6 +187,7 @@ export const RouteRouter = router({
           'animeToStudios',
           'updatedAt',
           'episodeUpdatedAt',
+          'characterUpdatedAt',
         ),
         id: input.id,
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),

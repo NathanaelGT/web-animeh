@@ -64,6 +64,7 @@ export const anime = sqliteTable('anime', {
   isVisible: integer('is_visible', { mode: 'boolean' }),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
   episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
+  characterUpdatedAt: integer('character_updated_at', { mode: 'timestamp' }),
 })
 
 export const animeSynonyms = sqliteTable(
@@ -175,6 +176,51 @@ export const episodes = sqliteTable(
   }),
 )
 
+export const characters = sqliteTable('characters', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull(),
+  favorites: integer('favorites'),
+  imageUrl: text('image_url'),
+  imageExtension: text('image_extension'),
+})
+
+export const persons = sqliteTable('persons', {
+  id: integer('id').primaryKey(),
+  name: text('name').notNull(),
+})
+
+export const animeToCharacters = sqliteTable(
+  'anime_to_characters',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    characterId: integer('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    isMain: integer('is_main', { mode: 'boolean' }),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.animeId, t.characterId] }),
+  }),
+)
+
+export const characterToPersons = sqliteTable(
+  'character_to_persons',
+  {
+    characterId: integer('character_id')
+      .notNull()
+      .references(() => characters.id, { onDelete: 'cascade' }),
+    personId: integer('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade' }),
+    language: text('language').notNull(),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.characterId, t.personId] }),
+  }),
+)
+
 export const metadata = sqliteTable('metadata', {
   key: text('key').primaryKey(),
   json: text('json', { mode: 'json' }).$type<SuperJSONResult['json']>().notNull(),
@@ -184,9 +230,10 @@ export const metadata = sqliteTable('metadata', {
 export const animeRelations = relations(anime, ({ many }) => ({
   synonyms: many(animeSynonyms),
   metadata: many(animeMetadata),
+  episodes: many(episodes),
   animeToGenres: many(animeToGenres),
   animeToStudios: many(animeToStudios),
-  episodes: many(episodes),
+  characters: many(animeToCharacters),
 }))
 
 export const animeSynonymsRelations = relations(animeSynonyms, ({ one }) => ({
@@ -222,6 +269,31 @@ export const animeToStudiosRelations = relations(animeToStudios, ({ one }) => ({
 
 export const episodesRelations = relations(episodes, ({ one }) => ({
   anime: one(anime, { fields: [episodes.animeId], references: [anime.id] }),
+}))
+
+export const charactersRelations = relations(characters, ({ many }) => ({
+  anime: many(animeToCharacters),
+  persons: many(characterToPersons),
+}))
+
+export const personsRelations = relations(persons, ({ many }) => ({
+  characters: many(characterToPersons),
+}))
+
+export const animeToCharactersRelations = relations(animeToCharacters, ({ one }) => ({
+  anime: one(anime, { fields: [animeToCharacters.animeId], references: [anime.id] }),
+  character: one(characters, {
+    fields: [animeToCharacters.characterId],
+    references: [characters.id],
+  }),
+}))
+
+export const characterToPersonsRelations = relations(characterToPersons, ({ one }) => ({
+  character: one(characters, {
+    fields: [characterToPersons.characterId],
+    references: [characters.id],
+  }),
+  person: one(persons, { fields: [characterToPersons.personId], references: [persons.id] }),
 }))
 
 export interface Profile extends Omit<typeof profiles.$inferSelect, 'settings'> {
