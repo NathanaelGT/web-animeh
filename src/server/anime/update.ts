@@ -1,4 +1,3 @@
-import path from 'path'
 import ky from 'ky'
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
@@ -9,15 +8,13 @@ import {
   animeRelationships,
   studios,
 } from '~s/db/schema'
-import { basePath } from '~s/utils/path'
+import { imagesDirPath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
 import { extension } from '~/shared/utils/file'
 import { jikanQueue, jikanClient } from '~s/external/api/jikan'
 import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
 import type { Anime as JikanAnime, JikanResponseFull } from '@tutkli/jikan-ts'
-
-const imageDir = path.join(basePath, 'images/')
 
 const parseMalDurationRegex = new RegExp('(?:([0-9]+)hr)?(?:([0-9]+)min)?')
 const parseMalDuration = (duration: string | null | undefined) => {
@@ -94,7 +91,7 @@ export const update = async <TConfig extends UpdateConfig>(
 
     promises.push(
       (async () => {
-        await Bun.write(imageDir + animeId + '.' + ext, await request)
+        await Bun.write(imagesDirPath + animeId + '.' + ext, await request)
       })(),
     )
   }

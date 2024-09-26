@@ -7,7 +7,9 @@ export const basePath = isProduction()
   ? path.join(import.meta.dir, '../')
   : path.join(import.meta.dir, '../../../')
 
-export const videosDirPath = path.join(basePath, 'videos/')
+export const imagesDirPath = basePath + 'images' + path.sep
+
+export const videosDirPath = basePath + 'videos' + path.sep
 
 export const glob = async (
   path: string,

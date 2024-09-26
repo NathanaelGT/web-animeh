@@ -3,7 +3,7 @@ import { initTRPC } from '@trpc/server'
 import SuperJSON from 'superjson'
 import { isValiError } from 'valibot'
 import { db } from '~s/db'
-import { basePath } from '~s/utils/path'
+import { imagesDirPath } from '~s/utils/path'
 import { fetchAndUpdate } from '~s/anime/update'
 import { handleReadImageError, readImage, type Image } from '~s/utils/image'
 import { imageEmitterMap, pendingImageEmitterMap, type ImageEmitterParam } from '~s/emits/loadImage'
@@ -51,7 +51,6 @@ export const createTRPCContext = (opts: ContextOpts) => {
     }
   })()
 
-  const imageDir = path.join(basePath, 'images/')
   const loadedImages = new Set<string>()
 
   const ctx = {
@@ -66,7 +65,7 @@ export const createTRPCContext = (opts: ContextOpts) => {
         return
       }
 
-      readImage(imageDir + imagePath + '.' + imageExtension)
+      readImage(imagesDirPath + imagePath + '.' + imageExtension)
         .then(base64 => {
           loadedImages.add(imagePath)
 

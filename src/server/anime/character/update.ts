@@ -5,7 +5,7 @@ import { buildConflictUpdateColumns } from '~s/utils/db'
 import { anime, characters, persons, animeToCharacters, characterToPersons } from '~s/db/schema'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
-import { basePath } from '~s/utils/path'
+import { imagesDirPath } from '~s/utils/path'
 import { limitRequest } from '~s/external/limit'
 import { extension } from '~/shared/utils/file'
 
@@ -54,7 +54,7 @@ export const updateCharacter = async (
           imageUrl = imageUrl.slice(0, queryParamsSeparatorIndex)
         }
 
-        const imagePath = `${basePath}images/characters/${character.mal_id}.${extension(imageUrl)}`
+        const imagePath = `${imagesDirPath}/characters/${character.mal_id}.${extension(imageUrl)}`
         promises.push(
           Bun.file(imagePath)
             .exists()
