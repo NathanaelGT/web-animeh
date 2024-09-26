@@ -19,11 +19,6 @@ export const updateEpisode = async (
 
   // jikan ngecache data selama 24 jam
   if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-    db.update(anime)
-      .set({ episodeUpdatedAt: new Date() })
-      .where(eq(anime.id, animeData.id))
-      .execute()
-
     const walkJikan = async (page: number) => {
       const result = await jikanQueue.add(
         () => jikanClient.anime.getAnimeEpisodes(animeData.id, page),
@@ -45,26 +40,45 @@ export const updateEpisode = async (
           title: episode.title,
           japaneseTitle: episode.title_japanese,
           romanjiTitle: episode.title_romanji,
-          score: (episode as any).score,
+          score: (episode as any).score, // @JIKAN_TYPE
           is_filler: episode.filler,
           is_recap: episode.recap,
         } satisfies typeof episodes.$inferInsert
       })
 
-      db.insert(episodes)
-        .values(episodeList)
-        .onConflictDoUpdate({
-          target: [episodes.animeId, episodes.number],
-          set: buildConflictUpdateColumns(episodes, [
-            'title',
-            'japaneseTitle',
-            'romanjiTitle',
-            'score',
-            'is_filler',
-            'is_recap',
-          ]),
-        })
-        .execute()
+      const promises: Promise<void>[] = []
+
+      if (episodeList.length) {
+        promises.push(
+          db
+            .insert(episodes)
+            .values(episodeList)
+            .onConflictDoUpdate({
+              target: [episodes.animeId, episodes.number],
+              set: buildConflictUpdateColumns(episodes, [
+                'title',
+                'japaneseTitle',
+                'romanjiTitle',
+                'score',
+                'is_filler',
+                'is_recap',
+              ]),
+            })
+            .execute(),
+        )
+      }
+
+      if (page === 1) {
+        promises.push(
+          db
+            .update(anime)
+            .set({ episodeUpdatedAt: new Date(result.header.get('Last-Modified')) })
+            .where(eq(anime.id, animeData.id))
+            .execute(),
+        )
+      }
+
+      await Promise.all(promises)
 
       return episodeList
     }
