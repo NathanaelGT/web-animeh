@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 import { procedure } from '~s/trpc'
-import { animeSynonyms, animeToGenres, genres } from '~s/db/schema'
+import { animeSynonyms, animeToCharacters, animeToGenres, characters, genres } from '~s/db/schema'
 import { omit } from '~/shared/utils/object'
 
 export const SearchProcedure = procedure
@@ -53,18 +53,36 @@ export const SearchProcedure = procedure
             inArray(
               anime.id,
               ctx.db
-                .selectDistinct({ id: animeToGenres.animeId })
+                .select({ id: animeToGenres.animeId })
                 .from(animeToGenres)
                 .where(
                   inArray(
                     animeToGenres.genreId,
                     ctx.db
-                      .selectDistinct({ id: genres.id })
+                      .select({ id: genres.id })
                       .from(genres)
                       .where(like(genres.name, qLike))
                       .limit(limit),
                   ),
-                ),
+                )
+                .limit(limit),
+            ),
+            inArray(
+              anime.id,
+              ctx.db
+                .select({ animeId: animeToCharacters.animeId })
+                .from(animeToCharacters)
+                .where(
+                  inArray(
+                    animeToCharacters.characterId,
+                    ctx.db
+                      .select({ id: characters.id })
+                      .from(characters)
+                      .where(like(characters.name, qLike))
+                      .limit(limit),
+                  ),
+                )
+                .limit(limit),
             ),
           ),
         )
