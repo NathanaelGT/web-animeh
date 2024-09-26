@@ -66,10 +66,10 @@ export const createTRPCContext = (opts: ContextOpts) => {
         return
       }
 
-      loadedImages.add(imagePath)
-
       readImage(imageDir + imagePath + '.' + imageExtension)
         .then(base64 => {
+          loadedImages.add(imagePath)
+
           if (imageExtension === 'webp') {
             loadImage([[imagePath, base64]])
           } else {
