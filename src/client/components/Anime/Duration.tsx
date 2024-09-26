@@ -8,7 +8,7 @@ export function AnimeDuration({ duration }: Props) {
   let text: string
   let className: string
 
-  if (duration === null) {
+  if (!duration) {
     text = '?'
     className = 'bg-gray-200'
   } else {
