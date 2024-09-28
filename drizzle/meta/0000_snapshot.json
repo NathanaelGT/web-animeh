@@ -213,7 +213,17 @@
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "anime_metadata__anime_id__provider__provider_id__unique": {
+          "name": "anime_metadata__anime_id__provider__provider_id__unique",
+          "columns": [
+            "anime_id",
+            "provider",
+            "provider_id"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {
         "anime_metadata_anime_id_anime_id_fk": {
           "name": "anime_metadata_anime_id_anime_id_fk",

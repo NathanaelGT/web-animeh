@@ -141,5 +141,6 @@ CREATE TABLE `studios` (
 	`established_at` integer
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `anime_metadata__anime_id__provider__provider_id__unique` ON `anime_metadata` (`anime_id`,`provider`,`provider_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `genres_name_unique` ON `genres` (`name`);--> statement-breakpoint
 CREATE UNIQUE INDEX `profiles_name_unique` ON `profiles` (`name`);

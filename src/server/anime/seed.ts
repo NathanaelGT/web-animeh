@@ -1,42 +1,35 @@
-import path from 'path'
-import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
-import { anime, animeMetadata, episodes, genres, studios, studioSynonyms } from '~s/db/schema'
+import { genres, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
 import { prepareStudioData } from '~s/studio/prepare'
-import { basePath, glob } from '~s/utils/path'
+import { glob, imagesDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
-import { parseNumber } from '~/shared/utils/number'
-import { fetchAll } from '~s/external/api/kuramanime'
-import { limitRequest } from '~s/external/limit'
-import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { extension } from '~/shared/utils/file'
+import { fetchAll, fetchPage } from '~s/external/api/kuramanime/fetch'
+import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
+import { insertKuramanimeAnimeListToDb } from '~s/external/api/kuramanime/insert'
 import { fetchAndUpdate } from './update'
 import { updateEpisode } from './episode/update'
 import { updateCharacter } from './character/update'
 
-export const seed = () => {
-  db.query.anime.findFirst({ columns: { id: true } }).then(async firstAnime => {
-    const imageDirPath = path.join(basePath, 'images/')
-
-    if (firstAnime) {
-      await updateIncompleteAnimeData(imageDirPath)
-
-      await updateIncompleteAnimeEpisodes()
-
-      await updateIncompleteAnimeCharacters()
-    } else {
-      populate(imageDirPath)
-    }
-  })
+export const seed = async () => {
+  seedGenres()
 
   metadata.get('lastStudioPage').then(fetchStudio)
+
+  const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
+
+  await (firstAnime ? sync : populate)()
+
+  await updateIncompleteAnimeData()
+
+  await updateIncompleteAnimeEpisodes()
+
+  await updateIncompleteAnimeCharacters()
 }
 
-const populate = async (imageDirPath: string) => {
-  const imageListPromise = glob(imageDirPath, '*')
-
-  let populateGenrePromise: Promise<void> | null = jikanQueue.add(async () => {
+const seedGenres = async () => {
+  await jikanQueue.add(async () => {
     const malGenreList = await jikanClient.genres.getAnimeGenres()
 
     const genreList: (typeof genres.$inferInsert)[] = malGenreList.data.map(genre => ({
@@ -44,171 +37,13 @@ const populate = async (imageDirPath: string) => {
       name: genre.name,
     }))
 
-    await db.insert(genres).values(genreList)
-  })
-
-  const parseKuramanimeDate = (date: string) => {
-    let [day, month, year] = date.split(' ') as [string, string, string]
-
-    month =
-      {
-        Mei: 'May',
-        Agt: 'Aug',
-        Okt: 'Oct',
-        Des: 'Dec',
-      }[month] || month
-
-    return new Date(`${year} ${month} ${day}`)
-  }
-
-  const parseKuramanimeDurationRegex = new RegExp(
-    '[^0-9]*(?:([0-9]+)jam)?(?:([0-9]+)(?:menit|mnt))?(?:([0-9]+)detik|dtk)?.*',
-  )
-  const parseKuramanimeDuration = (duration: string | null | undefined) => {
-    duration = duration?.replaceAll(' ', '')
-    if (!duration) {
-      return null
-    }
-
-    const [, hours, minutes, seconds] = duration.toLowerCase().match(parseKuramanimeDurationRegex)!
-
-    return Number(hours || 0) * 3600 + Number(minutes || 0) * 60 + Number(seconds || 0)
-  }
-
-  const imageResponsePromiseMap = new Map<string, Promise<[string, KyResponse]>>()
-
-  const now = new Date()
-
-  const imageList = new Set(await imageListPromise)
-  const storedAnimeList = new Map<number, string>()
-
-  fetchAll(async animeList => {
-    const animeDataList: (typeof anime.$inferInsert)[] = []
-    const animeMetadataList: (typeof animeMetadata.$inferInsert)[] = []
-    const episodeList: (typeof episodes.$inferInsert)[] = []
-
-    for (const animeData of animeList) {
-      if (
-        animeData.mal_url === null ||
-        ['Music', 'CM', 'PV'].includes(animeData.type) ||
-        animeData.title.endsWith('(Dub ID)') ||
-        animeData.title.endsWith('(Dub JP)')
-      ) {
-        continue
-      }
-
-      const duration = parseKuramanimeDuration(animeData.duration)
-      if (typeof duration === 'number' && duration < 301) {
-        continue
-      }
-
-      const slicedMalUrl = animeData.mal_url.slice('https://myanimelist.net/anime/'.length)
-      const id = Number(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/')))
-      if (isNaN(id)) {
-        continue
-      }
-
-      const storedTitle = storedAnimeList.get(id)
-      const createProviderData = () => {
-        if (!storedTitle) {
-          return null
-        }
-
-        const extra = animeData.title.slice(storedTitle.length).trim()
-
-        if (extra.startsWith('(') && extra.endsWith(')')) {
-          return extra.slice(1, -1)
-        }
-        return extra
-      }
-
-      animeMetadataList.push({
-        animeId: id,
-        provider: 'kuramanime',
-        providerId: animeData.id,
-        providerSlug: animeData.slug,
-        providerData: createProviderData(),
+    await db
+      .insert(genres)
+      .values(genreList)
+      .onConflictDoUpdate({
+        target: genres.id,
+        set: buildConflictUpdateColumns(genres, ['name']),
       })
-
-      // kadang ada yang duplikat, misalnya untuk versi uncensored
-      if (storedTitle) {
-        continue
-      }
-      storedAnimeList.set(id, animeData.title)
-
-      const slicedAnilistUrl = animeData.anilist_url?.slice('https://anilist.co/anime/'.length)
-
-      const imageUrl = animeData.image_portrait_url
-      const imageFetchUrl =
-        imageUrl.startsWith('https://cdn.myanimelist.net') && imageUrl.endsWith('l.jpg')
-          ? imageUrl.slice(0, -5) + '.webp'
-          : imageUrl
-      const ext = extension(imageFetchUrl)
-
-      if (!imageList.has(animeData.id + '.' + ext)) {
-        imageResponsePromiseMap.set(
-          imageFetchUrl,
-          limitRequest(async () => [ext, await ky.get(imageFetchUrl, { throwHttpErrors: false })]),
-        )
-      }
-
-      animeDataList.push({
-        id,
-        anilistId: parseNumber(slicedAnilistUrl),
-        title: animeData.title,
-        totalEpisodes: animeData.total_episodes,
-        airedFrom: parseKuramanimeDate(animeData.aired_from),
-        airedTo: animeData.aired_to ? parseKuramanimeDate(animeData.aired_to) : null,
-        score: animeData.score,
-        rating: animeData.rating?.slice(0, animeData.rating.indexOf(' ')),
-        duration,
-        type: animeData.type,
-        imageUrl: imageFetchUrl,
-        isVisible: true,
-        updatedAt: now,
-      })
-
-      for (const post of animeData.posts) {
-        if (post.type !== 'Episode' || post.episode_decimal === null) {
-          continue
-        }
-
-        episodeList.push({
-          animeId: id,
-          number: parseInt(post.episode_decimal),
-        })
-      }
-    }
-
-    const insertedAnimeList = await db
-      .insert(anime)
-      .values(animeDataList)
-      .returning({ id: anime.id, imageUrl: anime.imageUrl })
-
-    db.insert(animeMetadata).values(animeMetadataList).execute()
-    db.insert(episodes).values(episodeList).execute()
-
-    if (populateGenrePromise) {
-      await populateGenrePromise
-      populateGenrePromise = null
-    }
-
-    const hasImages = new Set<number>()
-
-    for (const animeData of insertedAnimeList) {
-      imageResponsePromiseMap.get(animeData.imageUrl!)?.then(([ext, response]) => {
-        if (response.ok || response.status === 304) {
-          Bun.write(imageDirPath + animeData.id + '.' + ext, response)
-
-          hasImages.add(animeData.id)
-        }
-      })
-
-      fetchAndUpdate(animeData, {
-        updateImage: !hasImages.has(animeData.id) || extension(animeData.imageUrl ?? '') !== 'webp',
-        priority: 0,
-      })
-    }
   })
 }
 
@@ -269,7 +104,47 @@ async function fetchStudio(startPage: number) {
   }
 }
 
-const updateIncompleteAnimeData = async (imageDirPath: string) => {
+const populate = async () => {
+  const imageList = new Set(await glob(imagesDirPath, '*'))
+
+  await fetchAll(animeList => insertKuramanimeAnimeListToDb(animeList, imageList))
+}
+
+const sync = async () => {
+  const imageListPromise = glob(imagesDirPath, '*')
+  const { perPage, lastPage } = await metadata.get('kuramanimeCrawl')
+
+  let [parsedData, imageListArr] = await Promise.all([fetchPage(lastPage), imageListPromise])
+  const newPerPage = parsedData.animes.per_page
+  const imageList = new Set(imageListArr)
+
+  const insertParsedDataToDb = async () => {
+    await Promise.all([
+      insertKuramanimeAnimeListToDb(parsedData.animes.data, imageList),
+
+      metadata.set('kuramanimeCrawl', {
+        perPage: newPerPage,
+        lastPage: parsedData.animes.last_page,
+      }),
+    ])
+  }
+
+  let page: number
+  if (newPerPage !== perPage) {
+    page = Math.floor(((lastPage - 1) * perPage) / newPerPage)
+  } else {
+    page = lastPage + 1
+    await insertParsedDataToDb()
+  }
+
+  while (page <= parsedData.animes.last_page) {
+    parsedData = await fetchPage(page++)
+
+    await insertParsedDataToDb()
+  }
+}
+
+const updateIncompleteAnimeData = async () => {
   while (true) {
     const animeList = await db.query.anime.findMany({
       where(anime, { and, eq, isNull }) {
@@ -288,7 +163,7 @@ const updateIncompleteAnimeData = async (imageDirPath: string) => {
 
       await fetchAndUpdate(animeData, {
         updateImage:
-          ext !== 'webp' || (await Bun.file(imageDirPath + animeData.id + '.' + ext).exists()),
+          ext !== 'webp' || (await Bun.file(imagesDirPath + animeData.id + '.' + ext).exists()),
         priority: 0,
       })
     }

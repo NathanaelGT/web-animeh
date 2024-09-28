@@ -5,6 +5,7 @@ import { buildConflictUpdateColumns } from './utils/db'
 
 const defaultMetadata = {
   lastStudioPage: 1,
+  kuramanimeCrawl: { perPage: 1, lastPage: 1 },
 }
 
 type Metadata = typeof defaultMetadata

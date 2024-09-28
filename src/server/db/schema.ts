@@ -1,4 +1,11 @@
-import { customType, text, integer, primaryKey, sqliteTable } from 'drizzle-orm/sqlite-core'
+import {
+  customType,
+  text,
+  integer,
+  primaryKey,
+  sqliteTable,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 import type * as v from 'valibot'
 import type { SuperJSONResult } from 'superjson'
@@ -151,16 +158,26 @@ export const animeSynonyms = sqliteTable(
   }),
 )
 
-export const animeMetadata = sqliteTable('anime_metadata', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  animeId: integer('anime_id')
-    .notNull()
-    .references(() => anime.id, { onDelete: 'cascade' }),
-  provider: text('provider').notNull(),
-  providerId: integer('provider_id').notNull(),
-  providerSlug: text('provider_slug'),
-  providerData: text('provider_data'),
-})
+export const animeMetadata = sqliteTable(
+  'anime_metadata',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerId: integer('provider_id').notNull(),
+    providerSlug: text('provider_slug'),
+    providerData: text('provider_data'),
+  },
+  t => ({
+    unique: uniqueIndex('anime_metadata__anime_id__provider__provider_id__unique').on(
+      t.animeId,
+      t.provider,
+      t.providerId,
+    ),
+  }),
+)
 
 export const animeRelationships = sqliteTable(
   'anime_relationships',

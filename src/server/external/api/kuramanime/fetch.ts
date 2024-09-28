@@ -1,7 +1,7 @@
 import ky from 'ky'
 import * as v from 'valibot'
 import { env } from '~/env'
-import { logger } from '~s/utils/logger'
+import { metadata } from '~s/metadata'
 import { limitRequest } from '~s/external/limit'
 
 const postSchema = v.object({
@@ -91,49 +91,66 @@ const listResultSchema = v.object({
     // ),
     // next_page_url: v.nullable(v.pipe(v.string(), v.url())),
     // path: v.pipe(v.string(), v.url()),
-    // per_page: v.number(),
+    per_page: v.number(),
     // prev_page_url: v.nullable(v.pipe(v.string(), v.url())),
     // to: v.number(),
     // total: v.number(),
   }),
 })
 
-type Anime = v.InferInput<typeof animeSchema>
+type OrderBy = 'latest' | 'oldest' | 'updated'
 
-export const fetchAll = (callback: (animeList: Anime[]) => void) => {
+export const fetchPage = async (page: number, orderBy: OrderBy = 'oldest') => {
+  const response = await limitRequest(() => {
+    return ky.get(
+      `https://kuramanime.${env.KURAMANIME_TLD}/properties/country/jp?` +
+        `order_by=${orderBy}&name=JP&page=${page}&need_json=true`,
+    )
+  })
+
+  return v.parse(listResultSchema, await response.json())
+}
+
+export type Anime = v.InferInput<typeof animeSchema>
+
+export const fetchAll = async (callback: (animeList: Anime[]) => Promise<void> | void) => {
   let page = 0
-  let maxPage = Infinity
+  let lastPage = Infinity
 
-  const fetchPage = (page: number) => {
-    return limitRequest(async () => {
-      const response = await ky.get(
-        `https://kuramanime.${env.KURAMANIME_TLD}/properties/country/jp?` +
-          `order_by=latest&name=JP&page=${page}&need_json=true`,
-      )
+  const promises: Promise<void>[] = []
+  const cbPromises: Promise<void>[] = []
 
-      const parsedData = v.parse(listResultSchema, await response.json())
-      maxPage = parsedData.animes.last_page
+  const crawl = async (page: number) => {
+    const parsedData = await fetchPage(page, 'latest')
 
-      callback(parsedData.animes.data)
-    })
-  }
+    if (lastPage === Infinity) {
+      lastPage = parsedData.animes.last_page
 
-  try {
-    const promises: Promise<void>[] = []
-
-    while (++page < 30) {
-      promises.push(fetchPage(page))
+      metadata.set('kuramanimeCrawl', {
+        perPage: parsedData.animes.per_page,
+        lastPage,
+      })
     }
 
-    // biar maxPagenya keset
-    Promise.any(promises).then(() => {
-      promises.length = 0
-
-      while (++page < maxPage) {
-        promises.push(fetchPage(page))
-      }
-    })
-  } catch (error) {
-    logger.error('Failed to scrape all kuramanime data', { currentPage: page, maxPage, error })
+    const cbResult = callback(parsedData.animes.data)
+    if (cbResult instanceof Promise) {
+      cbPromises.push(cbResult)
+    }
   }
+
+  while (++page < 30) {
+    promises.push(crawl(page))
+  }
+
+  // biar maxPagenya keset
+  Promise.any(promises).then(() => {
+    promises.length = 0
+
+    while (++page < lastPage) {
+      promises.push(crawl(page))
+    }
+  })
+
+  await Promise.all(promises)
+  await Promise.all(cbPromises)
 }
