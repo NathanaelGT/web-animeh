@@ -157,9 +157,9 @@ function AnimeId() {
             <Stat title="Tanggal tayang" stat={dateFormatter.format(animeData.airedFrom)} />
           ) : (
             <>
-              <Stat title="Tanggal mulai" stat={dateFormatter.format(animeData.airedFrom)} />
+              <Stat title="Tayang mulai" stat={dateFormatter.format(animeData.airedFrom)} />
               <Stat
-                title="Tanggal sampai"
+                title="Tayang sampai"
                 stat={animeData.airedTo ? dateFormatter.format(animeData.airedTo) : '?'}
               />
             </>
