@@ -93,7 +93,7 @@ export const downloadEpisode = async (
   episodeUrl.pathname = `/anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
   const setCredentials = async () => {
-    downloadProgress.emit(emitKey, { text: 'Mengambil token dari kuramanime' })
+    downloadProgress.emit(emitKey, { text: 'Mengambil token dari Kuramanime' })
     ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess] = await Promise.all([
       getKuramanimeProcess(episodeUrl.toString()),
       getKuramanimeInitProcess(),
@@ -109,7 +109,7 @@ export const downloadEpisode = async (
     episodeUrl.searchParams.set(kProcess!.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
     episodeUrl.searchParams.set('page', '1')
 
-    downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari kuramanime' })
+    downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari Kuramanime' })
     const responseHtml = await fetchText(episodeUrl.toString(), { signal })
 
     let downloadUrl = responseHtml.slice(
