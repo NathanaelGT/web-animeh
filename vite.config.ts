@@ -5,6 +5,9 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 export default defineConfig({
   plugins: [tsconfigPaths(), react(), TanStackRouterVite()],
+  resolve: {
+    extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
+  },
   build: {
     target: 'esnext',
     minify: 'terser',
