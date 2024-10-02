@@ -423,17 +423,16 @@ export const downloadEpisode = async (
                 const sizeIndex = message.lastIndexOf('size=  ')
                 if (sizeIndex > -1) {
                   const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
-                  // bukan dikalikan 100 untuk ngasih ilusi loadingnya lebih mulus saat nampilin progress palsu
-                  progress = ((sizeKilo * 1024) / videoSize) * (intervalId ? 100 : 80)
+                  progress = ((sizeKilo * 1024) / videoSize) * 100
 
                   emitProgress()
 
-                  // setelah progress diatas 72.8% (aslinya 91%), ffmpegnya bakal stuck agak lama
+                  // setelah progress diatas 91%, ffmpegnya bakal stuck agak lama
                   // jadi biar progressnya ga stuck, dibuat progress palsu
-                  if (!intervalId && progress > 72.8) {
+                  if (!intervalId && progress > 91) {
                     intervalId = setInterval(() => {
-                      // 1.7 angka magic yang kira kira pas
-                      progress += (100 - progress) / 1.7
+                      // 2 angka magic yang kira kira pas
+                      progress += (100 - progress) / 2
 
                       emitProgress()
                     }, 500) // ffmpeg nampilin progressnya tiap 500ms
