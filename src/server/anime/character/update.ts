@@ -95,45 +95,60 @@ export const updateCharacter = async (
       }
     }
 
-    await Promise.all([
-      db
-        .insert(characters)
-        .values(characterList)
-        .onConflictDoUpdate({
-          target: characters.id,
-          set: buildConflictUpdateColumns(characters, ['name', 'favorites', 'imageUrl']),
-        })
-        .execute(),
+    const mainPromises: Promise<unknown>[] = []
+    if (characterList.length) {
+      mainPromises.push(
+        db
+          .insert(characters)
+          .values(characterList)
+          .onConflictDoUpdate({
+            target: characters.id,
+            set: buildConflictUpdateColumns(characters, ['name', 'favorites', 'imageUrl']),
+          })
+          .execute(),
+      )
+    }
+    if (personList.length) {
+      mainPromises.push(
+        db
+          .insert(persons)
+          .values(personList)
+          .onConflictDoUpdate({
+            target: persons.id,
+            set: buildConflictUpdateColumns(persons, ['name']),
+          })
+          .execute(),
+      )
+    }
 
-      db
-        .insert(persons)
-        .values(personList)
-        .onConflictDoUpdate({
-          target: persons.id,
-          set: buildConflictUpdateColumns(persons, ['name']),
-        })
-        .execute(),
-    ])
+    await Promise.all(mainPromises)
+
+    if (animeToCharacterList.length) {
+      promises.push(
+        db
+          .insert(animeToCharacters)
+          .values(animeToCharacterList)
+          .onConflictDoUpdate({
+            target: [animeToCharacters.animeId, animeToCharacters.characterId],
+            set: buildConflictUpdateColumns(animeToCharacters, ['isMain']),
+          })
+          .execute(),
+      )
+    }
+    if (characterToPersonList.length) {
+      promises.push(
+        db
+          .insert(characterToPersons)
+          .values(characterToPersonList)
+          .onConflictDoUpdate({
+            target: [characterToPersons.characterId, characterToPersons.personId],
+            set: buildConflictUpdateColumns(characterToPersons, ['language']),
+          })
+          .execute(),
+      )
+    }
 
     promises.push(
-      db
-        .insert(animeToCharacters)
-        .values(animeToCharacterList)
-        .onConflictDoUpdate({
-          target: [animeToCharacters.animeId, animeToCharacters.characterId],
-          set: buildConflictUpdateColumns(animeToCharacters, ['isMain']),
-        })
-        .execute(),
-
-      db
-        .insert(characterToPersons)
-        .values(characterToPersonList)
-        .onConflictDoUpdate({
-          target: [characterToPersons.characterId, characterToPersons.personId],
-          set: buildConflictUpdateColumns(characterToPersons, ['language']),
-        })
-        .execute(),
-
       db
         .update(anime)
         .set({ characterUpdatedAt: new Date(result.header.get('Last-Modified')) })
