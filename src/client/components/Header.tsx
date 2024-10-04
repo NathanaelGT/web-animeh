@@ -172,6 +172,15 @@ export function Header() {
           <Link
             to="/"
             preloadDelay={50}
+            search={() => ({ ongoing: 'yoi' })}
+            activeProps={{ className: 'font-bold' }}
+          >
+            Ongoing
+          </Link>
+
+          <Link
+            to="/"
+            preloadDelay={50}
             search={() => ({ terunduh: 'yoi' })}
             activeProps={{ className: 'font-bold' }}
           >

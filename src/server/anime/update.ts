@@ -34,17 +34,19 @@ type UpdateConfig = Partial<{
 }>
 
 const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<any>['header']) => {
+  const airedFrom = new Date(jikanAnimeData.aired.from)
+
   return {
     updatedAt: new Date(header.get('Last-Modified')),
     japaneseTitle: jikanAnimeData.title_japanese,
     englishTitle: jikanAnimeData.title_english,
     synopsis: jikanAnimeData.synopsis ?? '', // @JIKAN_TYPE ada anime yang gapunya sinopsis
     totalEpisodes: jikanAnimeData.episodes,
-    airedFrom: new Date(jikanAnimeData.aired.from),
+    airedFrom,
     airedTo: jikanAnimeData.aired.to
       ? new Date(jikanAnimeData.aired.to)
-      : jikanAnimeData.episodes === 1
-        ? new Date(jikanAnimeData.aired.from)
+      : jikanAnimeData.episodes === 1 || jikanAnimeData.status === 'Finished Airing'
+        ? airedFrom
         : null,
     score: jikanAnimeData.score,
     scoredBy: jikanAnimeData.scored_by,

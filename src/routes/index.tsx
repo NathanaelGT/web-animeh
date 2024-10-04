@@ -11,8 +11,11 @@ import { oneRemInPx } from '~c/utils/css'
 import { PosterDisplayGroup } from '@/page/home/PosterDisplayGroup'
 import type { TRPCParams } from '~/shared/utils/types'
 
+const vOptionalString = v.optional(v.string(), undefined)
+
 const searchSchema = v.object({
-  terunduh: v.optional(v.string(), undefined),
+  ongoing: vOptionalString,
+  terunduh: vOptionalString,
 })
 
 export const Route = createFileRoute('/')({
@@ -45,6 +48,7 @@ export const Route = createFileRoute('/')({
           (posterHeightPx + posterTextHeightPx + wrapperGapY),
       )
 
+    params.ongoing = Boolean(deps?.ongoing)
     params.downloaded = Boolean(deps?.terunduh)
 
     return [params, getScrollThresholdPx(4), await fetchRouteData('/', params)] as const

@@ -26,8 +26,9 @@ export const RouteRouter = router({
         v.object({
           // x: v.number(), // x cuma untuk cache busting
           cursor: v.nullish(v.number()),
-          downloaded: v.boolean(),
           perPage: v.number(),
+          ongoing: v.boolean(),
+          downloaded: v.boolean(),
         }),
       ),
     )
@@ -49,15 +50,16 @@ export const RouteRouter = router({
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
         orderBy: (anime, { desc }) => [desc(anime.id)],
-        where(anime, { and, eq, inArray, lt }) {
-          const isVisible = eq(anime.isVisible, true)
-          const otherCondition = ids
-            ? inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
-            : cursor
-              ? lt(anime.id, cursor)
-              : undefined
-
-          return otherCondition ? and(isVisible, otherCondition) : isVisible
+        where(anime, { and, eq, isNull, inArray, lt }) {
+          return and(
+            eq(anime.isVisible, true),
+            input.ongoing ? isNull(anime.airedTo) : undefined,
+            ids
+              ? inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
+              : cursor
+                ? lt(anime.id, cursor)
+                : undefined,
+          )
         },
         columns: {
           id: true,
