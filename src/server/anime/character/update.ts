@@ -33,7 +33,17 @@ export const updateCharacter = async (
       favorites: number | null // masih belum tau apakah favorites selalu number, jadi amannya dibuat nullable
     })[]
 
+    const updateAnimeCharacterTimestamp = () => {
+      return db
+        .update(anime)
+        .set({ characterUpdatedAt: new Date(result.header.get('Last-Modified')) })
+        .where(eq(anime.id, animeData.id))
+        .execute()
+    }
+
     if (!data.length) {
+      await updateAnimeCharacterTimestamp()
+
       break update
     }
 
@@ -148,13 +158,7 @@ export const updateCharacter = async (
       )
     }
 
-    promises.push(
-      db
-        .update(anime)
-        .set({ characterUpdatedAt: new Date(result.header.get('Last-Modified')) })
-        .where(eq(anime.id, animeData.id))
-        .execute(),
-    )
+    promises.push(updateAnimeCharacterTimestamp())
 
     await Promise.all(promises)
   }
