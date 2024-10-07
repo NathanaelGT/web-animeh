@@ -255,8 +255,8 @@ export const episodes = sqliteTable(
     japaneseTitle: text('japanese_title'),
     romanjiTitle: text('romanji_title'),
     score: score('score'),
-    is_filler: integer('is_filler', { mode: 'boolean' }),
-    is_recap: integer('is_recap', { mode: 'boolean' }),
+    isFiller: integer('is_filler', { mode: 'boolean' }),
+    isRecap: integer('is_recap', { mode: 'boolean' }),
   },
   t => ({
     pk: primaryKey({ columns: [t.animeId, t.number] }),

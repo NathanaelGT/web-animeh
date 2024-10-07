@@ -44,8 +44,8 @@ export const updateEpisode = async (
           japaneseTitle: episode.title_japanese,
           romanjiTitle: episode.title_romanji,
           score: (episode as any).score, // @JIKAN_TYPE
-          is_filler: episode.filler,
-          is_recap: episode.recap,
+          isFiller: episode.filler,
+          isRecap: episode.recap,
         } satisfies typeof episodes.$inferInsert
       })
 
@@ -63,8 +63,8 @@ export const updateEpisode = async (
                 'japaneseTitle',
                 'romanjiTitle',
                 'score',
-                'is_filler',
-                'is_recap',
+                'isFiller',
+                'isRecap',
               ]),
             })
             .execute(),

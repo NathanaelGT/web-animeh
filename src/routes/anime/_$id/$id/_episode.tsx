@@ -101,7 +101,7 @@ function EpisodeLayout() {
       .sort((a, b) => a - b) as [number, number]
 
     const result = episodeList.slice(start, end + 1).filter(episode => {
-      if ((hideFiller && episode.is_filler) || (hideRecap && episode.is_recap)) {
+      if ((hideFiller && episode.isFiller) || (hideRecap && episode.isRecap)) {
         return false
       }
 
@@ -161,12 +161,12 @@ function EpisodeLayout() {
     if (hideFiller || hideRecap) {
       const episode = searchEpisode(episodeList, query)
 
-      if (hideFiller && episode?.is_filler) {
+      if (hideFiller && episode?.isFiller) {
         updaters.push(() => {
           setHideFiller(false)
         })
       }
-      if (hideRecap && episode?.is_recap) {
+      if (hideRecap && episode?.isRecap) {
         updaters.push(() => {
           setHideRecap(false)
         })

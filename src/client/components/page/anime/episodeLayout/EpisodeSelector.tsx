@@ -57,16 +57,16 @@ export function EpisodeTooltip({ episode }: EpisodeTooltipProps) {
             <td>: {episode.score}</td>
           </tr>
         )}
-        {episode.is_filler !== null && (
+        {episode.isFiller !== null && (
           <tr>
             <td>Filler</td>
-            <td>: {episode.is_filler ? 'Ya' : 'Bukan'}</td>
+            <td>: {episode.isFiller ? 'Ya' : 'Bukan'}</td>
           </tr>
         )}
-        {episode.is_recap !== null && (
+        {episode.isRecap !== null && (
           <tr>
             <td>Recap</td>
-            <td>: {episode.is_recap ? 'Ya' : 'Bukan'}</td>
+            <td>: {episode.isRecap ? 'Ya' : 'Bukan'}</td>
           </tr>
         )}
       </tbody>
@@ -98,7 +98,7 @@ function DetailEpisodeSelector(initial: boolean, { animeId, currentEpisode, epis
         id={`episode_${episode.number}`}
         className={
           'relative h-11 ring ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out' +
-          (episode.is_filler ? ' bg-yellow-100' : episode.is_recap ? ' bg-red-100' : '')
+          (episode.isFiller ? ' bg-yellow-100' : episode.isRecap ? ' bg-red-100' : '')
         }
       >
         <SimpleTooltip title={<EpisodeTooltip episode={episode} />}>
@@ -147,7 +147,7 @@ function CompactEpisodeSelector(initial: boolean, { animeId, currentEpisode, epi
         id={`episode_${episode.number}`}
         className={
           'w-10 rounded-md ring ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out ' +
-          (episode.is_filler ? 'bg-yellow-100' : episode.is_recap ? 'bg-red-100' : 'bg-primary/20')
+          (episode.isFiller ? 'bg-yellow-100' : episode.isRecap ? 'bg-red-100' : 'bg-primary/20')
         }
       >
         <SimpleTooltip title={<EpisodeTooltip episode={episode} />}>
