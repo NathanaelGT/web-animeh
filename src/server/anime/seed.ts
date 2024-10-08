@@ -1,6 +1,7 @@
 import { db } from '~s/db'
 import { genres, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
+import { isProduction } from '~s/env'
 import { prepareStudioData } from '~s/studio/prepare'
 import { glob, imagesDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
@@ -15,11 +16,17 @@ import { updateCharacter } from './character/update'
 export const seed = async () => {
   seedGenres()
 
-  metadata.get('lastStudioPage').then(fetchStudio)
+  if (isProduction()) {
+    metadata.get('lastStudioPage').then(fetchStudio)
+  }
 
   const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
 
   await (firstAnime ? sync : populate)()
+
+  if (!isProduction()) {
+    return
+  }
 
   await updateIncompleteAnimeData()
 
@@ -107,7 +114,9 @@ async function fetchStudio(startPage: number) {
 const populate = async () => {
   const imageList = new Set(await glob(imagesDirPath, '*'))
 
-  await fetchAll(animeList => insertKuramanimeAnimeListToDb(animeList, imageList))
+  await fetchAll(animeList => {
+    return insertKuramanimeAnimeListToDb(animeList, imageList, { withCreatedAt: false })
+  })
 }
 
 const sync = async () => {
@@ -120,7 +129,7 @@ const sync = async () => {
 
   const insertParsedDataToDb = async () => {
     await Promise.all([
-      insertKuramanimeAnimeListToDb(parsedData.animes.data, imageList),
+      insertKuramanimeAnimeListToDb(parsedData.animes.data, imageList, { withCreatedAt: true }),
 
       metadata.set('kuramanimeCrawl', {
         perPage: newPerPage,
