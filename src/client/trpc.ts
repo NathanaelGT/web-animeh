@@ -14,9 +14,11 @@ export const wsClient = createWSClient({
   retryDelayMs: index => Math.min(5000, index * 1000),
 
   url() {
-    const port = import.meta.env.PROD ? 8888 : 8887
+    // ga langsung ditentukan "http" atau "ws" dari env soalnya bisa jadi protoclnya "https" di prod
+    const protocol = location.protocol.replace('http', 'ws')
+    const host = import.meta.env.PROD ? location.host : 'localhost:8887'
 
-    return `ws://localhost:${port}/$INJECT_VERSION$&${clientProfileIdStore.state ?? ''}`
+    return `${protocol}//${host}/$INJECT_VERSION$&${clientProfileIdStore.state ?? ''}`
   },
 
   onClose(cause) {

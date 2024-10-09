@@ -20,9 +20,9 @@ type Props = {
 }
 
 const getSrc = (animeId: string, episodeString: string) => {
-  const PORT = import.meta.env.PROD ? 8888 : 8887
+  const basePath = import.meta.env.PROD ? origin : 'http://localhost:8887'
 
-  return `http://localhost:${PORT}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
+  return `${basePath}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
 }
 
 export function VideoPlayer({ params }: Props) {
