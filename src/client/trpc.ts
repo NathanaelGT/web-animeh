@@ -10,6 +10,10 @@ import type { TRPCRouter } from '~s/router'
 let currentToast: ReturnType<typeof toast> | null | undefined
 let firstTime = true
 
+const reconnectToWs = () => {
+  wsClient.reconnect()
+}
+
 export const wsClient = createWSClient({
   retryDelayMs: index => Math.min(5000, index * 1000),
 
@@ -28,6 +32,8 @@ export const wsClient = createWSClient({
       return
     }
 
+    addEventListener('focus', reconnectToWs, true)
+
     let index = 0
     const toastData = () => {
       return {
@@ -36,18 +42,18 @@ export const wsClient = createWSClient({
         duration: Infinity,
         onOpenChange(open) {
           if (!open) {
-            toastObj.dismiss()
+            toastInstance.dismiss()
             currentToast = null
           }
         },
       } satisfies Toast
     }
 
-    const toastObj = (currentToast = toast(toastData()))
+    const toastInstance = (currentToast = toast(toastData()))
 
     const toastIntervalId = setInterval(() => {
       if (currentToast) {
-        toastObj.update(toastData())
+        toastInstance.update(toastData())
       } else {
         clearInterval(toastIntervalId)
       }
@@ -61,19 +67,28 @@ export const wsClient = createWSClient({
       return
     }
 
+    removeEventListener('focus', reconnectToWs, true)
+
     const toastData = {
       title: 'Terhubung kembali',
       description: 'Koneksi dengan server telah berhasil terhubung kembali',
-      duration: 5000,
     } satisfies Toast
 
+    let toastInstance: ReturnType<typeof toast>
+
     if (currentToast) {
+      toastInstance = currentToast
+
       currentToast.update(toastData)
 
       currentToast = null
     } else {
-      toast(toastData)
+      toastInstance = toast(toastData)
     }
+
+    setTimeout(() => {
+      toastInstance.dismiss()
+    }, 5000)
   },
 })
 
