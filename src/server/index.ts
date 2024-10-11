@@ -1,7 +1,6 @@
 // import argv ditaro dipaling atas biar hasil buildnya pengecekan argv dilakukan diawal
 import { argv } from '~s/argv'
 import Bun from 'bun'
-// import os from 'os'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { websocket, httpHandler } from '~s/handler'
 import { fill, maxWidth } from '~s/utils/cli'
@@ -79,119 +78,135 @@ export type WebSocketData = {
   profile: Profile
 }
 
-const server = Bun.serve<WebSocketData & BunWSClientCtx>({
-  port: isProduction() ? 8888 : 8887,
-  // hostname: Object.values(os.networkInterfaces()).reduce(
-  //   (r, list) =>
-  //     r.concat(
-  //       list.reduce(
-  //         (rr, i) => rr.concat((i.family === 'IPv4' && !i.internal && i.address) || []),
-  //         [],
-  //       ),
-  //     ),
-  //   [],
-  // )[0],
-  websocket: argv.log
-    ? {
-        ...websocket,
-        open(ws) {
-          const startNs = Bun.nanoseconds()
+const server = await (async () => {
+  const serverOption: Bun.Serve<WebSocketData & BunWSClientCtx> = {
+    port: isProduction() ? 8888 : 8887,
+    websocket: argv.log
+      ? {
+          ...websocket,
+          open(ws) {
+            const startNs = Bun.nanoseconds()
 
-          try {
-            return websocket.open?.(ws)
-          } finally {
-            const elapsed = Bun.nanoseconds() - startNs
+            try {
+              return websocket.open?.(ws)
+            } finally {
+              const elapsed = Bun.nanoseconds() - startNs
 
-            log('ws', 'Client Connected', elapsed, ws.data.id)
-          }
-        },
-        close(ws, code, reason) {
-          const startNs = Bun.nanoseconds()
+              log('ws', 'Client Connected', elapsed, ws.data.id)
+            }
+          },
+          close(ws, code, reason) {
+            const startNs = Bun.nanoseconds()
 
-          try {
-            return websocket.close?.(ws, code, reason)
-          } finally {
-            const elapsed = Bun.nanoseconds() - startNs
-            const status = isTerminating ? 'Terminated' : 'Disconnected'
+            try {
+              return websocket.close?.(ws, code, reason)
+            } finally {
+              const elapsed = Bun.nanoseconds() - startNs
+              const status = isTerminating ? 'Terminated' : 'Disconnected'
 
-            log('ws', `Client ${status}`, elapsed, ws.data.id)
-          }
-        },
-        message(ws, message) {
-          const startNs = Bun.nanoseconds()
+              log('ws', `Client ${status}`, elapsed, ws.data.id)
+            }
+          },
+          message(ws, message) {
+            const startNs = Bun.nanoseconds()
 
-          try {
-            return websocket.message(ws, message)
-          } finally {
-            const elapsed = Bun.nanoseconds() - startNs
+            try {
+              return websocket.message(ws, message)
+            } finally {
+              const elapsed = Bun.nanoseconds() - startNs
 
-            ;(() => {
-              message = message.toString()
-              if (message === '[]') {
-                return
-              }
-
-              const data = JSON.parse(message) as Record<string, unknown> | null
-              if (!isObject(data?.params)) {
-                return
-              }
-
-              const { path, ...params } = data.params
-              if (path === 'log' || typeof path !== 'string') {
-                return
-              }
-
-              const isRoute = path.startsWith('route.')
-              const msg = isRoute ? path.slice(6) : path
-              const level = isRoute ? 'route' : 'ws'
-              const maxLength = maxWidth - 53 - msg.length
-
-              if (isObject(params.input) && 'json' in params.input) {
-                try {
-                  params.input = SuperJSON.deserialize(params.input as SuperJSONResult)
-                } catch {
-                  //
+              ;(() => {
+                message = message.toString()
+                if (message === '[]') {
+                  return
                 }
-              }
 
-              let param = JSON.stringify(params)
-              param = (param.length > maxLength ? param.slice(0, maxLength - 2) + '..' : param)
-                // ngehilangin double quotes dari property
-                .replace(/"([^"]+)":/g, '$1:')
-                .replace(/\uFFFF/g, '\\"')
+                const data = JSON.parse(message) as Record<string, unknown> | null
+                if (!isObject(data?.params)) {
+                  return
+                }
 
-              const context = param ? `${ws.data.id} ${param}` : ws.data.id
+                const { path, ...params } = data.params
+                if (path === 'log' || typeof path !== 'string') {
+                  return
+                }
 
-              log(level, msg, elapsed, context, /({|}|:|,|")/g)
-            })()
+                const isRoute = path.startsWith('route.')
+                const msg = isRoute ? path.slice(6) : path
+                const level = isRoute ? 'route' : 'ws'
+                const maxLength = maxWidth - 53 - msg.length
+
+                if (isObject(params.input) && 'json' in params.input) {
+                  try {
+                    params.input = SuperJSON.deserialize(params.input as SuperJSONResult)
+                  } catch {
+                    //
+                  }
+                }
+
+                let param = JSON.stringify(params)
+                param = (param.length > maxLength ? param.slice(0, maxLength - 2) + '..' : param)
+                  // ngehilangin double quotes dari property
+                  .replace(/"([^"]+)":/g, '$1:')
+                  .replace(/\uFFFF/g, '\\"')
+
+                const context = param ? `${ws.data.id} ${param}` : ws.data.id
+
+                log(level, msg, elapsed, context, /({|}|:|,|")/g)
+              })()
+            }
+          },
+        }
+      : websocket,
+
+    fetch: argv.log
+      ? async (request, server) => {
+          const startNs = Bun.nanoseconds()
+
+          const response = await httpHandler(request, server)
+
+          if (response === undefined) {
+            return
           }
-        },
-      }
-    : websocket,
 
-  fetch: argv.log
-    ? async (request, server) => {
-        const startNs = Bun.nanoseconds()
+          try {
+            return response
+          } finally {
+            const elapsed = Bun.nanoseconds() - startNs
+            const url = request.url.slice(server.url.origin.length)
+            const range = request.headers.get('range')
+            const context = range ? range.replace('bytes=', '') : null
 
-        const response = await httpHandler(request, server)
-
-        if (response === undefined) {
-          return
+            log('http', url, elapsed, context, /(-)/g, ['{', '}'])
+          }
         }
+      : httpHandler,
+  }
 
-        try {
-          return response
-        } finally {
-          const elapsed = Bun.nanoseconds() - startNs
-          const url = request.url.slice(server.url.origin.length)
-          const range = request.headers.get('range')
-          const context = range ? range.replace('bytes=', '') : null
+  try {
+    return Bun.serve(serverOption)
+  } catch (error) {
+    let message: string
 
-          log('http', url, elapsed, context, /(-)/g, ['{', '}'])
-        }
+    if (error instanceof Error) {
+      if (error.name === 'EADDRINUSE') {
+        message = `Port ${serverOption.port} in use`
+      } else {
+        message = error.message
       }
-    : httpHandler,
-})
+    } else if (typeof error === 'string') {
+      message = error
+    } else {
+      message = JSON.stringify(error)
+    }
+
+    process.stdout.write('\n')
+
+    log('server', `Failed to start: ${message}`)
+
+    process.exit(1)
+  }
+})()
 
 if (!isProduction()) {
   globalForServer.server = server
