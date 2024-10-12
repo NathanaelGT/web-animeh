@@ -21,7 +21,7 @@ const globalForServer = globalThis as unknown as {
 }
 
 const firstTime = isProduction() || globalForServer.server === undefined
-let isTerminating = false
+let isShuttingdown = false
 
 type Level = 'server' | 'http' | 'ws' | 'route'
 
@@ -69,7 +69,7 @@ if (firstTime) {
   globalForServer.server?.stop(true)
 
   if (!isProduction()) {
-    log('server', 'Hot Reload')
+    log('server', 'Hot reload')
   }
 }
 
@@ -92,7 +92,7 @@ const server = await (async () => {
             } finally {
               const elapsed = Bun.nanoseconds() - startNs
 
-              log('ws', 'Client Connected', elapsed, ws.data.id)
+              log('ws', 'Client connected', elapsed, ws.data.id)
             }
           },
           close(ws, code, reason) {
@@ -102,9 +102,9 @@ const server = await (async () => {
               return websocket.close?.(ws, code, reason)
             } finally {
               const elapsed = Bun.nanoseconds() - startNs
-              const status = isTerminating ? 'Terminated' : 'Disconnected'
+              const suffix = isShuttingdown ? ' by server' : ''
 
-              log('ws', `Client ${status}`, elapsed, ws.data.id)
+              log('ws', `Client disconnected${suffix}`, elapsed, ws.data.id)
             }
           },
           message(ws, message) {
@@ -243,25 +243,70 @@ if (firstTime) {
     logger.error(message, context)
   })
 
-  process.on('SIGHUP', () => process.exit(129))
-  process.on('SIGINT', () => process.exit(130))
-  process.on('SIGTERM', () => process.exit(143))
-  process.on('exit', () => {
-    isTerminating = true
+  const [createShutdownHandler, forceShutdown] = (() => {
+    let startNs: number | undefined
+    let stoppedLogged = false
 
-    // ada beberapa terminal yang ngeprint "^C" kalo ngirim SIGINT tanpa ngasih newline
-    process.stdout.cursorTo(0)
+    const start = () => {
+      isShuttingdown = true
 
-    log('server', 'Terminating')
+      // ada beberapa terminal yang ngeprint "^C" kalo ngirim SIGINT tanpa ngasih newline
+      process.stdout.cursorTo(0)
 
-    const startNs = Bun.nanoseconds()
-    server.stop(true)
-    const elapsed = Bun.nanoseconds() - startNs
+      log('server', 'Stopping', null, 'press Ctrl+C again to force stop the server', /(.)/g, [
+        '',
+        '',
+      ])
 
-    log('server', 'Terminated', elapsed)
+      startNs = Bun.nanoseconds()
+    }
 
-    process.stdout.write('\x1b[0m')
-  })
+    const logElapsed = (message = 'Terminated') => {
+      if (stoppedLogged) {
+        return
+      }
+
+      stoppedLogged = true
+
+      const elapsed = Bun.nanoseconds() - startNs!
+
+      // ada beberapa terminal yang ngeprint "^C" kalo ngirim SIGINT tanpa ngasih newline
+      process.stdout.cursorTo(0)
+
+      process.stdout.write(logMessage('server', message, elapsed) + '\x1b[0m')
+    }
+
+    return [
+      (exitCode: number) => async () => {
+        if (startNs === undefined) {
+          start()
+
+          await server.stop(true)
+
+          logElapsed('Stopped')
+        } else {
+          logElapsed()
+        }
+
+        process.exit(exitCode)
+      },
+
+      () => {
+        if (startNs === undefined) {
+          start()
+
+          server.stop(true)
+        }
+
+        logElapsed()
+      },
+    ] as const
+  })()
+
+  process.on('SIGHUP', createShutdownHandler(129))
+  process.on('SIGINT', createShutdownHandler(130))
+  process.on('SIGTERM', createShutdownHandler(143))
+  process.on('exit', forceShutdown)
 
   const elapsed = Bun.nanoseconds()
 
@@ -291,5 +336,5 @@ if (firstTime) {
 }
 
 if (!argv.log) {
-  log('server', 'Silent Mode')
+  log('server', 'Silent mode')
 }

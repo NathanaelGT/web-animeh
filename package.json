@@ -57,7 +57,7 @@
     "@tanstack/router-cli": "^1.58.1",
     "@tanstack/router-devtools": "^1.58.7",
     "@tanstack/router-plugin": "^1.58.4",
-    "@types/bun": "^1.1.10",
+    "@types/bun": "^1.1.11",
     "@types/eslint": "^9.6.1",
     "@types/node": "^22.6.1",
     "@types/react": "^18.3.8",
