@@ -8,7 +8,7 @@ import { formatNs } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
 import { getStackTraces } from '~s/utils/error'
 import { format } from '~/shared/utils/date'
-import { isObject } from '~/shared/utils/object'
+import { isObject, omit } from '~/shared/utils/object'
 import { seed } from '~s/anime/seed'
 import { SilentError } from '~s/error'
 import { serverType } from '~s/info' with { type: 'macro' }
@@ -126,16 +126,12 @@ const server = await (async () => {
                   return
                 }
 
-                const { path, ...params } = data.params
+                const { path } = data.params
                 if (path === 'log' || typeof path !== 'string') {
                   return
                 }
 
-                const isRoute = path.startsWith('route.')
-                const msg = isRoute ? path.slice(6) : path
-                const level = isRoute ? 'route' : 'ws'
-                const maxLength = maxWidth - 53 - msg.length
-
+                const params = omit(data.params, 'path')
                 if (isObject(params.input) && 'json' in params.input) {
                   try {
                     params.input = SuperJSON.deserialize(params.input as SuperJSONResult)
@@ -143,6 +139,11 @@ const server = await (async () => {
                     //
                   }
                 }
+
+                const isRoute = path.startsWith('route.')
+                const msg = isRoute ? path.slice(6) : path
+                const level = isRoute ? 'route' : 'ws'
+                const maxLength = maxWidth - 53 - msg.length
 
                 let param = JSON.stringify(params)
                 param = (param.length > maxLength ? param.slice(0, maxLength - 2) + '..' : param)
