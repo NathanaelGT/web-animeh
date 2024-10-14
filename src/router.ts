@@ -1,5 +1,6 @@
 import { createRouter as createTanstackRouter } from '@tanstack/react-router'
 import { routeTree } from '~/routeTree.gen'
+import { Pending } from '@/Pending'
 
 export const createRouter = () => {
   return createTanstackRouter({
@@ -10,6 +11,7 @@ export const createRouter = () => {
     defaultPreloadStaleTime: 10_000,
     defaultStaleTime: Infinity,
     defaultGcTime: 0,
+    defaultPendingComponent: Pending,
   })
 }
 
