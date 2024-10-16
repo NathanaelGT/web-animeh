@@ -12,6 +12,7 @@ export const createRouter = () => {
     defaultStaleTime: Infinity,
     defaultGcTime: 0,
     defaultPendingComponent: Pending,
+    defaultPendingMinMs: 0,
   })
 }
 
