@@ -3,6 +3,7 @@ import path from 'path'
 import ky from 'ky'
 import * as v from 'valibot'
 import { env } from '~/env'
+import * as kyInstances from '~s/ky'
 import { anime, animeMetadata } from '~s/db/schema'
 import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
@@ -16,6 +17,7 @@ import {
 import { fetchText } from '~s/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
+import { toSearchParamString } from '~/shared/utils/url'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -89,13 +91,12 @@ export const downloadEpisode = async (
 
   downloadProgressController.set(emitKey, abortController)
 
-  const episodeUrl = new URL('https://kuramanime.' + env.KURAMANIME_TLD)
-  episodeUrl.pathname = `/anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
+  const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
   const setCredentials = async () => {
     downloadProgress.emit(emitKey, { text: 'Mengambil token dari Kuramanime' })
     ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess] = await Promise.all([
-      getKuramanimeProcess(episodeUrl.toString()),
+      getKuramanimeProcess(episodeUrl),
       getKuramanimeInitProcess(),
     ])
   }
@@ -105,12 +106,19 @@ export const downloadEpisode = async (
       await setCredentials()
     }
 
-    episodeUrl.searchParams.set(kProcess!.env.MIX_PAGE_TOKEN_KEY, kMIX_PAGE_TOKEN_VALUE!)
-    episodeUrl.searchParams.set(kProcess!.env.MIX_STREAM_SERVER_KEY, 'kuramadrive')
-    episodeUrl.searchParams.set('page', '1')
+    const searchParams = toSearchParamString({
+      [kProcess!.env.MIX_PAGE_TOKEN_KEY]: kMIX_PAGE_TOKEN_VALUE!,
+      [kProcess!.env.MIX_STREAM_SERVER_KEY]: 'kuramadrive',
+      page: 1,
+    })
 
     downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari Kuramanime' })
-    const responseHtml = await fetchText(episodeUrl.toString(), { signal })
+
+    const responseHtml = await fetchText(
+      `${episodeUrl}?${searchParams}`,
+      { signal },
+      kyInstances.kuramanime,
+    )
 
     let downloadUrl = responseHtml.slice(
       responseHtml.indexOf('id="source720" src="') + 'id="source720" src="'.length,
@@ -545,7 +553,7 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
 }
 
 async function getKuramanimeInitProcess() {
-  const js = await fetchText(`https://kuramanime.${env.KURAMANIME_TLD}/assets/js/sizzly.js`)
+  const js = await fetchText('assets/js/sizzly.js', {}, kyInstances.kuramanime)
 
   return v.parse(
     kuramanimeInitProcessSchema,
@@ -554,7 +562,7 @@ async function getKuramanimeInitProcess() {
 }
 
 async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
-  let kpsUrl = await fetchText(anyKuramanimeEpisodeUrl)
+  let kpsUrl = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('data-kps="'))
   kpsUrl = kpsUrl.slice(kpsUrl.indexOf('"') + 1, kpsUrl.indexOf('">'))
 
@@ -562,16 +570,16 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
     throw new EpisodeNotFoundError()
   }
 
-  const kProcessJs = await fetchText(
-    `https://kuramanime.${env.KURAMANIME_TLD}/assets/js/${kpsUrl}.js`,
-  )
+  const kProcessJs = await fetchText(`assets/js/${kpsUrl}.js`, {}, kyInstances.kuramanime)
   const kProcess = v.parse(
     kuramanimeProcessSchema,
     parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
   )
 
   const pageToken = await fetchText(
-    `https://kuramanime.${env.KURAMANIME_TLD}/assets/${kProcess.env.MIX_AUTH_ROUTE_PARAM}`,
+    `assets/${kProcess.env.MIX_AUTH_ROUTE_PARAM}`,
+    {},
+    kyInstances.kuramanime,
   )
 
   return [pageToken, kProcess] as const

@@ -1,6 +1,5 @@
-import ky from 'ky'
 import * as v from 'valibot'
-import { env } from '~/env'
+import * as kyInstances from '~s/ky'
 import { metadata } from '~s/metadata'
 import { limitRequest } from '~s/external/limit'
 
@@ -102,9 +101,8 @@ type OrderBy = 'latest' | 'oldest' | 'updated'
 
 export const fetchPage = async (page: number, orderBy: OrderBy = 'oldest') => {
   const response = await limitRequest(() => {
-    return ky.get(
-      `https://kuramanime.${env.KURAMANIME_TLD}/properties/country/jp?` +
-        `order_by=${orderBy}&name=JP&page=${page}&need_json=true`,
+    return kyInstances.kuramanime.get(
+      `properties/country/jp?order_by=${orderBy}&name=JP&page=${page}&need_json=true`,
     )
   })
 

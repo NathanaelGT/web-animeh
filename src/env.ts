@@ -10,7 +10,6 @@ const number = (min: number) => {
 }
 
 const schema = v.object({
-  KURAMANIME_TLD: v.string(),
   PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB: number(0),
   PARALLEL_REQUEST_LIMIT: number(1),
   PARALLEL_DOWNLOAD_LIMIT: number(1),

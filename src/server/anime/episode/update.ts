@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { env } from '~/env'
 import { db } from '~s/db'
+import * as kyInstances from '~s/ky'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { anime, episodes } from '~s/db/schema'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
@@ -112,9 +112,11 @@ export const updateEpisode = async (
     }
     const episodeNumbers: ReturnType<typeof createEpisodeData>[] = []
 
-    const html = await fetchText(
-      `https://kuramanime.${env.KURAMANIME_TLD}/anime/${metadata.providerId}/${metadata.providerSlug}`,
-    )
+      const html = await fetchText(
+        `anime/${metadata.providerId}/${metadata.providerSlug}`,
+        {},
+        kyInstances.kuramanime,
+      )
 
     const episodeListHtml = html
       .slice(html.lastIndexOf(' id="episodeLists"'))
