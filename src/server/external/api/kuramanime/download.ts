@@ -101,7 +101,7 @@ export const downloadEpisode = async (
     ])
   }
 
-  const getDownloadUrl = async () => {
+  const getDownloadUrl = async (): Promise<string> => {
     if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess) {
       await setCredentials()
     }
@@ -120,12 +120,7 @@ export const downloadEpisode = async (
       kyInstances.kuramanime,
     )
 
-    let downloadUrl = responseHtml.slice(
-      responseHtml.indexOf('id="source720" src="') + 'id="source720" src="'.length,
-    )
-    downloadUrl = downloadUrl.slice(0, downloadUrl.indexOf('"'))
-
-    if (!downloadUrl.startsWith('http')) {
+    const handleDownloadUrlNotFound = () => {
       // tokennya expired
       if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
         unsetCredentials()
@@ -145,10 +140,56 @@ export const downloadEpisode = async (
         responseHtml,
       })
 
-      throw new Error('unknown error')
+      throw new SilentError('unknown error')
     }
 
-    return downloadUrl
+    const videoOpenTagIndex = responseHtml.indexOf('<video')
+    if (videoOpenTagIndex === -1) {
+      return handleDownloadUrlNotFound()
+    }
+
+    const videoCloseTagIndex = responseHtml.indexOf('</video>')
+    const videoTag = responseHtml.slice(videoOpenTagIndex, videoCloseTagIndex)
+
+    const sourceTags = videoTag.split('<source')
+
+    const sources: string[] = []
+
+    // index pertama isinya tag video, bukan source
+    for (let i = 1; i < sourceTags.length; i++) {
+      const sourceTag = sourceTags[i]!
+
+      const getAttributeValue = (attributeName: string) => {
+        const attributeIndex = sourceTag.indexOf(`${attributeName}="`)
+        if (attributeIndex === -1) {
+          return null
+        }
+
+        const value = sourceTag.slice(attributeIndex + attributeName.length + '="'.length)
+
+        return value.slice(0, value.indexOf('"'))
+      }
+
+      const downloadUrl = getAttributeValue('src')
+      const size = parseInt(getAttributeValue('size') ?? '')
+
+      if (!downloadUrl || isNaN(size)) {
+        continue
+      } else if (size === 720) {
+        return downloadUrl
+      }
+
+      sources[size] = downloadUrl
+    }
+
+    for (let i = sources.length; i >= 0; i--) {
+      const downloadUrl = sources[i]
+      if (downloadUrl) {
+        return downloadUrl
+      }
+    }
+
+    return handleDownloadUrlNotFound()
   }
 
   const start = (
@@ -170,16 +211,13 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      return ky.get(
-        `https://www.googleapis.com/drive/v3/files/${gdriveCredentials.gid}?alt=media`,
-        {
-          signal,
-          headers: {
-            Range: `bytes=${start}-`,
-            Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
-          },
+      return ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
+        signal,
+        headers: {
+          Range: `bytes=${start}-`,
+          Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
         },
-      )
+      })
     }
 
     const metadataLock = new Promise<void>(releaseMetadataLock => {
@@ -481,14 +519,24 @@ type GDriveCredentialsResponse = {
   token_type: string
   id_token: string
 }
+type GDriveFilesResponse = {
+  files: {
+    id: string
+  }[]
+}
 type GDriveCredentialsReturn = {
-  reqTime: number
   data: GDriveCredentialsResponse
-  gid: string
+  id: string
 }
 
 const gdriveAccessTokenCache = new Map<string, GDriveCredentialsReturn>()
 async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredentialsReturn> {
+  const cache = gdriveAccessTokenCache.get(downloadUrl)
+  if (cache) {
+    return cache
+  }
+
+  // source: https://kuramanime.dad/serviceworker.js
   const url = new URL(downloadUrl.replaceAll(';', '&'))
 
   const nullValues: string[] = []
@@ -503,10 +551,24 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
     return value
   }
 
+  const komiOrigin = 'https://komi.my.id'
+
+  let id: string
+  if (downloadUrl.includes('.my.id/kdrive/')) {
+    id = getSearchParams('gid')
+  } else if (downloadUrl.startsWith(komiOrigin)) {
+    id = getSearchParams('fn')
+  } else {
+    const message = `Unknown domain: ${downloadUrl}`
+
+    logger.error(message, { downloadUrl })
+
+    throw new SilentError(message)
+  }
+
   const clientId = getSearchParams('id')
   const clientSecret = getSearchParams('sc')
   const refreshToken = getSearchParams('rt')
-  const driveId = getSearchParams('gid')
 
   if (nullValues.length > 0) {
     const message = `Download episode: ${nullValues.join(', ')} is null`
@@ -516,38 +578,56 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
     throw new SilentError(message)
   }
 
-  const cache = gdriveAccessTokenCache.get(downloadUrl)
-  if (cache) {
-    const now = performance.now()
-    const diff = now - cache.reqTime
-    // 3000 detik, tokennya cuma berlaku selama 1 jam
-    if (diff < 3_000_000) {
-      return cache
-    }
-  }
-
   const accessTokenResponse = await ky.post<GDriveCredentialsResponse>(
     'https://www.googleapis.com/oauth2/v4/token',
     {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        client_id: clientId!,
-        client_secret: clientSecret!,
-        refresh_token: refreshToken!,
+      body: toSearchParamString({
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
         grant_type: 'refresh_token',
-      }).toString(),
+      }),
     },
   )
 
-  const result: GDriveCredentialsReturn = {
-    reqTime: performance.now(),
+  const result = {
     data: await accessTokenResponse.json(),
-    gid: driveId,
+  } as GDriveCredentialsReturn
+
+  if (downloadUrl.startsWith(komiOrigin)) {
+    const params = encodeURIComponent(`name ='${id}'`)
+
+    const fileListResponse = await ky.get<GDriveFilesResponse>(
+      `https://www.googleapis.com/drive/v3/files?q=${params}`,
+      {
+        headers: {
+          Authorization: `Bearer ${result.data.access_token}`,
+        },
+      },
+    )
+
+    const { files } = await fileListResponse.json()
+    if (files.length === 0) {
+      const message = `File not found: ${id}`
+
+      logger.error(message, { downloadUrl, id })
+
+      throw new SilentError(message)
+    }
+
+    result.id = files[0]!.id
+  } else {
+    result.id = id
   }
 
   gdriveAccessTokenCache.set(downloadUrl, result)
+
+  setTimeout(() => {
+    gdriveAccessTokenCache.delete(downloadUrl)
+  }, 3_000_000) // 3000 detik, tokennya cuma berlaku selama 1 jam
 
   return result
 }
