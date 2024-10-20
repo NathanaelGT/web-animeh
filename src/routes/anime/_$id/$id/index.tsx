@@ -1,10 +1,12 @@
-import { useEffect, useMemo, type ReactNode, type ReactElement } from 'react'
+import { useEffect, useMemo, memo, type ReactNode, type ReactElement } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
 import BaseTextTransition, { presets } from 'react-text-transition'
-import { animeDataStore } from '~c/stores'
+import { animeDataStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
+import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
+import { randomBetween } from '~/shared/utils/number'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { AnimePoster } from '@/Anime/Poster'
 import { AnimeType } from '@/Anime/Type'
@@ -13,13 +15,30 @@ import { AnimeDuration } from '@/Anime/Duration'
 import { AnimeEpisode } from '@/Anime/Episode'
 import { Button } from '@/ui/button'
 import { Separator } from '@/ui/separator'
+import { Skeleton } from '@/ui/skeleton'
 
 export const Route = createFileRoute('/anime/_$id/$id/')({
   component: AnimeId,
 })
 
+const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
+const MAIN_CLASSNAME = [
+  "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'bread''poster''main''info']",
+  "sm:grid-cols-[225px_1fr] sm:grid-rows-[auto_auto_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_bread''poster_main''info_main']",
+  "lg:grid-cols-[225px_1fr_15rem] lg:grid-rows-[auto_1fr] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_bread_info''poster_main_info']",
+  'xl:grid-cols-[225px_1fr_19rem]',
+].join(' ')
+
 function AnimeId() {
   const animeData = useStore(animeDataStore)
+  if (animeData) {
+    return <RealAnimeId animeData={animeData} />
+  }
+
+  return <PendingAnimeId />
+}
+
+function RealAnimeId({ animeData }: { animeData: AnimeData }) {
   const router = useRouter()
 
   useEffect(() => {
@@ -35,8 +54,6 @@ function AnimeId() {
       })
     })
   }, [animeData?.id])
-
-  const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 
   const [studios, producers, licensors] = useMemo(() => {
     const studios: (string | JSX.Element)[] = []
@@ -77,15 +94,7 @@ function AnimeId() {
   })
 
   return (
-    <main
-      key={animeData.id}
-      className={[
-        "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'bread''poster''main''info']",
-        "sm:grid-cols-[225px_1fr] sm:grid-rows-[auto_auto_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_bread''poster_main''info_main']",
-        "lg:grid-cols-[225px_1fr_15rem] lg:grid-rows-[auto_1fr] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_bread_info''poster_main_info']",
-        'xl:grid-cols-[225px_1fr_19rem]',
-      ].join(' ')}
-    >
+    <main key={animeData.id} className={MAIN_CLASSNAME}>
       <SimpleBreadcrumb
         links={[
           <Link to="/" preloadDelay={50}>
@@ -129,7 +138,7 @@ function AnimeId() {
         </div>
 
         <div className="w-fit rounded-lg bg-primary/10 p-[1px]">
-          <div className="flex gap-[2px] overflow-hidden rounded-md text-xs text-primary text-slate-800 shadow-md">
+          <div className="flex gap-[2px] overflow-hidden rounded-md text-xs text-slate-800 shadow-md">
             <AnimeType type={animeData.type} />
             <AnimeRating rating={animeData.rating} />
             <AnimeDuration duration={animeData.duration} />
@@ -218,7 +227,7 @@ function AnimeId() {
 }
 
 type StatProps = {
-  title: string
+  title: string | JSX.Element
   stat: ReactNode
   prefix?: ReactNode
   suffix?: ReactNode
@@ -266,3 +275,210 @@ function Transition({ text }: TransitionProps) {
     </div>
   )
 }
+
+// dimasukin kedalam memo untuk menghindari komponennya rerender karena parentnya rerender
+// kalo sampe rerender, nanti state randomnya berubah
+const PendingAnimeId = memo(function PendingAnimeId() {
+  let seed = Date.now()
+
+  const infoSkeletonStyle = (...widths: number[]) => ({
+    padding: '0 .5rem',
+    height: '1.5rem',
+    borderRadius: '0',
+    width: widths[seed++ % widths.length] + 'rem',
+  })
+
+  const titleWidth = generateTextWidth(1, 8, 21, 120)
+
+  return (
+    <main className={MAIN_CLASSNAME}>
+      <SimpleBreadcrumb
+        links={[
+          <div className="flex flex-wrap gap-x-[1ch]">
+            <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={{ width: '29px' }}>
+              &nbsp;
+            </Skeleton>
+            <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={{ width: '47px' }}>
+              &nbsp;
+            </Skeleton>
+          </div>,
+          <div className="flex flex-wrap gap-x-[1ch]">
+            {titleWidth.map(width => (
+              <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={width}>
+                &nbsp;
+              </Skeleton>
+            ))}
+          </div>,
+        ]}
+        itemClassName={SHADOW}
+        className="[grid-area:bread]"
+      />
+
+      <div className="flex flex-col items-center gap-3 [grid-area:poster]">
+        <Skeleton className="h-[318px] w-[225px] rounded-md shadow shadow-foreground/50 outline outline-1 outline-slate-600/20" />
+
+        <div className="grid w-[225px] gap-3">
+          <Skeleton className="h-11 rounded-md shadow shadow-foreground/25" />
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-3 [grid-area:main] sm:items-start">
+        <div className="mt-4 sm:mt-0">
+          <div className="flex flex-wrap gap-x-[1ch]">
+            {titleWidth.map(width => (
+              <Skeleton className="mb-1 mt-0.5 h-[1.875rem] select-none" style={width}>
+                &nbsp;
+              </Skeleton>
+            ))}
+          </div>
+          <div className={`flex flex-wrap gap-x-[1ch] ${SHADOW}`}>
+            {generateTextWidth(4, 15).map(width => (
+              <Skeleton className="mb-1 mt-0.5 h-2.5 select-none" style={width}>
+                &nbsp;
+              </Skeleton>
+            ))}
+          </div>
+        </div>
+
+        <div className="w-fit rounded-lg p-[1px]">
+          <div className="flex gap-[2px] overflow-hidden rounded-md">
+            <Skeleton style={infoSkeletonStyle(2, 1.6, 1.5, 2.3, 0.9, 3.4)} />
+            <Skeleton style={infoSkeletonStyle(0.6, 1, 2, 0.5, 0.9, 0.8)} />
+            <Skeleton style={infoSkeletonStyle(1.3, 1.4, 1.5)} />
+            {Math.random() > 0.5 && <Skeleton style={infoSkeletonStyle(1.9, 1.6, 0.5)} />}
+          </div>
+        </div>
+
+        <div className="grid w-full gap-6">
+          {generateTextWidthList([1, 3], [20, 140]).map(synopsisWidth => (
+            <div className="flex flex-wrap gap-x-[1ch]">
+              {synopsisWidth.map(width => (
+                <Skeleton className="mb-1 mt-0.5 h-[1.125rem]" style={width} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 [grid-area:info] lg:-mb-10 lg:-mr-12 lg:-mt-[6.5rem] lg:bg-primary/10 lg:pb-10 lg:pl-4 lg:pr-12 lg:pt-[6.5rem]">
+        <Stat
+          title={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.75rem]" />}
+          stat={
+            <div className="flex flex-wrap gap-x-[1ch]">
+              {generateTextWidth(3, 30).map(width => (
+                <Skeleton className="mb-1 mt-0.5 h-[1.125rem]" style={width} />
+              ))}
+            </div>
+          }
+        />
+
+        {Math.random() > 0.3 &&
+          (Math.random() > 0.9 ? (
+            <Stat
+              title={
+                <div className="flex flex-wrap gap-x-[1ch]">
+                  <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.7rem]" />
+                  <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.1rem]" />
+                </div>
+              }
+              stat={
+                <div className="flex flex-wrap gap-x-[1ch]">
+                  <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-14" />
+                  <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[1.1rem]" />
+                  <Skeleton
+                    className="mb-1 mt-0.5 h-[1.125rem]"
+                    style={{ width: randomBetween(25, 80) + 'px' }}
+                  />
+                  <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.3rem]" />
+                </div>
+              }
+            />
+          ) : (
+            <>
+              <Stat
+                title={
+                  <div className="flex flex-wrap gap-x-[1ch]">
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.2rem]" />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.5rem]" />
+                  </div>
+                }
+                stat={
+                  <div className="flex flex-wrap gap-x-[1ch]">
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-14" />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[1.1rem]" />
+                    <Skeleton
+                      className="mb-1 mt-0.5 h-[1.125rem]"
+                      style={{ width: randomBetween(25, 80) + 'px' }}
+                    />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.3rem]" />
+                  </div>
+                }
+              />
+              <Stat
+                title={
+                  <div className="flex flex-wrap gap-x-[1ch]">
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.2rem]" />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[3.2rem]" />
+                  </div>
+                }
+                stat={
+                  <div className="flex flex-wrap gap-x-[1ch]">
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-14" />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[1.1rem]" />
+                    <Skeleton
+                      className="mb-1 mt-0.5 h-[1.125rem]"
+                      style={{ width: randomBetween(25, 80) + 'px' }}
+                    />
+                    <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.3rem]" />
+                  </div>
+                }
+              />
+            </>
+          ))}
+
+        <Stat
+          title={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.1rem]" />}
+          stat={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[1.9rem]" />}
+          suffix={
+            <div className="inline-flex flex-wrap gap-x-[1ch]">
+              <span />
+              <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.1rem]" />
+              <Skeleton
+                className="mb-1 mt-0.5 h-[1.125rem]"
+                style={{ width: randomBetween(40, 52) + 'px' }}
+              />
+              <Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[4.8rem]" />
+            </div>
+          }
+        />
+        <Stat
+          title={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[4.4rem]" />}
+          stat={
+            <Skeleton
+              className="mb-1 mt-0.5 h-[1.125rem]"
+              style={{ width: randomBetween(30, 40) + 'px' }}
+            />
+          }
+        />
+        <Stat
+          title={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[2.6rem]" />}
+          stat={
+            <Skeleton
+              className="mb-1 mt-0.5 h-[1.125rem]"
+              style={{ width: randomBetween(30, 40) + 'px' }}
+            />
+          }
+        />
+        <Stat
+          title={<Skeleton className="mb-1 mt-0.5 h-[1.125rem] w-[4.4rem]" />}
+          stat={
+            <Skeleton
+              className="mb-1 mt-0.5 h-[1.125rem]"
+              style={{ width: randomBetween(48, 56) + 'px' }}
+            />
+          }
+        />
+      </div>
+    </main>
+  )
+})

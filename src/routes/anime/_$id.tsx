@@ -6,6 +6,7 @@ import { animeDataStore, headerChildStore } from '~c/stores'
 
 export const Route = createFileRoute('/anime/_$id')({
   component: AnimeIdLayout,
+  pendingComponent: Outlet,
   preload: false,
   loader({ params }: { params: { id: string } }) {
     return fetchRouteData('/anime/_$id', { id: Number(params.id) })
