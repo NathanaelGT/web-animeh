@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createFileRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
+import { Filter } from 'lucide-react'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import {
@@ -10,19 +11,24 @@ import {
   episodeListStore,
   type EpisodeList,
 } from '~c/stores'
+import { createKeybindHandler } from '~c/utils/eventHandler'
+import { generateTextWidth } from '~c/utils/skeleton'
 import { searchEpisode } from '~/shared/utils/episode'
 import { sleep } from '~/shared/utils/time'
+import { combineFunction } from '~/shared/utils/function'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
 import { SearchInput } from '@/page/anime/episodeLayout/SearchInput'
 import { EpisodeSelector } from '@/page/anime/episodeLayout/EpisodeSelector'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
-import { createKeybindHandler } from '~/client/utils/eventHandler'
-import { combineFunction } from '~/shared/utils/function'
+import { Skeleton } from '@/ui/skeleton'
+import { Button } from '@/ui/button'
+import { InputKeybind } from '@/ui/custom/input-keybind'
 
 let latestAnimeId = ''
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode')({
   component: EpisodeLayout,
+  pendingComponent: PendingEpisodeLayout,
   async loader({ params }) {
     try {
       return await fetchRouteData('/anime/_$id/$id/_episode', Number(params.id))
@@ -30,7 +36,7 @@ export const Route = createFileRoute('/anime/_$id/$id/_episode')({
       latestAnimeId = params.id
     }
   },
-  shouldReload: match => match.params.id !== latestAnimeId,
+  shouldReload: ({ params }) => params.id !== latestAnimeId,
 })
 
 function EpisodeLayout() {
@@ -293,7 +299,7 @@ function EpisodeLayout() {
             <div
               ref={episodeListRef}
               className={
-                'h-fit justify-items-center scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
+                'h-fit scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
                 (compactMode
                   ? 'grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2 overflow-y-scroll p-2 text-xs md:grid-cols-5'
                   : 'overflow-y-auto text-sm')
@@ -311,6 +317,75 @@ function EpisodeLayout() {
         )}
 
         <Outlet />
+      </div>
+    </div>
+  )
+}
+
+function PendingEpisodeLayout() {
+  const [titleWidths] = useState(() => generateTextWidth(1, 8, 21, 120))
+
+  type TextSkeletonProps = {
+    widths: ({ width: string } | number)[]
+  }
+
+  function TextSkeleton({ widths }: TextSkeletonProps) {
+    return (
+      <div className="flex flex-wrap gap-x-[1ch]">
+        {widths.map(width => (
+          <Skeleton
+            className="mb-1 mt-0.5 h-3.5 select-none"
+            style={typeof width === 'number' ? { width: width + 'px' } : width}
+          >
+            &nbsp;
+          </Skeleton>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
+      <SimpleBreadcrumb
+        links={[
+          <TextSkeleton widths={[29, 47]} />,
+          <TextSkeleton widths={titleWidths} />,
+          <TextSkeleton widths={[49, 10]} />,
+        ]}
+        itemClassName="drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]"
+        className="hidden md:block"
+      />
+
+      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline outline-1 outline-primary/5 md:grid md:grid-cols-[16rem_1fr]">
+        <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
+          <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
+            <Button
+              variant="outline2"
+              className="h-6 w-6 border-slate-300 bg-transparent p-1 md:mx-2"
+            >
+              <Filter />
+            </Button>
+
+            <InputKeybind
+              ref={() => {}}
+              type="number"
+              autoComplete="off"
+              placeholder="Cari episode..."
+              keybindId={['watchPage', 'search']}
+              wrapperClassName="h-6 border-slate-300 ring-indigo-400/75 focus-within:ring-1"
+              buttonClassName="px-[.2rem]"
+              tipClassName="h-4 min-w-4 border-slate-300/50 px-[.2rem] py-[.05rem] text-[.6rem]"
+              disabled
+              className="placeholder:text-slate-300/75"
+            />
+          </div>
+
+          <div className="h-fit md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)]">
+            <Skeleton className="rounded-none" />
+          </div>
+        </aside>
+
+        <Skeleton className="rounded-none" />
       </div>
     </div>
   )
