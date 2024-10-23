@@ -44,7 +44,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
       style={{ viewTransitionName: `anime-poster-${anime.id}` }}
       className={
         (small ? 'h-[229px] w-[162px]' : 'h-[318px] w-[225px]') +
-        ' rounded-md object-cover shadow outline outline-1 outline-slate-600/20'
+        ' rounded-md bg-muted object-cover shadow outline outline-1 outline-slate-600/20'
       }
     />
   )
