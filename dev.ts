@@ -4,15 +4,18 @@ import os from 'os'
 import { format } from 'src/shared/utils/date'
 import { formatNs } from 'src/server/utils/time'
 
-// di linux, kadang portnya tetap nyangkut walau sudah distop
-const killPreviousServerPromise =
-  os.platform() === 'linux' ? $`fuser -k 8887/tcp`.quiet().nothrow() : Promise.resolve()
+const promises: (Promise<void> | Bun.ShellPromise)[] = [
+  (async () => {
+    if (!(await Bun.file('.env').exists())) {
+      await Bun.write('.env', Bun.file('.env.example'))
+    }
+  })(),
+]
 
-const copyEnvPromise = (async () => {
-  if (!(await Bun.file('.env').exists())) {
-    await Bun.write('.env', Bun.file('.env.example'))
-  }
-})()
+// di linux, kadang portnya tetap nyangkut walau sudah distop
+if (os.platform() === 'linux') {
+  promises.push($`fuser -k 8887/tcp`.quiet().nothrow())
+}
 
 const maxWidth = 140
 
@@ -31,7 +34,7 @@ const client = Bun.spawn(['bunx', '--bun', 'vite', '--port', '8888'], {
 const clientStartNs = Bun.nanoseconds()
 const clientStdout = client.stdout.getReader()
 
-await Promise.all([killPreviousServerPromise, copyEnvPromise])
+await Promise.all(promises)
 
 const server = Bun.spawn(
   [
