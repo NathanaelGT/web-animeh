@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@libsql/client": "^0.14.0",
+    "@tailwindcss/line-clamp": "^0.4.4",
     "@tanstack/router-cli": "^1.58.1",
     "@tanstack/router-devtools": "^1.58.7",
     "@tanstack/router-plugin": "^1.58.4",
