@@ -7,6 +7,7 @@ import { DownloadRouter } from './trpc-procedures/download'
 import { SearchProcedure } from './trpc-procedures/search'
 import { ImageSubscriptionProcedure } from './trpc-procedures/image'
 import { PosterRouter } from './trpc-procedures/components/poster'
+import { AnimeTitleRouter } from './trpc-procedures/components/anime-title'
 
 export const TRPCRouter = router({
   log: LogProcedure,
@@ -18,5 +19,6 @@ export const TRPCRouter = router({
   images: ImageSubscriptionProcedure,
   component: router({
     poster: PosterRouter,
+    animeTitle: AnimeTitleRouter,
   }),
 })

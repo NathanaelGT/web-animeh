@@ -4,10 +4,14 @@ const kuramalink = 'https://kuramalink.me/'
 
 let cachedKuramanimeOrigin: string | undefined
 /** Origin dengan trailing slash */
-const getKuramanimeOrigin = async () => {
+const getFreshKuramanimeOrigin = async () => {
   const response = await fetch(kuramalink, { method: 'HEAD' })
 
   return response.url
+}
+
+export const getKuramanimeOrigin = async () => {
+  return (cachedKuramanimeOrigin ??= await getFreshKuramanimeOrigin())
 }
 
 const rewriteKuramalink = async (input: Parameters<typeof fetch>[0]) => {
@@ -16,7 +20,7 @@ const rewriteKuramalink = async (input: Parameters<typeof fetch>[0]) => {
   // + 1 untuk "/" diawal
   const relativeInput = url.href.slice(url.origin.length + 1)
 
-  return (cachedKuramanimeOrigin ??= await getKuramanimeOrigin()) + relativeInput
+  return (await getKuramanimeOrigin()) + relativeInput
 }
 
 export const kuramanime = ky.extend({

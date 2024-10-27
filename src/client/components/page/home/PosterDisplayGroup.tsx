@@ -1,7 +1,6 @@
 import { memo, useState, useEffect } from 'react'
-import { Link } from '@tanstack/react-router'
 import { animeListPages } from '~c/stores'
-import { SimpleTooltip } from '@/ui/tooltip'
+import { AnimeTitle } from '@/Anime/Title'
 import { AnimePoster } from '@/Anime/Poster'
 import { AnimeType } from '@/Anime/Type'
 import { AnimeRating } from '@/Anime/Rating'
@@ -51,15 +50,12 @@ export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Pr
     <div key={animeData.id} className="mx-auto w-[162px]">
       <AnimePoster small asLink anime={animeData} tabIndex={-1} />
 
-      <SimpleTooltip title={animeData.title}>
-        <Link
-          to="/anime/$id"
-          params={{ id: animeData.id.toString() }}
-          className="mt-1 block truncate text-sm font-bold"
-        >
-          {animeData.title}
-        </Link>
-      </SimpleTooltip>
+      <AnimeTitle
+        animeData={animeData}
+        withTooltip
+        asLink
+        className="mt-1 block truncate text-sm font-bold"
+      />
 
       <div className="flex justify-between text-xs text-slate-500 [&>*]:bg-transparent [&>*]:p-0">
         <AnimeType type={animeData.type} />

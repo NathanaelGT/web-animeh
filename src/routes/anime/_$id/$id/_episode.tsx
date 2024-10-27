@@ -19,6 +19,7 @@ import { combineFunction } from '~/shared/utils/function'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
 import { SearchInput } from '@/page/anime/episodeLayout/SearchInput'
 import { EpisodeSelector } from '@/page/anime/episodeLayout/EpisodeSelector'
+import { AnimeTitle } from '@/Anime/Title'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { Skeleton } from '@/ui/skeleton'
 import { Button } from '@/ui/button'
@@ -256,11 +257,7 @@ function EpisodeLayout() {
           <Link to="/" preloadDelay={50}>
             Web Animeh
           </Link>,
-          <h1>
-            <Link to="/anime/$id" params={{ id: params.id }}>
-              {animeData.title}
-            </Link>
-          </h1>,
+          <AnimeTitle animeData={animeData} tag="h1" asLink />,
           animeData.totalEpisodes === 1 ? 'Nonton' : `Episode ${currentEpisode}`,
         ]}
         viewTransitionPrefix={params.id}

@@ -7,6 +7,7 @@ import { animeDataStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
 import { randomBetween } from '~/shared/utils/number'
+import { AnimeTitle } from '@/Anime/Title'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { AnimePoster } from '@/Anime/Poster'
 import { AnimeType } from '@/Anime/Type'
@@ -100,7 +101,7 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
           <Link to="/" preloadDelay={50}>
             Web Animeh
           </Link>,
-          animeData.title,
+          <AnimeTitle animeData={animeData} />,
         ]}
         itemClassName={SHADOW}
         viewTransitionPrefix={animeData.id}
@@ -131,9 +132,16 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
 
       <div className="flex flex-col items-center gap-3 [grid-area:main] sm:items-start">
         <div className="mt-4 sm:mt-0">
-          <h1 className="text-3xl">{animeData.title}</h1>
+          <AnimeTitle animeData={animeData} tag="h1" className="w-fit text-3xl" />
           {animeData.englishTitle && (
-            <h2 className={`text-xs text-muted-foreground ${SHADOW}`}>{animeData.englishTitle}</h2>
+            <AnimeTitle
+              animeData={{
+                id: animeData.id,
+                title: animeData.englishTitle,
+              }}
+              tag="h2"
+              className={`w-fit text-xs text-muted-foreground ${SHADOW}`}
+            />
           )}
         </div>
 
