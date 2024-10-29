@@ -17,6 +17,7 @@ export interface InputKeybindProps<TGroup extends keyof KeybindGroups>
   tipClassName?: string
 }
 
+// @ts-expect-error
 export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function InputKeybind(
   {
     keybindId,
