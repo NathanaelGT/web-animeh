@@ -1,10 +1,10 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { studios, studioSynonyms } from '~s/db/schema'
+import * as episodeRepository from '~s/db/repository/episode'
 import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
-import { dedupeEpisodes } from '~s/anime/episode/dedupe'
 import { updateCharacter } from '~s/anime/character/update'
 import { prepareStudioData } from '~s/studio/prepare'
 import { isMoreThanOneDay } from '~s/utils/time'
@@ -159,8 +159,8 @@ export const RouteRouter = router({
       if (!input.ref) {
         ctx.loadAnimePoster(animeData)
 
-        updateEpisode(animeData)
-        updateCharacter(animeData)
+        void updateEpisode(animeData)
+        void updateCharacter(animeData)
       }
 
       const ref = input.id + Math.random()
@@ -182,7 +182,6 @@ export const RouteRouter = router({
       const result = {
         ...omit(
           animeData,
-          'id',
           'synonyms',
           'animeToGenres',
           'animeToStudios',
@@ -191,7 +190,6 @@ export const RouteRouter = router({
           'episodeUpdatedAt',
           'characterUpdatedAt',
         ),
-        id: input.id,
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),
         genres: animeData.animeToGenres.map(({ genre }) => genre.name),
         studios: animeData.animeToStudios.map(({ studio, type, studioId }) => {
@@ -254,28 +252,19 @@ export const RouteRouter = router({
 
   '/anime/_$id/$id/_episode': procedure
     .input(v.parser(v.number()))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ ctx, input: animeId }) => {
       const animeData = await ctx.db.query.anime.findFirst({
-        columns: { episodeUpdatedAt: true },
-        where: (anime, { eq }) => eq(anime.id, input),
+        columns: { id: true, title: true, episodeUpdatedAt: true },
+        where: (anime, { eq }) => eq(anime.id, animeId),
       })
 
       if (!animeData) {
         throw new Error('404')
       }
 
-      const [freshEpisodeList, dbEpisodeList] = await Promise.all([
-        updateEpisode({ id: input, episodeUpdatedAt: animeData.episodeUpdatedAt }),
+      void updateEpisode(animeData)
 
-        ctx.db.query.episodes.findMany({
-          where: (episodes, { eq }) => eq(episodes.animeId, input),
-          columns: {
-            animeId: false,
-          },
-        }),
-      ])
-
-      return dedupeEpisodes(dbEpisodeList, freshEpisodeList, episode => omit(episode, 'animeId'))
+      return episodeRepository.findByAnime(animeData)
     }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never

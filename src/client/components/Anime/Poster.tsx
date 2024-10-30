@@ -97,13 +97,13 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
               query={episodeList}
               onLoading={() => <ContextMenuItem>Memuat...</ContextMenuItem>}
               onEmpty={() => <ContextMenuItem>Belum ada episode yang rilis</ContextMenuItem>}
-              cb={([episode]) => (
-                <ContextMenuItem key={episode} asChild>
+              cb={({ number }) => (
+                <ContextMenuItem key={number} asChild>
                   <Link
                     to="/anime/$id/episode/$number"
-                    params={{ id: animeId, number: episode.toString() }}
+                    params={{ id: animeId, number: number.toString() }}
                   >
-                    Episode {episode}
+                    Episode {number}
                   </Link>
                 </ContextMenuItem>
               )}
@@ -116,7 +116,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
           <ContextMenuSubContent className="w-48">
             {!episodeList.data ? (
               <ContextMenuItem>Memuat...</ContextMenuItem>
-            ) : episodeList.data.every(([, isDownloadCompleted]) => isDownloadCompleted) ? (
+            ) : episodeList.data.every(episode => episode.downloadStatus) ? (
               <ContextMenuItem>Semua episode sudah terunduh</ContextMenuItem>
             ) : (
               <>
@@ -126,21 +126,21 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
                 <ContextMenuSeparator />
                 <MapArray
                   data={episodeList.data}
-                  cb={([episode, isDownloadCompleted]) => {
-                    if (isDownloadCompleted) {
+                  cb={({ number, downloadStatus }) => {
+                    if (downloadStatus) {
                       return null
                     }
 
                     const download = () => {
-                      const partialTitle = `${anime.title} episode ${episode}`
+                      const partialTitle = `${anime.title} episode ${number}`
                       const { dismiss } = toast({
-                        title: `${isDownloadCompleted === false ? 'Lanjut' : 'Mulai'} mengunduh ${partialTitle}`,
+                        title: `${downloadStatus === '' ? 'Lanjut' : 'Mulai'} mengunduh ${partialTitle}`,
                       })
 
                       downloadEpisode.mutate(
                         {
                           animeId: anime.id,
-                          episodeNumber: episode,
+                          episodeNumber: number,
                         },
                         {
                           onSuccess(result) {
@@ -164,7 +164,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
                                   <ToastAction altText="Nonton">
                                     <Link
                                       to="/anime/$id/episode/$number"
-                                      params={{ id: animeId, number: episode.toString() }}
+                                      params={{ id: animeId, number: number.toString() }}
                                       onClick={() => {
                                         dismiss()
                                       }}
@@ -184,12 +184,12 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
 
                     return (
                       <ContextMenuItem
-                        key={episode}
+                        key={number}
                         onClick={download}
                         role="button"
                         className="cursor-pointer"
                       >
-                        Episode {episode}
+                        Episode {number}
                       </ContextMenuItem>
                     )
                   }}

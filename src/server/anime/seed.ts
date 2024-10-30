@@ -185,7 +185,7 @@ const updateIncompleteAnimeEpisodes = async () => {
       where(anime, { and, eq, isNull }) {
         return and(eq(anime.isVisible, true), isNull(anime.episodeUpdatedAt))
       },
-      columns: { id: true },
+      columns: { id: true, title: true },
       limit: 10,
     })
 
@@ -194,15 +194,9 @@ const updateIncompleteAnimeEpisodes = async () => {
     }
 
     for (const animeData of animeList) {
-      await updateEpisode(
-        {
-          id: animeData.id,
-          episodeUpdatedAt: null,
-        },
-        {
-          priority: 0,
-        },
-      )
+      await updateEpisode(animeData, {
+        priority: 0,
+      })
     }
   }
 }

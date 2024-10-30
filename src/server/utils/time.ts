@@ -11,12 +11,12 @@ export const formatNs = (ns: number) => {
   return ns.toFixed(2) + 'ns'
 }
 
-export const isMoreThanOneDay = <TNullAs = true>(
-  compareTo: Date | null,
-  { nullAs = true as TNullAs } = {},
+export const isMoreThanOneDay = <TFallback = true>(
+  compareTo: Date | null | undefined,
+  { fallback = true as TFallback } = {},
 ) => {
-  if (compareTo === null) {
-    return nullAs
+  if (!compareTo) {
+    return fallback
   }
 
   const diff = Date.now() - compareTo.getTime()
@@ -24,12 +24,12 @@ export const isMoreThanOneDay = <TNullAs = true>(
   return diff > 24 * 60 * 60 * 1000
 }
 
-export const isMoreThanOneMinute = <TNullAs = true>(
-  compareTo: Date | null,
-  { nullAs = true as TNullAs } = {},
+export const isMoreThanOneMinute = <TFallback = true>(
+  compareTo: Date | null | undefined,
+  { fallback = true as TFallback } = {},
 ) => {
-  if (compareTo === null) {
-    return nullAs
+  if (!compareTo) {
+    return fallback
   }
 
   const diff = Date.now() - compareTo.getTime()

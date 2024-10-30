@@ -22,23 +22,17 @@ function EpisodeNumber() {
     return <main className="m-auto">Episode {params.number} tidak ditemukan</main>
   }
 
-  const status = episode.downloadStatus as typeof episode.downloadStatus | undefined
+  const status = episode.downloadStatus
 
   return (
     <main className="mb-auto">
       <div className="flex aspect-video bg-primary-foreground/85">
-        {status === undefined ? (
-          <p className="m-auto">Sedang memuat data episode</p>
-        ) : !status ? ( // string kosong = downloadnya pending
-          <Download
-            animeId={Number(params.id)}
-            episodeNumber={Number(params.number)}
-            isPending={status === ''}
-          />
+        {!status ? ( // string kosong = downloadnya pending
+          <Download params={params} isPending={status === ''} />
         ) : typeof status === 'string' ? (
           <StringStatus status={status} />
         ) : (
-          <VideoPlayer params={params} />
+          <VideoPlayer key={`${params.id}|${params.number}`} params={params} />
         )}
       </div>
     </main>

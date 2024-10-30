@@ -1,6 +1,6 @@
 import ky, { type KyResponse } from 'ky'
 import { db } from '~s/db'
-import { anime, animeMetadata, episodes } from '~s/db/schema'
+import { anime, animeMetadata, providerEpisodes } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { imagesDirPath } from '~s/utils/path'
@@ -39,10 +39,13 @@ const parseKuramanimeDuration = (duration: string | null | undefined) => {
 export const insertKuramanimeAnimeListToDb = async (
   animeList: Anime[],
   existingImageList: Set<string>,
+  { withCreatedAt }: { withCreatedAt: boolean },
 ) => {
+  type ProviderEpisode = typeof providerEpisodes.$inferInsert
+
   const animeDataList: (typeof anime.$inferInsert)[] = []
   const animeMetadataList: (typeof animeMetadata.$inferInsert)[] = []
-  const episodeList: (typeof episodes.$inferInsert)[] = []
+  const providerEpisodeList: ProviderEpisode[] = []
 
   const imageResponsePromiseMap = new Map<string, Promise<[string, KyResponse]>>()
 
@@ -114,10 +117,18 @@ export const insertKuramanimeAnimeListToDb = async (
         continue
       }
 
-      episodeList.push({
+      const episode: ProviderEpisode = {
         animeId: id,
+        provider: 'kuramanime',
+        providerId: animeData.id,
         number: parseInt(post.episode_decimal),
-      })
+      }
+
+      if (withCreatedAt) {
+        episode.createdAt = now
+      }
+
+      providerEpisodeList.push(episode)
     }
   }
 
@@ -146,8 +157,22 @@ export const insertKuramanimeAnimeListToDb = async (
         .execute(),
     )
   }
-  if (episodeList.length) {
-    promises.push(db.insert(episodes).values(episodeList).onConflictDoNothing().execute())
+  if (providerEpisodeList.length) {
+    promises.push(
+      db
+        .insert(providerEpisodes)
+        .values(providerEpisodeList)
+        .onConflictDoUpdate({
+          target: [
+            providerEpisodes.animeId,
+            providerEpisodes.provider,
+            providerEpisodes.providerId,
+            providerEpisodes.number,
+          ],
+          set: buildConflictUpdateColumns(providerEpisodes, ['createdAt']),
+        })
+        .execute(),
+    )
   }
 
   for (const animeData of insertedAnimeList) {

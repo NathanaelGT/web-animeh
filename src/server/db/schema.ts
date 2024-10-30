@@ -4,7 +4,7 @@ import {
   integer,
   primaryKey,
   sqliteTable,
-  uniqueIndex,
+  foreignKey,
 } from 'drizzle-orm/sqlite-core'
 import { relations } from 'drizzle-orm'
 import type * as v from 'valibot'
@@ -63,9 +63,8 @@ const malCharacterImage = createRepetitivePrefixColumnType(
   'https://cdn.myanimelist.net/images/characters/',
 )
 
-// FIX TYPE
 const createRepetitiveStringsColumnType = <TStringList extends string[]>(
-  stringList: TStringList,
+  ...stringList: TStringList
 ) => {
   return customType<{ data: [string & {}, ...TStringList][number] }>({
     dataType() {
@@ -73,7 +72,7 @@ const createRepetitiveStringsColumnType = <TStringList extends string[]>(
     },
 
     fromDriver(value): string {
-      const index = parseInt(value as string)
+      const index = Number(value as string)
 
       return isNaN(index) ? (value as string) : stringList[index]!
     },
@@ -86,7 +85,33 @@ const createRepetitiveStringsColumnType = <TStringList extends string[]>(
   })
 }
 
-const malAnimeRelationType = createRepetitiveStringsColumnType([
+const createEnumStringsColumnType = <TStringList extends string[]>(...stringList: TStringList) => {
+  return customType<{ data: TStringList[number] }>({
+    dataType() {
+      return 'integer'
+    },
+
+    fromDriver(index): TStringList[number] {
+      const value = stringList[index as number]
+      if (value) {
+        return value
+      }
+
+      throw new Error(`Invalid enum index: ${index}`)
+    },
+
+    toDriver(value): number {
+      const index = stringList.indexOf(value)
+      if (index > -1) {
+        return index
+      }
+
+      throw new Error(`Invalid enum value: ${value}`)
+    },
+  })
+}
+
+const malAnimeRelationType = createRepetitiveStringsColumnType(
   'Other',
   'Sequel',
   'Prequel',
@@ -98,9 +123,11 @@ const malAnimeRelationType = createRepetitiveStringsColumnType([
   'Character',
   'Spin-Off',
   'Full Story',
-])
+)
 
-const malStudioSynonymType = createRepetitiveStringsColumnType(['Japanese', 'Synonym'])
+const malStudioSynonymType = createRepetitiveStringsColumnType('Japanese', 'Synonym')
+
+const providerType = createEnumStringsColumnType('kuramanime')
 
 type Settings = v.InferInput<typeof settingsSchema>
 export type AnimeType =
@@ -161,21 +188,16 @@ export const animeSynonyms = sqliteTable(
 export const animeMetadata = sqliteTable(
   'anime_metadata',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
     animeId: integer('anime_id')
       .notNull()
       .references(() => anime.id, { onDelete: 'cascade' }),
-    provider: text('provider').notNull(),
+    provider: providerType('provider').notNull(),
     providerId: integer('provider_id').notNull(),
     providerSlug: text('provider_slug'),
     providerData: text('provider_data'),
   },
   t => ({
-    unique: uniqueIndex('anime_metadata__anime_id__provider__provider_id__unique').on(
-      t.animeId,
-      t.provider,
-      t.providerId,
-    ),
+    pk: primaryKey({ columns: [t.animeId, t.provider, t.providerId] }),
   }),
 )
 
@@ -263,6 +285,30 @@ export const episodes = sqliteTable(
   }),
 )
 
+export const providerEpisodes = sqliteTable(
+  'provider_episodes',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    provider: providerType('provider').notNull(),
+    providerId: integer('provider_id').notNull(),
+    number: integer('number').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }),
+  },
+  t => ({
+    pk: primaryKey({ columns: [t.animeId, t.provider, t.providerId, t.number] }),
+    episodeReference: foreignKey({
+      columns: [t.animeId, t.number],
+      foreignColumns: [episodes.animeId, episodes.number],
+    }).onDelete('cascade'),
+    metadataReference: foreignKey({
+      columns: [t.animeId, t.provider, t.providerId],
+      foreignColumns: [animeMetadata.animeId, animeMetadata.provider, animeMetadata.providerId],
+    }).onDelete('cascade'),
+  }),
+)
+
 export const characters = sqliteTable('characters', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
@@ -317,6 +363,7 @@ export const animeRelations = relations(anime, ({ many }) => ({
   synonyms: many(animeSynonyms),
   metadata: many(animeMetadata),
   episodes: many(episodes),
+  providerEpisodes: many(providerEpisodes),
   animeToGenres: many(animeToGenres),
   animeToStudios: many(animeToStudios),
   characters: many(animeToCharacters),
@@ -353,8 +400,21 @@ export const animeToStudiosRelations = relations(animeToStudios, ({ one }) => ({
   studio: one(studios, { fields: [animeToStudios.studioId], references: [studios.id] }),
 }))
 
-export const episodesRelations = relations(episodes, ({ one }) => ({
+export const episodesRelations = relations(episodes, ({ one, many }) => ({
   anime: one(anime, { fields: [episodes.animeId], references: [anime.id] }),
+  providers: many(providerEpisodes),
+}))
+
+export const providerEpisodesRelations = relations(providerEpisodes, ({ one }) => ({
+  anime: one(anime, { fields: [providerEpisodes.animeId], references: [anime.id] }),
+  episode: one(episodes, {
+    fields: [providerEpisodes.animeId, providerEpisodes.number],
+    references: [episodes.animeId, episodes.number],
+  }),
+  metadata: one(animeMetadata, {
+    fields: [providerEpisodes.animeId, providerEpisodes.provider, providerEpisodes.providerId],
+    references: [animeMetadata.animeId, animeMetadata.provider, animeMetadata.providerId],
+  }),
 }))
 
 export const charactersRelations = relations(characters, ({ many }) => ({

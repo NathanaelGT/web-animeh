@@ -6,12 +6,14 @@ import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Button } from '@/ui/button'
 
 type Props = {
-  animeId: number
-  episodeNumber: number
+  params: {
+    id: string
+    number: string
+  }
   isPending: boolean
 }
 
-export function Download(props: Props) {
+export function Download({ params, isPending }: Props) {
   const [placeholder, setPlaceholder] = useState('')
   const animeData = useStore(animeDataStore)
   const downloadEpisode = api.component.poster.download.useMutation()
@@ -19,13 +21,16 @@ export function Download(props: Props) {
   const requestDownload = () => {
     setPlaceholder('Memuat unduhan')
 
-    downloadEpisode.mutate(props, {
-      onSuccess(result) {
-        if (result?.size === '') {
-          setPlaceholder(`Episode ${props.episodeNumber} telah ditambahkan ke antrian unduhan`)
-        }
+    downloadEpisode.mutate(
+      { animeId: Number(params.id), episodeNumber: Number(params.number) },
+      {
+        onSuccess(result) {
+          if (result?.size === '') {
+            setPlaceholder(`Episode ${params.number} telah ditambahkan ke antrian unduhan`)
+          }
+        },
       },
-    })
+    )
   }
 
   useEffect(() => {
@@ -44,12 +49,12 @@ export function Download(props: Props) {
     )
   }
 
-  const title = animeData.totalEpisodes === 1 ? animeData.title : 'Episode ' + props.episodeNumber
+  const title = animeData.totalEpisodes === 1 ? animeData.title : 'Episode ' + params.number
 
   return (
     <div className="p-auto m-4 flex w-full flex-col items-center justify-center gap-3">
       <p className="text-center">
-        {title} belum{props.isPending ? ' selesai' : ''} diunduh
+        {title} belum{isPending ? ' selesai' : ''} diunduh
       </p>
       <Button
         onClick={requestDownload}
@@ -57,7 +62,7 @@ export function Download(props: Props) {
         size="sm"
         className="w-full max-w-96 font-bold"
       >
-        {props.isPending ? 'Lanjutkan Unduhan' : 'Unduh'}
+        {isPending ? 'Lanjutkan Unduhan' : 'Unduh'}
       </Button>
     </div>
   )

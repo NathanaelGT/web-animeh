@@ -170,13 +170,6 @@
     "anime_metadata": {
       "name": "anime_metadata",
       "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
         "anime_id": {
           "name": "anime_id",
           "type": "integer",
@@ -186,7 +179,7 @@
         },
         "provider": {
           "name": "provider",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -213,17 +206,7 @@
           "autoincrement": false
         }
       },
-      "indexes": {
-        "anime_metadata__anime_id__provider__provider_id__unique": {
-          "name": "anime_metadata__anime_id__provider__provider_id__unique",
-          "columns": [
-            "anime_id",
-            "provider",
-            "provider_id"
-          ],
-          "isUnique": true
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "anime_metadata_anime_id_anime_id_fk": {
           "name": "anime_metadata_anime_id_anime_id_fk",
@@ -239,7 +222,16 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "anime_metadata_anime_id_provider_provider_id_pk": {
+          "columns": [
+            "anime_id",
+            "provider",
+            "provider_id"
+          ],
+          "name": "anime_metadata_anime_id_provider_provider_id_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "anime_relationships": {
@@ -831,6 +823,106 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "provider_episodes": {
+      "name": "provider_episodes",
+      "columns": {
+        "anime_id": {
+          "name": "anime_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "provider_episodes_anime_id_anime_id_fk": {
+          "name": "provider_episodes_anime_id_anime_id_fk",
+          "tableFrom": "provider_episodes",
+          "tableTo": "anime",
+          "columnsFrom": [
+            "anime_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "provider_episodes_anime_id_number_episodes_anime_id_number_fk": {
+          "name": "provider_episodes_anime_id_number_episodes_anime_id_number_fk",
+          "tableFrom": "provider_episodes",
+          "tableTo": "episodes",
+          "columnsFrom": [
+            "anime_id",
+            "number"
+          ],
+          "columnsTo": [
+            "anime_id",
+            "number"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "provider_episodes_anime_id_provider_provider_id_anime_metadata_anime_id_provider_provider_id_fk": {
+          "name": "provider_episodes_anime_id_provider_provider_id_anime_metadata_anime_id_provider_provider_id_fk",
+          "tableFrom": "provider_episodes",
+          "tableTo": "anime_metadata",
+          "columnsFrom": [
+            "anime_id",
+            "provider",
+            "provider_id"
+          ],
+          "columnsTo": [
+            "anime_id",
+            "provider",
+            "provider_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "provider_episodes_anime_id_provider_provider_id_number_pk": {
+          "columns": [
+            "anime_id",
+            "provider",
+            "provider_id",
+            "number"
+          ],
+          "name": "provider_episodes_anime_id_provider_provider_id_number_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "studio_synonyms": {

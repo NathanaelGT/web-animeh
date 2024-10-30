@@ -22,11 +22,11 @@ export const AnimeTitleRouter = router({
             },
           },
         },
-        episodes: {
+        providerEpisodes: {
           columns: {
             number: true,
           },
-          orderBy: (episodes, { desc }) => desc(episodes.number),
+          orderBy: (providerEpisodes, { desc }) => desc(providerEpisodes.number),
           limit: 1,
         },
       },
@@ -37,8 +37,8 @@ export const AnimeTitleRouter = router({
     }
 
     return {
-      ...omit(animeData, 'animeToGenres', 'episodes'),
-      currentEpisode: animeData.episodes[0]?.number ?? 0,
+      ...omit(animeData, 'animeToGenres', 'providerEpisodes'),
+      currentEpisode: animeData.providerEpisodes[0]?.number ?? 0,
       genres: animeData.animeToGenres.map(({ genre }) => genre.name),
     }
   }),

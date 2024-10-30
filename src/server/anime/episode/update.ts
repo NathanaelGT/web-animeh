@@ -2,38 +2,40 @@ import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
 import * as kyInstances from '~s/ky'
 import { buildConflictUpdateColumns } from '~s/utils/db'
-import { anime, episodes } from '~s/db/schema'
+import { anime, episodes, providerEpisodes } from '~s/db/schema'
+import * as episodeRepository from '~s/db/repository/episode'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { fetchText } from '~s/utils/fetch'
-import { dedupeEpisodes } from './dedupe'
 
 type Config = { priority?: number }
 
 export const updateEpisode = async (
-  animeData: Pick<typeof anime.$inferSelect, 'id' | 'episodeUpdatedAt'>,
+  animeData: Parameters<typeof episodeRepository.findByAnime>[0] &
+    Partial<Pick<typeof anime.$inferSelect, 'episodeUpdatedAt'>>,
   config: Config = {},
+  callback?: (episodeList: episodeRepository.EpisodeList) => void,
 ) => {
   if (!isMoreThanOneMinute(animeData.episodeUpdatedAt)) {
-    return []
+    if (callback) {
+      episodeRepository.findByAnime(animeData).then(callback)
+    }
+
+    return
   }
 
-  let episodeListPromise: Promise<(typeof episodes.$inferSelect)[]>
+  const promises: Promise<unknown>[] = []
 
   // jikan ngecache data selama 24 jam
   if (isMoreThanOneDay(animeData.episodeUpdatedAt)) {
-    const walkJikan = async (page: number) => {
+    const fetchJikan = async (page: number) => {
       const result = await jikanQueue.add(
         () => jikanClient.anime.getAnimeEpisodes(animeData.id, page),
         { throwOnTimeout: true, priority: config.priority ?? (page === 1 ? 2 : 1) },
       )
 
       if (result.pagination?.has_next_page) {
-        void walkJikan(page + 1)
-      }
-
-      if (!result.data.length) {
-        return []
+        fetchJikan(page + 1)
       }
 
       const episodeList = result.data.map(episode => {
@@ -82,35 +84,31 @@ export const updateEpisode = async (
       }
 
       await Promise.all(promises)
-
-      return episodeList
     }
 
-    episodeListPromise = walkJikan(1)
-  } else {
-    episodeListPromise = Promise.resolve([])
+    promises.push(fetchJikan(1))
   }
 
   const metadata = await db.query.animeMetadata.findFirst({
     where: (metadata, { eq }) => eq(metadata.animeId, animeData.id),
     columns: {
+      provider: true,
       providerId: true,
       providerSlug: true,
     },
   })
 
-  if (!metadata) {
-    return episodeListPromise
-  }
-
-  const fromKuramanime = async () => {
-    const createEpisodeData = (number: number) => {
-      return {
-        animeId: animeData.id,
-        number,
-      } satisfies typeof episodes.$inferInsert
-    }
-    const episodeNumbers: ReturnType<typeof createEpisodeData>[] = []
+  if (metadata) {
+    const fetchKuramanime = async () => {
+      const episodeNumbers: (typeof providerEpisodes.$inferInsert)[] = []
+      const addEpisodeData = (number: number) => {
+        episodeNumbers.push({
+          animeId: animeData.id,
+          provider: metadata.provider,
+          providerId: metadata.providerId,
+          number,
+        })
+      }
 
       const html = await fetchText(
         `anime/${metadata.providerId}/${metadata.providerSlug}`,
@@ -118,43 +116,41 @@ export const updateEpisode = async (
         kyInstances.kuramanime,
       )
 
-    const episodeListHtml = html
-      .slice(html.lastIndexOf(' id="episodeLists"'))
-      .slice(0, html.indexOf(' id="episodeListsLoading"'))
+      const episodeListHtml = html
+        .slice(html.lastIndexOf(' id="episodeLists"'))
+        .slice(0, html.indexOf(' id="episodeListsLoading"'))
 
-    if (episodeListHtml.includes('Pilihan Cepat')) {
-      const oldest = episodeListHtml.match(/Ep [0-9]+ \(Terlama\)/)
-      const latest = episodeListHtml.match(/Ep [0-9]+ \(Terbaru\)/)
+      if (episodeListHtml.includes('Pilihan Cepat')) {
+        const oldest = episodeListHtml.match(/Ep [0-9]+ \(Terlama\)/)
+        const latest = episodeListHtml.match(/Ep [0-9]+ \(Terbaru\)/)
 
-      if (oldest?.length && latest?.length) {
-        const start = parseInt(oldest[0].slice(3))
-        const end = parseInt(latest[0].slice(3))
+        if (oldest?.length && latest?.length) {
+          const start = Number(oldest[0].slice(3))
+          const end = Number(latest[0].slice(3))
 
-        for (let i = start; i <= end; i++) {
-          episodeNumbers.push(createEpisodeData(i))
+          for (let i = start; i <= end; i++) {
+            addEpisodeData(i)
+          }
         }
       }
-    }
 
-    if (!episodeNumbers.length) {
-      const episodeList = episodeListHtml.match(/Ep [0-9]+/g)
-      if (!episodeList?.length) {
-        return []
+      if (!episodeNumbers.length) {
+        episodeListHtml.match(/Ep [0-9]+/g)?.forEach(episode => {
+          addEpisodeData(Number(episode.slice(3)))
+        })
       }
 
-      for (const episode of episodeList) {
-        episodeNumbers.push(createEpisodeData(parseInt(episode.slice(3))))
+      if (episodeNumbers.length) {
+        await db.insert(providerEpisodes).values(episodeNumbers).onConflictDoNothing()
       }
     }
 
-    if (episodeNumbers.length) {
-      db.insert(episodes).values(episodeNumbers).onConflictDoNothing().execute()
-    }
-
-    return episodeNumbers
+    promises.push(fetchKuramanime())
   }
 
-  const [jikanResult, kuramanimeResult] = await Promise.all([episodeListPromise, fromKuramanime()])
+  await Promise.all(promises)
 
-  return dedupeEpisodes(jikanResult, kuramanimeResult)
+  if (callback) {
+    episodeRepository.findByAnime(animeData).then(callback)
+  }
 }

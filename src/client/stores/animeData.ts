@@ -2,9 +2,9 @@ import { Store } from '@tanstack/store'
 import { fetchRouteData } from '~c/route'
 import type { TRPCResponse } from '~/shared/utils/types'
 
-export const animeDataStore = new Store<
-  TRPCResponse<(typeof import('~s/trpc-procedures/route'))['RouteRouter']['/anime/_$id']>
->(null as never)
+export type AnimeData = TRPCResponse<(typeof import('~s/trpc-procedures/route'))['RouteRouter']['/anime/_$id']>
+
+export const animeDataStore = new Store<AnimeData>(null as never)
 
 animeDataStore.subscribe(async () => {
   const animeData = animeDataStore.state

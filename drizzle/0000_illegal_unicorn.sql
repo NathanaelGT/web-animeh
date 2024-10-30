@@ -24,12 +24,12 @@ CREATE TABLE `anime` (
 );
 --> statement-breakpoint
 CREATE TABLE `anime_metadata` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`anime_id` integer NOT NULL,
-	`provider` text NOT NULL,
+	`provider` integer NOT NULL,
 	`provider_id` integer NOT NULL,
 	`provider_slug` text,
 	`provider_data` text,
+	PRIMARY KEY(`anime_id`, `provider`, `provider_id`),
 	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
@@ -125,6 +125,18 @@ CREATE TABLE `profiles` (
 	`settings` text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `provider_episodes` (
+	`anime_id` integer NOT NULL,
+	`provider` integer NOT NULL,
+	`provider_id` integer NOT NULL,
+	`number` integer NOT NULL,
+	`created_at` integer,
+	PRIMARY KEY(`anime_id`, `provider`, `provider_id`, `number`),
+	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`anime_id`,`number`) REFERENCES `episodes`(`anime_id`,`number`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`anime_id`,`provider`,`provider_id`) REFERENCES `anime_metadata`(`anime_id`,`provider`,`provider_id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `studio_synonyms` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`studio_id` integer NOT NULL,
@@ -141,6 +153,5 @@ CREATE TABLE `studios` (
 	`established_at` integer
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `anime_metadata__anime_id__provider__provider_id__unique` ON `anime_metadata` (`anime_id`,`provider`,`provider_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `genres_name_unique` ON `genres` (`name`);--> statement-breakpoint
 CREATE UNIQUE INDEX `profiles_name_unique` ON `profiles` (`name`);

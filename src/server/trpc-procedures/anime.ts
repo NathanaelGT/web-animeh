@@ -1,35 +1,38 @@
 import { observable } from '@trpc/server/observable'
 import * as v from 'valibot'
+import * as episodeRepository from '~s/db/repository/episode'
 import { procedure, router } from '~s/trpc'
-import { glob, animeVideoRealDirPath } from '~s/utils/path'
-import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
+import { searchEpisode } from '~/shared/utils/episode'
+import {
+  downloadProgress,
+  downloadProgressSnapshot,
+  type DownloadProgressData,
+} from '~s/external/download/progress'
 
 export const AnimeRouter = router({
-  episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input }) => {
-    const [animeData, downloadedEpisodePaths] = await Promise.all([
-      ctx.db.query.anime.findFirst({
-        columns: { title: true },
-        where: (anime, { eq }) => eq(anime.id, input),
-      }),
-
-      animeVideoRealDirPath(input).then(videoRealDir => {
-        return videoRealDir ? glob(videoRealDir, '*.mp4') : []
-      }),
-    ])
+  episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input: animeId }) => {
+    const animeData = await ctx.db.query.anime.findFirst({
+      columns: { id: true, title: true },
+      where: (anime, { eq }) => eq(anime.id, animeId),
+    })
 
     if (!animeData) {
       throw new Error('404')
     }
 
-    const episodeList: Record<number, string | true> = {}
-    const downloadedEpisodePathSliceAt = (downloadedEpisodePaths[0]?.lastIndexOf('/') ?? 0) + 1
-    for (const downloadedEpisodePath of downloadedEpisodePaths) {
-      const episodePath = downloadedEpisodePath.slice(downloadedEpisodePathSliceAt)
+    let episodeList = await episodeRepository.findByAnime(animeData)
 
-      episodeList[parseInt(episodePath)] = episodePath.includes('_') ? '' : true
+    const updateStatus = (episodeNumber: number, status: string | boolean) => {
+      const episode = searchEpisode(episodeList, episodeNumber)
+
+      if (episode) {
+        episode.downloadStatus = status
+      }
     }
 
-    return observable<typeof episodeList>(emit => {
+    return observable<episodeRepository.EpisodeList>(emit => {
+      emit.next(episodeList)
+
       const handleUpdate = (data: { text: string; done?: boolean }, name: string) => {
         if (!(name === animeData.title || name.startsWith(animeData.title + ': Episode '))) {
           return false
@@ -39,11 +42,11 @@ export const AnimeRouter = router({
         const episodeNumber =
           episodeIndex > -1 ? parseInt(name.slice(episodeIndex + 'Episode '.length)) : 1
 
-        episodeList[episodeNumber] = data.text
+        updateStatus(episodeNumber, data.text)
 
         if (data.done) {
           setTimeout(() => {
-            episodeList[episodeNumber] = true
+            updateStatus(episodeNumber, true)
 
             emit.next(episodeList)
           }, 250)
@@ -52,15 +55,19 @@ export const AnimeRouter = router({
         return true
       }
 
-      downloadProgressSnapshot.forEach(handleUpdate)
-
-      emit.next(episodeList)
-
-      downloadProgress.on('*', (name, data) => {
+      const downloadProgressHandler = (name: string, data: DownloadProgressData) => {
         if (handleUpdate(data, name)) {
           emit.next(episodeList)
         }
-      })
+      }
+
+      downloadProgress.on('*', downloadProgressHandler)
+
+      downloadProgressSnapshot.forEach(handleUpdate)
+
+      return () => {
+        downloadProgress.off('*', downloadProgressHandler)
+      }
     })
   }),
 })
