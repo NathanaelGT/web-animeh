@@ -7,6 +7,7 @@ import * as episodeRepository from '~s/db/repository/episode'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { fetchText } from '~s/utils/fetch'
+import { episodeMitt } from './event'
 
 type Config = { priority?: number }
 
@@ -150,7 +151,14 @@ export const updateEpisode = async (
 
   await Promise.all(promises)
 
-  if (callback) {
+  const key = animeData.id.toString()
+  if (episodeMitt.all.get(key)?.length) {
+    episodeRepository.findByAnime(animeData).then(episodeList => {
+      callback?.(episodeList)
+
+      episodeMitt.emit(key, episodeList)
+    })
+  } else if (callback) {
     episodeRepository.findByAnime(animeData).then(callback)
   }
 }

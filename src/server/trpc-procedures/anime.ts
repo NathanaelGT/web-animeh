@@ -2,6 +2,7 @@ import { observable } from '@trpc/server/observable'
 import * as v from 'valibot'
 import * as episodeRepository from '~s/db/repository/episode'
 import { procedure, router } from '~s/trpc'
+import { episodeMitt } from '~s/anime/episode/event'
 import { searchEpisode } from '~/shared/utils/episode'
 import {
   downloadProgress,
@@ -33,6 +34,22 @@ export const AnimeRouter = router({
     return observable<episodeRepository.EpisodeList>(emit => {
       emit.next(episodeList)
 
+      const episodeUpdateHandler = (newEpisodeList: episodeRepository.EpisodeList) => {
+        for (const episode of newEpisodeList) {
+          const oldEpisode = searchEpisode(episodeList, episode.number)
+
+          if (oldEpisode) {
+            episode.downloadStatus = oldEpisode.downloadStatus
+          }
+        }
+
+        if (!Bun.deepEquals(episodeList, newEpisodeList)) {
+          episodeList = newEpisodeList
+
+          emit.next(episodeList)
+        }
+      }
+
       const handleUpdate = (data: { text: string; done?: boolean }, name: string) => {
         if (!(name === animeData.title || name.startsWith(animeData.title + ': Episode '))) {
           return false
@@ -61,11 +78,15 @@ export const AnimeRouter = router({
         }
       }
 
+      episodeMitt.on(animeId.toString(), episodeUpdateHandler)
+
       downloadProgress.on('*', downloadProgressHandler)
 
       downloadProgressSnapshot.forEach(handleUpdate)
 
       return () => {
+        episodeMitt.off(animeId.toString(), episodeUpdateHandler)
+
         downloadProgress.off('*', downloadProgressHandler)
       }
     })

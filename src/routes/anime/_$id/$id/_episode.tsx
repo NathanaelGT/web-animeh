@@ -231,14 +231,7 @@ function EpisodeLayout() {
 
   api.anime.episodes.useSubscription(Number(params.id), {
     onData(data) {
-      for (let i = 0; i < episodeCount; i++) {
-        episodeList[i] = {
-          ...episodeList[i]!,
-          downloadStatus: data[episodeList[i]!.number] ?? false,
-        }
-      }
-
-      episodeListStore.setState(() => [...episodeList])
+      episodeListStore.setState(() => data)
     },
   })
 
