@@ -47,45 +47,55 @@ const unsetCredentials = () => {
 const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
   env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
 
+export const generateEmitKey = (
+  animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
+  episodeNumber: number,
+) => {
+  return animeData.title + (animeData.totalEpisodes === 1 ? '' : `: Episode ${episodeNumber}`)
+}
+
 export const downloadEpisode = async (
   animeData: Pick<typeof anime.$inferSelect, 'id' | 'title' | 'totalEpisodes'>,
   metadata: Pick<typeof animeMetadata.$inferSelect, 'providerId' | 'providerSlug'>,
   episodeNumber: number,
   onFinish?: () => void,
 ): Promise<{ size: string | null } | null> => {
-  let animeDirPath = await animeVideoRealDirPath(animeData.id)
-  let shouldCheck = true
-  if (!animeDirPath) {
-    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
-    shouldCheck = false
+  const emitKey = generateEmitKey(animeData, episodeNumber)
+  const emit = (text: string, done = false) => {
+    downloadProgress.emit(emitKey, { text, done })
   }
 
+  emit('Menginisialisasi proses unduhan')
+
+  let animeDirPath = await animeVideoRealDirPath(animeData.id)
   const fileName = episodeNumber.toString().padStart(2, '0')
   const filePath = animeDirPath + fileName + '.mp4'
-  const tempFilePath = animeDirPath + fileName + '_.mp4'
-  const tempFile = Bun.file(tempFilePath)
 
-  if (shouldCheck) {
+  if (animeDirPath) {
     if (await Bun.file(filePath).exists()) {
+      emit('Episode ini telah diunduh', true)
+
       return null
     }
+  } else {
+    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
   }
 
-  const emitKey =
-    animeData.title + (animeData.totalEpisodes === 1 ? '' : `: Episode ${episodeNumber}`)
+  const tempFilePath = animeDirPath + fileName + '_.mp4'
+  const tempFile = Bun.file(tempFilePath)
 
   const abortController = new AbortController()
   const { signal } = abortController
 
   signal.addEventListener('abort', event => {
     if (event.target instanceof AbortSignal && event.target.reason === 'pause') {
-      downloadProgress.emit(emitKey, { text: 'Unduhan dijeda', done: true })
+      emit('Unduhan dijeda', true)
     } else {
       // defaultnya cancel
       fs.rm(tempFilePath, { force: true })
       fs.rm(filePath, { force: true })
 
-      downloadProgress.emit(emitKey, { text: 'Unduhan dibatalkan', done: true })
+      emit('Unduhan dibatalkan', true)
     }
   })
 
@@ -94,7 +104,7 @@ export const downloadEpisode = async (
   const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
   const setCredentials = async () => {
-    downloadProgress.emit(emitKey, { text: 'Mengambil token dari Kuramanime' })
+    emit('Mengambil token dari Kuramanime')
     ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess] = await Promise.all([
       getKuramanimeProcess(episodeUrl),
       getKuramanimeInitProcess(),
@@ -112,7 +122,7 @@ export const downloadEpisode = async (
       page: 1,
     })
 
-    downloadProgress.emit(emitKey, { text: 'Mengambil tautan unduh dari Kuramanime' })
+    emit('Mengambil tautan unduh dari Kuramanime')
 
     const responseHtml = await fetchText(
       `${episodeUrl}?${searchParams}`,
@@ -128,10 +138,29 @@ export const downloadEpisode = async (
         return getDownloadUrl()
       }
 
-      downloadProgress.emit(emitKey, {
-        text: 'Terjadi error yang tidak diketahui. Harap cek log',
-        done: true,
-      })
+      // video streaming masih diproses
+      if (responseHtml.includes('Streaming sedang diproses')) {
+        const index =
+          responseHtml.indexOf('updatedAtPlus5Min" value="') + 'updatedAtPlus5Min" value="'.length
+        if (index !== -1) {
+          const updatedAtPlus5Min = responseHtml.slice(index, responseHtml.indexOf('"', index))
+
+          const updatedAtPlus5MinDate = new Date(updatedAtPlus5Min)
+          const now = new Date()
+
+          const diff = updatedAtPlus5MinDate.getTime() - now.getTime()
+
+          emit(`Video sedang diproses. Mulai mengunduh dalam ${diff / 1e3} detik`)
+
+          return new Promise<string>(resolve => {
+            setTimeout(() => {
+              resolve(getDownloadUrl())
+            }, diff)
+          })
+        }
+      }
+
+      emit('Terjadi error yang tidak diketahui. Harap cek log', true)
 
       logger.error('Download episode: unknown error', {
         localAnime: animeData,
@@ -192,17 +221,12 @@ export const downloadEpisode = async (
     return handleDownloadUrlNotFound()
   }
 
-  const start = (
-    initialEmitText: string,
-    formattedTotalLengthCb?: (formattedTotalLength: string | null) => void,
-  ) => {
-    downloadProgress.emit(emitKey, { text: initialEmitText })
-
+  const start = (formattedTotalLengthCb?: (formattedTotalLength: string | null) => void) => {
     const handleError = (error: any) => {
       // kalo "error"nya dari `AbortController.abort`, variabel error nilainya sesuai parameternya
       // untuk sekarang parameternya antara undefined (default) atau string
       if (!(error === undefined || typeof error === 'string' || error instanceof DOMException)) {
-        downloadProgress.emit(emitKey, { text: 'Terjadi kesalahan', done: true })
+        emit('Terjadi kesalahan', true)
 
         throw error
       }
@@ -232,7 +256,7 @@ export const downloadEpisode = async (
                 const preparedResponse = await downloadVideo(url, tempFile.size)
 
                 if (!downloadIsStarted) {
-                  downloadProgress.emit(emitKey, { text: 'Menunggu unduhan sebelumnya selesai' })
+                  emit('Menunggu unduhan sebelumnya selesai')
                 }
 
                 resolvePreparedResponse([url, preparedResponse])
@@ -253,9 +277,7 @@ export const downloadEpisode = async (
             const initialLength = tempFile.size
             let receivedLength = initialLength
 
-            downloadProgress.emit(emitKey, {
-              text: (initialLength ? 'Lanjut' : 'Mulai') + ' mengunduh',
-            })
+            emit((initialLength ? 'Lanjut' : 'Mulai') + ' mengunduh')
 
             const prepared = await prepareResponsePromise
             if (!prepared) {
@@ -321,7 +343,7 @@ export const downloadEpisode = async (
                 text += speed
               }
 
-              downloadProgress.emit(emitKey, { text })
+              emit(text)
             }
 
             const setSkipIntervalId = setInterval(() => {
@@ -402,10 +424,8 @@ export const downloadEpisode = async (
             if (lastProgress) {
               const { text } = lastProgress
 
-              downloadProgress.emit(emitKey, {
-                // pake slice, biar hasil outputnya konsisten (kadang ada persenannya, kadang engga)
-                text: 'Mengunduh: ' + formattedTotalLength + text.slice(text.indexOf(' / ')),
-              })
+              // pake slice, biar hasil outputnya konsisten (kadang ada persenannya, kadang engga)
+              emit('Mengunduh: ' + formattedTotalLength + text.slice(text.indexOf(' / ')))
             }
 
             // biar keluar dari queue untuk proses selanjutnya
@@ -414,9 +434,7 @@ export const downloadEpisode = async (
 
               let progress = 0
               const emitProgress = () => {
-                downloadProgress.emit(emitKey, {
-                  text: `Mengoptimalisasi video (${progress.toFixed(2)}%)`,
-                })
+                emit(`Mengoptimalisasi video (${progress.toFixed(2)}%)`)
               }
 
               emitProgress()
@@ -490,7 +508,7 @@ export const downloadEpisode = async (
 
               onFinish?.()
 
-              downloadProgress.emit(emitKey, { text: 'Video selesai diunduh', done: true })
+              emit('Video selesai diunduh', true)
             })()
           },
           { signal },
@@ -500,13 +518,15 @@ export const downloadEpisode = async (
   }
 
   if (downloadQueue.pending === env.PARALLEL_DOWNLOAD_LIMIT) {
-    start('Menunggu unduhan sebelumnya')
+    emit('Menunggu unduhan sebelumnya')
+
+    start()
 
     return { size: '' }
   }
 
   return new Promise(resolve => {
-    start('Menginisialisasi proses unduhan', formattedTotalLength => {
+    start(formattedTotalLength => {
       resolve({ size: formattedTotalLength })
     })
   })
@@ -530,13 +550,13 @@ type GDriveCredentialsReturn = {
 }
 
 const gdriveAccessTokenCache = new Map<string, GDriveCredentialsReturn>()
+/** source: https://kuramalink.me/serviceworker.js */
 async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredentialsReturn> {
   const cache = gdriveAccessTokenCache.get(downloadUrl)
   if (cache) {
     return cache
   }
 
-  // source: https://kuramanime.dad/serviceworker.js
   const url = new URL(downloadUrl.replaceAll(';', '&'))
 
   const nullValues: string[] = []

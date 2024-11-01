@@ -1,8 +1,8 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
-import { downloadEpisode } from '~s/external/api/kuramanime/download'
-import { downloadProgressSnapshot } from '~s/external/download/progress'
+import { generateEmitKey, downloadEpisode } from '~s/external/api/kuramanime/download'
+import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
 import { updateEpisode } from '~s/anime/episode/update'
 import { picker } from '~/shared/utils/object'
 import type { EpisodeList } from '~s/db/repository/episode'
@@ -51,7 +51,7 @@ export const PosterRouter = router({
   downloadAll: procedure.input(v.parser(v.number())).mutation(async ({ ctx, input }) => {
     const [animeData, downloadedEpisodeList] = await Promise.all([
       ctx.db.query.anime.findFirst({
-        columns: { title: true, totalEpisodes: true },
+        columns: { id: true, title: true, totalEpisodes: true },
         where: (anime, { eq }) => eq(anime.id, input),
         with: {
           metadata: {
@@ -86,7 +86,7 @@ export const PosterRouter = router({
     }
 
     downloadProgressSnapshot.forEach((_, key) => {
-      const [title, episode] = key.split(': Episode ') as [string, string | undefined]
+      const [title, episode] = key.split(': Episode ')
 
       if (title === animeData.title) {
         downloadedEpisodeList.push(episode ? parseInt(episode) : 1)
@@ -104,13 +104,15 @@ export const PosterRouter = router({
       orderBy: (episodes, { asc }) => asc(episodes.number),
     })
 
+    for (const episode of episodes) {
+      downloadProgress.emit(generateEmitKey(animeData, episode.number), {
+        text: 'Menginisialisasi proses unduhan',
+      })
+    }
+
     ;(async () => {
       for (const episode of episodes) {
-        await downloadEpisode(
-          { id: input, title: animeData.title, totalEpisodes: animeData.totalEpisodes },
-          animeData.metadata[0]!,
-          episode.number,
-        )
+        await downloadEpisode(animeData, animeData.metadata[0]!, episode.number)
       }
     })()
 
