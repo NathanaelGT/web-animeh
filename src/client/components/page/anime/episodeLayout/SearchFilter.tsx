@@ -69,8 +69,8 @@ type Props = {
   setHideFiller: StateSetter<boolean>
   hideRecap: boolean
   setHideRecap: StateSetter<boolean>
-  currentPage: string
-  setCurrentPage: StateSetter<string>
+  currentPageIndex: number
+  setCurrentPageIndex: StateSetter<number>
 }
 
 export function SearchFilter({
@@ -85,10 +85,13 @@ export function SearchFilter({
   setHideFiller,
   hideRecap,
   setHideRecap,
-  currentPage,
-  setCurrentPage,
+  currentPageIndex,
+  setCurrentPageIndex,
 }: Props) {
   const perPage = useStore(clientProfileSettingsStore, state => state.episodeFilter.perPage)
+
+  const formattedPageList =
+    episodeCount > perPage ? pageList.map(([start, end]) => `${start} - ${end}`) : null
 
   const s = (value: boolean) => (value ? '1' : '0')
 
@@ -114,9 +117,9 @@ export function SearchFilter({
               setSortLatest(value === '1')
 
               if (value === '1') {
-                setCurrentPage(episodeCount + ' - ' + Math.max(1, episodeCount - perPage + 1))
+                setCurrentPageIndex(pageList.length - 1)
               } else {
-                setCurrentPage('1 - ' + Math.min(100, episodeCount))
+                setCurrentPageIndex(0)
               }
             }}
             options={[
@@ -146,21 +149,24 @@ export function SearchFilter({
               ['1', 'Sembunyikan'],
             ]}
           />
-          {episodeCount > perPage && (
+          {formattedPageList && (
             <FilterInput
               key={s(sortLatest)}
               label="Episode"
-              defaultValue={currentPage}
+              defaultValue={formattedPageList[currentPageIndex]!}
               onValueChange={page => {
                 setTimeout(() => {
                   flushSync(() => {
-                    setCurrentPage(page)
+                    const index = formattedPageList.indexOf(page)
+                    if (index > -1) {
+                      setCurrentPageIndex(index)
+                    }
                   })
 
                   episodeListRef.current?.scrollTo(0, 0)
                 })
               }}
-              options={pageList.map(([start, end]) => `${start} - ${end}`)}
+              options={formattedPageList}
             />
           )}
         </div>

@@ -51,9 +51,17 @@ function EpisodeLayout() {
   const [sortLatest, setSortLatest] = useState(episodeFilter.sortLatest)
   const [hideFiller, setHideFiller] = useState(episodeFilter.hideFiller)
   const [hideRecap, setHideRecap] = useState(episodeFilter.hideRecap)
-  const episodeList = Route.useLoaderData() as EpisodeList
+  const initialEpisodeList = Route.useLoaderData() as EpisodeList
 
+  useState(() => {
+    animeWatchSessionStore.setState(() => ({ id: Math.random().toString().slice(2) }))
+
+    episodeListStore.setState(() => initialEpisodeList)
+  })
+
+  const episodeList = useStore(episodeListStore)
   const episodeCount = episodeList.length
+
   const pageCount = Math.ceil(episodeCount / perPage)
 
   const pageList = useMemo(() => {
@@ -76,12 +84,9 @@ function EpisodeLayout() {
     }
 
     return result
-  }, [pageCount, sortLatest])
+  }, [pageCount, episodeCount, perPage, sortLatest])
 
-  // sesuaikan berdasarkan setting
-  const [currentPage, setCurrentPage] = useState(
-    pageList[0] ? pageList[0][0] + ' - ' + pageList[0][1] : '',
-  )
+  const [currentPageIndex, setCurrentPageIndex] = useState(0)
 
   // pada saat transisi kehalaman lain, path engga bisa diandalin, jadi mesti nyimpan value sebelumnya
   const previousEpisodeRef = useRef<number>(1)
@@ -99,15 +104,13 @@ function EpisodeLayout() {
   })
   previousEpisodeRef.current = currentEpisode
 
-  const compactMode = displayMode === 'Auto' ? episodeCount > 50 : displayMode === 'Padat'
+  const compactMode =
+    displayMode === 'Auto' ? initialEpisodeList.length > 50 : displayMode === 'Padat'
 
   const currentPageEpisodeList = useMemo(() => {
-    const [start, end] = currentPage
-      .split(' - ')
-      .map(num => Number(num) - 1)
-      .sort((a, b) => a - b) as [number, number]
+    const [start, end] = pageList[currentPageIndex]!.sort((a, b) => a - b)
 
-    const result = episodeList.slice(start, end + 1).filter(episode => {
+    const result = episodeList.slice(start - 1, end).filter(episode => {
       if ((hideFiller && episode.isFiller) || (hideRecap && episode.isRecap)) {
         return false
       }
@@ -120,16 +123,16 @@ function EpisodeLayout() {
     }
 
     return result
-  }, [currentPage, episodeCount, hideFiller, hideRecap, sortLatest])
+  }, [currentPageIndex, pageList, episodeCount, hideFiller, hideRecap, sortLatest])
 
   const episodeListRef = useRef<HTMLDivElement | null>(null)
 
   const search = (query: number) => {
-    const page = sortLatest
-      ? pageList.find(([start, end]) => query >= end && query <= start)
-      : pageList.find(([start, end]) => query >= start && query <= end)
+    const pageIndex = sortLatest
+      ? pageList.findIndex(([start, end]) => query >= end && query <= start)
+      : pageList.findIndex(([start, end]) => query >= start && query <= end)
 
-    if (!page) {
+    if (pageIndex === -1) {
       return
     }
 
@@ -180,10 +183,9 @@ function EpisodeLayout() {
       }
     }
 
-    const newPage = page[0] + ' - ' + page[1]
-    if (currentPage !== newPage) {
+    if (currentPageIndex !== pageIndex) {
       updaters.push(() => {
-        setCurrentPage(newPage)
+        setCurrentPageIndex(pageIndex)
       })
     }
 
@@ -235,14 +237,6 @@ function EpisodeLayout() {
     },
   })
 
-  // kalo pake useEffect, bakal error karena baru dijalankan setelah rendering
-  // jadi disini ngeabuse useMemo biar callbacknya cuma jalan sekali sebelum rendering
-  useMemo(() => {
-    animeWatchSessionStore.setState(() => ({ id: Math.random().toString().slice(2) }))
-  }, [])
-
-  episodeListStore.setState(() => episodeList)
-
   return (
     <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
@@ -279,8 +273,8 @@ function EpisodeLayout() {
                 setHideFiller={setHideFiller}
                 hideRecap={hideRecap}
                 setHideRecap={setHideRecap}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
+                currentPageIndex={currentPageIndex}
+                setCurrentPageIndex={setCurrentPageIndex}
               />
 
               <SearchInput animeId={params.id} search={search} />
@@ -296,7 +290,7 @@ function EpisodeLayout() {
               }
             >
               <EpisodeSelector
-                key={params.id + '|' + currentPage}
+                key={params.id + '|' + currentPageIndex}
                 animeId={params.id}
                 currentEpisode={currentEpisode ?? 1}
                 episodeList={currentPageEpisodeList}
