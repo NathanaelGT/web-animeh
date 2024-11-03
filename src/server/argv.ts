@@ -8,6 +8,7 @@ const parseArgv = () => {
     const argv = parseArgs({
       args: Bun.argv,
       allowPositionals: true,
+      strict: false,
       options: {
         log: {
           type: 'boolean',

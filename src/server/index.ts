@@ -80,7 +80,7 @@ export type WebSocketData = {
 
 const server = await (async () => {
   const serverOption: Bun.Serve<WebSocketData & BunWSClientCtx> = {
-    port: isProduction() ? 8888 : 8887,
+    port: isProduction() || Bun.argv.includes('--server-only') ? 8888 : 8887,
     websocket: argv.log
       ? {
           ...websocket,

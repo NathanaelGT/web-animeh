@@ -4,6 +4,8 @@ import os from 'os'
 import { format } from 'src/shared/utils/date'
 import { formatNs } from 'src/server/utils/time'
 
+const serverOnly = Bun.argv.includes('--server-only')
+
 const promises: (Promise<void> | Bun.ShellPromise)[] = [
   (async () => {
     if (!(await Bun.file('.env').exists())) {
@@ -14,7 +16,9 @@ const promises: (Promise<void> | Bun.ShellPromise)[] = [
 
 // di linux, kadang portnya tetap nyangkut walau sudah distop
 if (os.platform() === 'linux') {
-  promises.push($`fuser -k 8887/tcp`.quiet().nothrow())
+  const port = serverOnly ? 8888 : 8887
+
+  promises.push($`fuser -k ${port}/tcp`.quiet().nothrow())
 }
 
 const maxWidth = 140
@@ -55,7 +59,7 @@ const server = Bun.spawn(
       ...process.env,
     },
     ipc(message) {
-      if (message === 'ready') {
+      if (message === 'ready' && !serverOnly) {
         log('vite', 'Starting')
       }
     },

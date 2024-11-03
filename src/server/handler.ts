@@ -1,9 +1,9 @@
 import Bun from 'bun'
-import path from 'path'
 import fs from 'fs/promises'
 import { createBunWSHandler } from 'trpc-bun-adapter'
 import { createTRPCContext } from '~s/trpc'
 import { TRPCRouter } from '~s/router'
+import { basePath } from '~s/utils/path'
 // import { safePath } from '~s/utils/path'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { handleVideoRequest } from '~s/http-handler/video'
@@ -11,9 +11,9 @@ import { isProduction } from '~s/env' with { type: 'macro' }
 
 let indexHtml: Buffer
 
-if (isProduction()) {
+if (isProduction() || Bun.argv.includes('--server-only')) {
   // ada kemungkinan kecil race condition, tapi ga masalah
-  void fs.readFile(path.join(import.meta.dir, 'public/index.html')).then(html => {
+  void fs.readFile(basePath + 'dist/public/index.html').then(html => {
     indexHtml = html
   })
 }
@@ -39,7 +39,7 @@ export const httpHandler = async (
     return handleVideoRequest(request, target)
   }
 
-  if (!isProduction()) {
+  if (!isProduction() && !Bun.argv.includes('--server-only')) {
     return Response.redirect(`http://localhost:8888${target}`, 302)
   }
 
