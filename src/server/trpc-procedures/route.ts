@@ -11,6 +11,7 @@ import { isMoreThanOneDay } from '~s/utils/time'
 import { glob, videosDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { jikanQueue, producerClient } from '~s/external/api/jikan'
+import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { omit } from '~/shared/utils/object'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
@@ -266,6 +267,18 @@ export const RouteRouter = router({
 
       return episodeRepository.findByAnime(animeData)
     }),
+
+  '/pengaturan/unduhan': procedure.query(() => {
+    const snapshot: [string, string][] = []
+
+    downloadProgressSnapshot.forEach((data, name) => {
+      if (!data.done) {
+        snapshot.push([name, data.text])
+      }
+    })
+
+    return snapshot
+  }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never
   AnyProcedure | CreateRouterOptions | AnyRouter
