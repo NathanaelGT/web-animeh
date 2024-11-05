@@ -269,11 +269,11 @@ export const RouteRouter = router({
     }),
 
   '/pengaturan/unduhan': procedure.query(() => {
-    const snapshot: [string, string][] = []
+    const snapshot: Record<string, string> = {}
 
     downloadProgressSnapshot.forEach((data, name) => {
       if (!data.done) {
-        snapshot.push([name, data.text])
+        snapshot[name] = data.text
       }
     })
 
