@@ -68,17 +68,19 @@ export const downloadEpisode = async (
   emit('Menginisialisasi proses unduhan')
 
   let animeDirPath = await animeVideoRealDirPath(animeData.id)
+  let shouldCheck = true
+  if (!animeDirPath) {
+    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
+    shouldCheck = false
+  }
+
   const fileName = episodeNumber.toString().padStart(2, '0')
   const filePath = animeDirPath + fileName + '.mp4'
 
-  if (animeDirPath) {
-    if (await Bun.file(filePath).exists()) {
-      emit('Episode ini telah diunduh', true)
+  if (shouldCheck && (await Bun.file(filePath).exists())) {
+    emit('Episode ini telah diunduh', true)
 
-      return null
-    }
-  } else {
-    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
+    return null
   }
 
   const tempFilePath = animeDirPath + fileName + '_.mp4'
