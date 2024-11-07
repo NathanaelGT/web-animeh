@@ -1,42 +1,87 @@
-import type { ReactNode } from 'react'
-import type { UseTRPCQueryResult } from '@trpc/react-query/shared'
+/*
+  type yang ada disini dicopy dari TRPC,
+  yang di TRPC gabisa diimport karena banyak type yang dimark sebagai internal
+*/
 
-export const mapTrpcArray = <TArray extends unknown[], TError extends unknown>({
-  query,
-  cb,
-  onEmpty,
-  onLoading,
-  onError,
-  filterCb = false,
-}: {
-  query: UseTRPCQueryResult<TArray, TError>
-  cb: (item: NoInfer<TArray[number]>, index: number, array: NoInfer<TArray>) => ReactNode
-  onEmpty?: () => ReactNode
-  onLoading?: () => ReactNode
-  onError?: (error: NoInfer<TError>) => ReactNode
-  filterCb?: boolean
-}): ReactNode => {
-  if (query.isLoading) {
-    return onLoading?.()
-  } else if (query.error) {
-    return onError?.(query.error)
-  }
+import type {
+  AnyProcedure,
+  AnyRootTypes,
+  inferProcedureInput,
+  inferTransformedProcedureOutput,
+  ProcedureType,
+  RouterRecord,
+} from '@trpc/server/unstable-core-do-not-import'
 
-  const data = query.data!
-  const count = data.length
-  if (count) {
-    const result = data.map(cb as (item: unknown) => ReactNode)
+type ResolverDef = {
+  input: any
+  output: any
+}
 
-    if (filterCb) {
-      for (let i = 0; i < count; i++) {
-        if (result[i] !== null && result[i] !== undefined) {
-          return result
-        }
+/**
+ * @remark `void` is here due to https://github.com/trpc/trpc/pull/4374
+ */
+type CursorInput = {
+  cursor?: any
+} | void
+
+export type MaybeDecoratedInfiniteQuery<TDef extends ResolverDef> =
+  TDef['input'] extends CursorInput
+    ? {
+        useInfiniteQuery: unknown
+        useSuspenseInfiniteQuery: unknown
+        usePrefetchInfiniteQuery: unknown
       }
-    } else {
-      return result
-    }
-  }
+    : object
 
-  return onEmpty?.()
+export type DecoratedQueryMethods<TDef extends ResolverDef> = {
+  useQuery: unknown
+  usePrefetchQuery: unknown
+  useSuspenseQuery: unknown
+}
+
+export type DecoratedQuery<TDef extends ResolverDef> = MaybeDecoratedInfiniteQuery<TDef> &
+  DecoratedQueryMethods<TDef>
+
+export type DecoratedMutation<TDef extends ResolverDef> = {
+  useMutation: unknown
+}
+
+export type DecoratedSubscription<TDef extends ResolverDef> = {
+  useSubscription: unknown
+}
+
+type DecorateProcedure<
+  TType extends ProcedureType,
+  TDef extends ResolverDef,
+> = TType extends 'query'
+  ? DecoratedQuery<TDef>
+  : TType extends 'mutation'
+    ? DecoratedMutation<TDef>
+    : TType extends 'subscription'
+      ? DecoratedSubscription<TDef>
+      : never
+
+export type DecorateRouterRecord<TRoot extends AnyRootTypes, TRecord extends RouterRecord> = {
+  [TKey in keyof TRecord]: TRecord[TKey] extends infer $Value
+    ? $Value extends RouterRecord
+      ? DecorateRouterRecord<TRoot, $Value>
+      : $Value extends AnyProcedure
+        ? DecorateProcedure<
+            $Value['_def']['type'],
+            {
+              input: inferProcedureInput<$Value>
+              output: inferTransformedProcedureOutput<TRoot, $Value>
+            }
+          >
+        : never
+    : never
+}
+
+export type CreateTRPCReactBase = {
+  useContext(): unknown
+  useUtils(): unknown
+  Provider: unknown
+  createClient: unknown
+  useQueries: unknown
+  useSuspenseQueries: unknown
 }
