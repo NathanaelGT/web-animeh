@@ -7,6 +7,7 @@ import {
   downloadProgressController,
   type DownloadProgressData,
 } from '~s/external/download/progress'
+import { downloadMeta } from '../external/download/meta'
 
 export const DownloadRouter = router({
   list: procedure.subscription(async () => {
@@ -58,4 +59,8 @@ export const DownloadRouter = router({
         return false
       }
     }),
+
+  meta: procedure.input(v.parser(v.string())).query(({ input }) => {
+    return downloadMeta.get(input)
+  }),
 })

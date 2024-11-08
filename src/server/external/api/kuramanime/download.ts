@@ -14,6 +14,7 @@ import {
   downloadProgressController,
   downloadProgressSnapshot,
 } from '~s/external/download/progress'
+import { downloadMeta } from '~s/external/download/meta'
 import { fetchText } from '~s/utils/fetch'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
@@ -54,18 +55,34 @@ export const generateEmitKey = (
   return animeData.title + (animeData.totalEpisodes === 1 ? '' : `: Episode ${episodeNumber}`)
 }
 
+export const initDownloadEpisode = (
+  animeData: Pick<typeof anime.$inferSelect, 'id' | 'title' | 'totalEpisodes'>,
+  episodeNumber: number,
+) => {
+  const emitKey = generateEmitKey(animeData, episodeNumber)
+
+  downloadProgress.emit(emitKey, {
+    text: 'Menginisialisasi proses unduhan',
+  })
+
+  downloadMeta.set(emitKey, {
+    animeId: animeData.id,
+    episodeNumber,
+  })
+}
+
 export const downloadEpisode = async (
   animeData: Pick<typeof anime.$inferSelect, 'id' | 'title' | 'totalEpisodes'>,
   metadata: Pick<typeof animeMetadata.$inferSelect, 'providerId' | 'providerSlug'>,
   episodeNumber: number,
   onFinish?: () => void,
 ): Promise<{ size: string | null } | null> => {
+  initDownloadEpisode(animeData, episodeNumber)
+
   const emitKey = generateEmitKey(animeData, episodeNumber)
   const emit = (text: string, done = false) => {
     downloadProgress.emit(emitKey, { text, done })
   }
-
-  emit('Menginisialisasi proses unduhan')
 
   let animeDirPath = await animeVideoRealDirPath(animeData.id)
   let shouldCheck = true

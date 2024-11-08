@@ -1,8 +1,8 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
-import { generateEmitKey, downloadEpisode } from '~s/external/api/kuramanime/download'
-import { downloadProgress, downloadProgressSnapshot } from '~s/external/download/progress'
+import { initDownloadEpisode, downloadEpisode } from '~s/external/api/kuramanime/download'
+import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { updateEpisode } from '~s/anime/episode/update'
 import { picker } from '~/shared/utils/object'
 import type { EpisodeList } from '~s/db/repository/episode'
@@ -105,9 +105,8 @@ export const PosterRouter = router({
     })
 
     for (const episode of episodes) {
-      downloadProgress.emit(generateEmitKey(animeData, episode.number), {
-        text: 'Menginisialisasi proses unduhan',
-      })
+      // diinit duluan biar semua yang didownload langsung muncul di queue
+      initDownloadEpisode(animeData, episode.number)
     }
 
     ;(async () => {

@@ -1,12 +1,9 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { api } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import { MapObject } from '@/logic/MapObject'
-import { DownloadProgress } from '@/ui/custom/download-progress'
-import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
-import { DownloadDropdown } from '@/page/pengaturan/unduhan/DownloadDropdown'
+import { DownloadState } from '@/page/pengaturan/unduhan/DownloadState'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/unduhan/')({
   component: PengaturanUnduhan,
@@ -25,43 +22,6 @@ function PengaturanUnduhan() {
   return MapObject({
     data: downloadList,
     onEmpty: () => <p>Sedang tidak mengunduh apapun</p>,
-    cb(text, name) {
-      const isDownloading = text.startsWith('Mengunduh: ')
-      const isOptimizing = !isDownloading && text.startsWith('Mengoptimalisasi video')
-
-      return (
-        <div key={name} className="grid gap-3">
-          <div className="flex gap-4">
-            <div className="my-auto w-6">
-              {isDownloading ? (
-                <DownloadIcon />
-              ) : isOptimizing ? (
-                <Wand />
-              ) : text.startsWith('Menunggu') ? (
-                <Hourglass />
-              ) : text === 'Video selesai diunduh' ? (
-                <CircleCheckBig />
-              ) : (
-                <LoaderCircle className="animate-spin" />
-              )}
-            </div>
-
-            <p className="my-auto flex-1">{name}</p>
-
-            {!isOptimizing && <DownloadDropdown downloadName={name} />}
-          </div>
-
-          {isDownloading ? (
-            <DownloadProgress text={text} />
-          ) : isOptimizing ? (
-            <OptimalizationProgress text={text}>
-              <p className="text-center">Mengoptimalisasi video</p>
-            </OptimalizationProgress>
-          ) : (
-            <p>{text}</p>
-          )}
-        </div>
-      )
-    },
+    cb: (text, name) => <DownloadState text={text} name={name} />,
   })
 }
