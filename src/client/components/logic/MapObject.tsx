@@ -1,12 +1,16 @@
 import type { ReactNode } from 'react'
 
+/**
+ * Known bug: Required<T> ngehilangin undefined walau sudah didefine secara explicit,
+ *            mengakibatkan parameter item di cb bisa salah type
+ */
 export function MapObject<TObj extends Record<string, unknown>>({
   data,
   cb,
   onEmpty,
 }: {
   data: TObj
-  cb: (item: NoInfer<TObj[string]>, key: string, object: NoInfer<TObj>) => ReactNode
+  cb: (item: Required<TObj>[keyof TObj], key: keyof TObj, object: NoInfer<TObj>) => ReactNode
   onEmpty?: () => ReactNode
 }): ReactNode {
   const result: ReactNode[] = []
