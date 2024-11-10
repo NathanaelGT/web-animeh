@@ -1,6 +1,6 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
-import { getKuramanimeOrigin } from '~/server/ky'
+import { getKuramanimeOrigin } from '~s/ky'
 import { omit } from '~/shared/utils/object'
 
 export const AnimeTitleRouter = router({
@@ -57,16 +57,14 @@ export const AnimeTitleRouter = router({
       }),
     ])
 
-    const kuramanimeUrlWithoutSlug = metadata
-      ? `${kuramanimeOrigin}anime/${metadata.providerId}`
-      : null
+    type Providers = 'Kuramanime'
 
-    return {
-      kuramanimeUrl: kuramanimeUrlWithoutSlug
-        ? metadata?.providerSlug
-          ? kuramanimeUrlWithoutSlug + '/' + metadata.providerSlug
-          : kuramanimeUrlWithoutSlug
-        : undefined,
+    const url: { [Key in Providers]?: `https://${string}` } = {}
+
+    if (metadata?.providerSlug) {
+      url.Kuramanime = `${kuramanimeOrigin}anime/${metadata.providerId}/${metadata.providerSlug}`
     }
+
+    return { url }
   }),
 })

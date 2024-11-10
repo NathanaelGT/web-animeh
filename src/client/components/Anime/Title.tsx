@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { api } from '~/client/trpc'
-import { Image } from '@/Image'
+import { SquarePlus, Copy } from 'lucide-react'
+import { api } from '~c/trpc'
 import { toast } from '@/ui/use-toast'
+import { MapObject } from '@/logic/MapObject'
+import { Image } from '@/Image'
+import { MyAnimeList } from '@/svg/MyAnimeList'
+import { Kuramanime } from '@/svg/Kuramanime'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -20,7 +24,7 @@ import {
   TooltipContent,
   TooltipArrow,
 } from '@/ui/tooltip'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import type { AnimeData as BaseAnimeData } from '~c/stores'
 
 const copy = (text: string | undefined) => {
@@ -37,7 +41,7 @@ const copy = (text: string | undefined) => {
   }
 }
 
-type AnimeData = Pick<BaseAnimeData, 'id' | 'title'>
+export type AnimeData = Pick<BaseAnimeData, 'id' | 'title'>
 
 type Tag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p'
 
@@ -80,6 +84,13 @@ export function AnimeTitle<TTag extends Tag = 'p', TAsLink extends boolean = fal
 
   text = withTooltip ? <TitleTooltip animeData={animeData}>{text}</TitleTooltip> : text
 
+  const iconMap: Record<
+    keyof NonNullable<typeof contextQuery.data>['url'],
+    (props: Omit<ComponentProps<'svg'>, 'children'>) => JSX.Element
+  > = {
+    Kuramanime,
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild onMouseDown={onTriggerMouseDown}>
@@ -87,18 +98,21 @@ export function AnimeTitle<TTag extends Tag = 'p', TAsLink extends boolean = fal
       </ContextMenuTrigger>
 
       {contextQuery.data && (
-        <ContextMenuContent className="w-48">
-          <ContextLink>
-            <Link to="/anime/$id" params={{ id: animeData.id.toString() }} target="_blank">
-              Buka di tab baru
-            </Link>
-          </ContextLink>
+        <ContextMenuContent className="w-52">
+          <ContextLink icon={SquarePlus} href={`/anime/${animeData.id}`} text="tab baru" />
 
-          <ContextLink href={`https://myanimelist.net/anime/${animeData.id}`} text="MyAnimeList" />
+          <ContextLink
+            icon={MyAnimeList}
+            href={`https://myanimelist.net/anime/${animeData.id}`}
+            text="MyAnimeList"
+          />
 
-          {contextQuery.data.kuramanimeUrl && (
-            <ContextLink href={contextQuery.data.kuramanimeUrl} text="Kuramanime" />
-          )}
+          <MapObject
+            data={contextQuery.data.url}
+            cb={(href, provider) => (
+              <ContextLink key={provider} icon={iconMap[provider]} href={href} text={provider} />
+            )}
+          />
 
           <ContextMenuSeparator />
 
@@ -106,7 +120,10 @@ export function AnimeTitle<TTag extends Tag = 'p', TAsLink extends boolean = fal
             onClick={() => {
               copy(animeData.title)
             }}
+            role="button"
+            className="cursor-pointer"
           >
+            <Copy className="mr-2 h-4 w-4" />
             Salin judul
           </ContextMenuItem>
         </ContextMenuContent>
@@ -196,51 +213,38 @@ function TitleTooltip({ animeData, children }: TitleTooltipProps) {
   )
 }
 
-type ContextLinkProps =
-  | {
-      children: JSX.Element
-    }
-  | {
-      href: string
-      text: string
-    }
+type Icon = (props: Omit<ComponentProps<'svg'>, 'children'>) => ReactNode
 
-function ContextLink(_props: ContextLinkProps) {
-  const props = _props as
-    | {
-        children: JSX.Element
-        href: undefined
-        text: undefined
-      }
-    | {
-        children: undefined
-        href: string
-        text: string
-      }
+type ContextLinkProps = {
+  icon: Icon
+  href: `https://${string}` | `/${string}`
+  text: string
+}
 
-  const anchor = props.children ?? (
-    <a href={props.href} target="_blank">
-      Buka di {props.text}
-    </a>
-  )
-
-  const handleCopy = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
-    copy(
-      props.href ??
-        (
-          event.currentTarget.previousElementSibling?.firstElementChild as
-            | HTMLAnchorElement
-            | undefined
-        )?.href,
-    )
+function ContextLink({ icon: Icon, href, text }: ContextLinkProps) {
+  const handleCopy = () => {
+    copy(href.startsWith('/') ? origin + href : href)
   }
 
   return (
     <ContextMenuSub>
-      <ContextMenuSubTrigger>{anchor}</ContextMenuSubTrigger>
+      <ContextMenuSubTrigger className="grid grid-cols-[1fr_auto] p-0 pr-2">
+        <a href={href} target="_blank" className="cursor-pointer px-2 py-1.5">
+          <Icon className="mr-2 inline h-4 w-4" />
+          Buka di {text}
+        </a>
+      </ContextMenuSubTrigger>
+
       <ContextMenuSubContent className="w-40">
-        <ContextMenuItem>{anchor}</ContextMenuItem>
-        <ContextMenuItem onClick={handleCopy}>Salin</ContextMenuItem>
+        <ContextMenuItem asChild>
+          <a href={href} target="_blank" className="cursor-pointer">
+            Buka di {text}
+          </a>
+        </ContextMenuItem>
+
+        <ContextMenuItem onClick={handleCopy} role="button" className="cursor-pointer">
+          Salin
+        </ContextMenuItem>
       </ContextMenuSubContent>
     </ContextMenuSub>
   )

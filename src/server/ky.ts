@@ -1,13 +1,15 @@
 import ky from 'ky'
 
-const kuramalink = 'https://kuramalink.me/'
+type KuramanimeOrigin = `https://${string}/`
 
-let cachedKuramanimeOrigin: string | undefined
-/** Origin dengan trailing slash */
+const kuramalink: KuramanimeOrigin = 'https://kuramalink.me/'
+
+let cachedKuramanimeOrigin: KuramanimeOrigin | undefined
+
 const getFreshKuramanimeOrigin = async () => {
   const response = await fetch(kuramalink, { method: 'HEAD' })
 
-  return response.url
+  return response.url as KuramanimeOrigin
 }
 
 export const getKuramanimeOrigin = async () => {
