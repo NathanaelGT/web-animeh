@@ -1,26 +1,39 @@
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
+import * as episodeRepository from '~s/db/repository/episode'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { initDownloadEpisode, downloadEpisode } from '~s/external/api/kuramanime/download'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { updateEpisode } from '~s/anime/episode/update'
 import { picker } from '~/shared/utils/object'
-import type { EpisodeList } from '~s/db/repository/episode'
 
 export const PosterRouter = router({
   episodeList: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
     const animeData = await ctx.db.query.anime.findFirst({
-      columns: { id: true, title: true, episodeUpdatedAt: true },
+      columns: { id: true, title: true, totalEpisodes: true, episodeUpdatedAt: true },
       where: (anime, { eq }) => eq(anime.id, input),
+      with: {
+        providerEpisodes: {
+          columns: {
+            number: true,
+          },
+          orderBy: (providerEpisodes, { desc }) => desc(providerEpisodes.number),
+          limit: 1,
+        },
+      },
     })
 
     if (!animeData) {
       throw new Error('404')
     }
 
-    const episodeList = await new Promise<EpisodeList>(resolve => {
-      updateEpisode(animeData, {}, resolve)
-    })
+    const latestEpisode = animeData.providerEpisodes[0]?.number ?? 0
+
+    const episodeList = await (animeData.totalEpisodes === latestEpisode
+      ? episodeRepository.findByAnime(animeData)
+      : new Promise<episodeRepository.EpisodeList>(resolve => {
+          updateEpisode(animeData, {}, resolve)
+        }))
 
     return episodeList.map(picker('number', 'downloadStatus'))
   }),
