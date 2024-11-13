@@ -117,9 +117,9 @@ export const api = createTRPCReact<typeof TRPCRouter>()
 type Api = Omit<typeof api, keyof CreateTRPCReactBase>
 
 type SubscribeHooks<TData> = {
-  onData: (data: TData) => void
-  onError: (error: TRPCClientError<typeof TRPCRouter>) => void
-  onComplete: () => void
+  onData?: (data: TData) => void
+  onError?: (error: TRPCClientError<typeof TRPCRouter>) => void
+  onComplete?: () => void
 }
 type Subscription = {
   state: 'open' | 'closed' | 'connecting'
@@ -137,67 +137,79 @@ type Transform<T> =
           ? { [K in keyof T]: Transform<T[K]> }
           : T
 
-export const rpc = new Proxy({} as { path: string }, {
-  get(target, prop) {
-    if (!target.path) {
-      target = { path: '' }
-    }
+const createHandler = () => {
+  const handler = ((input, hooks) => {
+    const separatorIndex = handler.path.lastIndexOf('.')
+    const path = handler.path.slice(0, separatorIndex)
+    const method = handler.path.slice(separatorIndex + 1)
 
-    if (prop === 'query' || prop === 'mutate') {
-      return (input: unknown) => {
-        return new Promise((resolve, reject) => {
-          const unsubscribe = req(
-            input,
-            prop === 'query' ? prop : 'mutation',
-            target.path.slice('.'.length),
-            {
-              complete() {},
-              error: reject,
-              next(message) {
-                unsubscribe()
-
-                const transformed = transformResult(message, SuperJSON)
-
-                if (transformed.ok) {
-                  resolve(transformed.result.data)
-                } else {
-                  reject(TRPCClientError.from(transformed.error))
-                }
-              },
-            },
-          )
-        })
-      }
-    } else if (prop === 'subscribe') {
-      return (input: unknown, hooks: SubscribeHooks<unknown>) => {
-        const unsubscribe = req(input, 'subscription', target.path.slice('.'.length), {
-          complete() {
-            subscription.state = 'closed'
-
-            hooks.onComplete?.()
-          },
-          error: hooks.onError,
+    if (method === 'query' || method === 'mutate') {
+      return new Promise((resolve, reject) => {
+        const unsubscribe = req(input, method === 'query' ? method : 'mutation', path, {
+          complete() {},
+          error: reject,
           next(message) {
-            subscription.state = 'open'
+            unsubscribe()
 
             const transformed = transformResult(message, SuperJSON)
 
             if (transformed.ok) {
-              hooks.onData(transformed.result.data)
+              resolve(transformed.result.data)
             } else {
-              hooks.onError(TRPCClientError.from(transformed.error))
+              reject(TRPCClientError.from(transformed.error))
             }
           },
         })
-
-        const subscription: Subscription = {
-          state: 'connecting',
-          unsubscribe,
-        }
-      }
+      })
     }
 
-    target.path += '.' + (typeof prop === 'string' ? prop : prop.toString())
+    const unsubscribe = req(input, 'subscription', path, {
+      complete() {
+        subscription.state = 'closed'
+
+        hooks.onComplete?.()
+      },
+      error: hooks?.onError ?? (() => {}),
+      next(message) {
+        subscription.state = 'open'
+
+        const transformed = transformResult(message, SuperJSON)
+
+        if (transformed.ok) {
+          if (transformed.result.type === 'data') {
+            hooks.onData?.(transformed.result.data)
+          } else if (transformed.result.type === 'stopped') {
+            this.complete()
+          }
+        } else {
+          hooks.onError?.(TRPCClientError.from(transformed.error))
+        }
+      },
+    })
+
+    const subscription: Subscription = {
+      state: 'connecting',
+      unsubscribe,
+    }
+
+    return subscription
+  }) as (
+    | ((input: unknown) => Promise<unknown>)
+    | ((input: unknown, hooks: SubscribeHooks<unknown>) => Subscription)
+  ) & {
+    path: string
+  }
+
+  return handler
+}
+
+export const rpc = new Proxy({} as ReturnType<typeof createHandler>, {
+  get(target, prop: string) {
+    if (!target.path) {
+      target = createHandler()
+    }
+
+    target.path = target.path ? target.path + '.' + prop : prop
 
     return new Proxy(target, this)
   },
