@@ -1,8 +1,6 @@
-import SuperJSON from 'superjson'
-import { wsClient } from '../trpc'
+import { rpc } from '~c/trpc'
+// @ts-ignore
 import type { logger as baseLogger } from '~s/utils/logger'
-
-let logId = 0
 
 const log = (
   level: keyof typeof baseLogger,
@@ -29,22 +27,7 @@ const log = (
     context.client_stacktraces = stackTraces
   }
 
-  wsClient.request({
-    lastEventId: undefined,
-    op: {
-      type: 'mutation',
-      path: 'log',
-      id: ('log' + ++logId) as unknown as number,
-      input: SuperJSON.serialize({ level, message, context }),
-      context: {},
-      signal: null,
-    },
-    callbacks: {
-      complete() {},
-      error() {},
-      next() {},
-    },
-  })
+  rpc.log.mutate({ level, message, context })
 
   console[level](message, context)
 }

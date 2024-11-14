@@ -1,10 +1,6 @@
-import { transformResult } from '@trpc/server/unstable-core-do-not-import'
-import SuperJSON from 'superjson'
-import { wsClient } from '~c/trpc'
+import { rpc } from '~c/trpc'
 import { imageIsLoaded, urlMap } from '~c/hooks/useImage'
 import { base64ToBlob } from '~c/utils'
-import type { ImageSubscriptionProcedure } from '~s/trpc-procedures/image'
-import type { TRPCResponse } from '~/shared/utils/types'
 
 const imageCache = new Map<string, Blob>()
 
@@ -83,41 +79,14 @@ function onImageLoad(callback: ImageLoadListener, identifier?: string) {
 
 export { onImageLoad }
 
-wsClient.request({
-  lastEventId: undefined,
-  op: {
-    type: 'subscription',
-    path: 'images',
-    id: 'images' as unknown as number,
-    input: '',
-    context: {},
-    signal: null,
-  },
-  callbacks: {
-    complete() {},
-    error() {},
-    next(message) {
-      const transformed = transformResult(message, SuperJSON)
-
-      if (!transformed.ok) {
-        // ?
-
-        return
+rpc.images.subscribe(undefined, {
+  onData(images) {
+    for (const image of images) {
+      if (typeof image === 'string') {
+        loadImageFromCache(image)
+      } else {
+        void cacheImage(...image)
       }
-
-      if (transformed.result.type !== 'data') {
-        return
-      }
-
-      const images = transformed.result.data as TRPCResponse<typeof ImageSubscriptionProcedure>
-
-      for (const image of images) {
-        if (typeof image === 'string') {
-          loadImageFromCache(image)
-        } else {
-          void cacheImage(...image)
-        }
-      }
-    },
+    }
   },
 })
