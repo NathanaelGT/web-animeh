@@ -4,20 +4,20 @@ import { valibotSearchValidator } from '@tanstack/router-valibot-adapter'
 import * as v from 'valibot'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { scrollbarWidth } from '~c/main'
-import { api } from '~c/trpc'
+import { api, type rpc } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import { animeListPages } from '~c/stores'
 import { randomBetween } from '~/shared/utils/number'
 import { oneRemInPx } from '~c/utils/css'
 import { Skeleton } from '@/ui/skeleton'
 import { PosterDisplayGroup } from '@/page/home/PosterDisplayGroup'
-import type { TRPCParams } from '~/shared/utils/types'
 
-const vOptionalString = v.optional(v.string(), undefined)
+type Params = Parameters<(typeof rpc.route)['/']['query']>[0]
 
 const searchSchema = v.object({
-  ongoing: vOptionalString,
-  terunduh: vOptionalString,
+  filter: v.optional(
+    v.string() as unknown as v.PicklistSchema<NonNullable<Params['filter']>[], undefined>,
+  ),
 })
 
 const posterHeightPx = 229
@@ -46,16 +46,17 @@ export const Route = createFileRoute('/')({
   pendingComponent: PendingIndex,
   validateSearch: valibotSearchValidator(searchSchema),
   loaderDeps: ({ search }) => search as v.InferOutput<typeof searchSchema>,
-  loader: async ({ deps }) => {
-    const params = {} as TRPCParams<(typeof import('~s/trpc-procedures/route'))['RouteRouter']['/']>
+  loader: async ({ deps: { filter } }) => {
+    const perPage = calculatePerPage()
+    const params: Params = {
+      x: `${perPage}_${filter && Math.random()}`,
+      perPage,
+      filter,
+    }
 
     const getScrollThresholdPx = (cols: number) => {
       return (posterHeightPx + posterTextHeightPx) * cols + wrapperGapY * (cols - 1)
     }
-
-    params.perPage = calculatePerPage()
-    params.ongoing = Boolean(deps?.ongoing)
-    params.downloaded = Boolean(deps?.terunduh)
 
     return [params, getScrollThresholdPx(4), await fetchRouteData('/', params)] as const
   },
@@ -75,8 +76,6 @@ function Index() {
     },
   })
 
-  const id = `${params.perPage}_${params.downloaded}`
-
   useEffect(() => {
     let timeoutId: Timer | null = setTimeout(() => {
       timeoutId = null
@@ -91,7 +90,7 @@ function Index() {
         clearTimeout(timeoutId)
       }
     }
-  }, [id])
+  }, [params.x])
 
   useEffect(() => {
     return () => {
@@ -116,7 +115,7 @@ function Index() {
         className={wrapperClassName}
       >
         {pages.map((_, index) => (
-          <PosterDisplayGroup key={id + index} index={index} />
+          <PosterDisplayGroup key={params.x + index} index={index} />
         ))}
       </InfiniteScroll>
     </main>

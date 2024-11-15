@@ -1,6 +1,7 @@
+import { isNull, inArray, type SQL } from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
-import { studios, studioSynonyms } from '~s/db/schema'
+import { anime, studios, studioSynonyms } from '~s/db/schema'
 import * as episodeRepository from '~s/db/repository/episode'
 import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
@@ -25,19 +26,25 @@ export const RouteRouter = router({
     .input(
       v.parser(
         v.object({
-          // x: v.number(), // x cuma untuk cache busting
+          x: v.string(), // x cuma untuk cache busting
           cursor: v.nullish(v.number()),
           perPage: v.number(),
-          ongoing: v.boolean(),
-          downloaded: v.boolean(),
+          filter: v.optional(v.picklist(['ongoing', 'downloaded'])),
         }),
       ),
     )
     .query(async ({ ctx, input }) => {
       const { cursor, perPage } = input
 
-      const ids = input.downloaded
-        ? (await glob(videosDirPath, '*', { onlyFiles: false }))
+      let filter: SQL<unknown> | undefined
+      switch (input.filter) {
+        case 'ongoing':
+          filter = isNull(anime.airedTo)
+
+          break
+
+        case 'downloaded': {
+          const ids = (await glob(videosDirPath, '*', { onlyFiles: false }))
             .map(dirName => {
               const index = dirName.lastIndexOf('.')
               const id = dirName.slice(index + 1)
@@ -46,20 +53,21 @@ export const RouteRouter = router({
             })
             .filter(isFinite)
             .sort((a, b) => b - a)
-        : null
+
+          filter = inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
+
+          break
+        }
+      }
 
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
         orderBy: (anime, { desc }) => [desc(anime.id)],
-        where(anime, { and, eq, isNull, inArray, lt }) {
+        where(anime, { and, eq, lt }) {
           return and(
             eq(anime.isVisible, true),
-            input.ongoing ? isNull(anime.airedTo) : undefined,
-            ids
-              ? inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
-              : cursor
-                ? lt(anime.id, cursor)
-                : undefined,
+            filter,
+            input.filter !== 'downloaded' && cursor ? lt(anime.id, cursor) : undefined,
           )
         },
         columns: {

@@ -172,7 +172,7 @@ export function Header() {
           <Link
             to="/"
             preloadDelay={50}
-            search={() => ({ ongoing: 'yoi' })}
+            search={() => ({ filter: 'ongoing' as const })}
             activeProps={{ className: 'font-bold' }}
           >
             Ongoing
@@ -181,7 +181,7 @@ export function Header() {
           <Link
             to="/"
             preloadDelay={50}
-            search={() => ({ terunduh: 'yoi' })}
+            search={() => ({ filter: 'downloaded' as const })}
             activeProps={{ className: 'font-bold' }}
           >
             Terunduh
