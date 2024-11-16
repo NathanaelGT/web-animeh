@@ -19,6 +19,8 @@ videos
 
 # Database
 db.sqlite
+db.sqlite-wal
+db.sqlite-shm
 
 # Vite
 vite.config.*.timestamp-*
