@@ -1,4 +1,6 @@
 import ky from 'ky'
+import { logger } from '~s/utils/logger'
+import { getStackTraces } from '~s/utils/error'
 
 type KuramanimeOrigin = `https://${string}/`
 
@@ -7,9 +9,23 @@ const kuramalink: KuramanimeOrigin = 'https://kuramalink.me/'
 let cachedKuramanimeOrigin: KuramanimeOrigin | undefined
 
 const getFreshKuramanimeOrigin = async () => {
-  const response = await fetch(kuramalink, { method: 'HEAD' })
+  try {
+    const response = await fetch(kuramalink, { method: 'HEAD', redirect: 'manual' })
+    const origin = response.headers.get('location')
 
-  return response.url as KuramanimeOrigin
+    if (origin) {
+      return origin as KuramanimeOrigin
+    }
+
+    logger.error(`fetch ${kuramalink} failed`, { response })
+  } catch (error) {
+    logger.error(`fetch ${kuramalink} failed`, {
+      error,
+      stacktraces: error instanceof Error ? getStackTraces(error) : undefined,
+    })
+  }
+
+  return kuramalink
 }
 
 export const getKuramanimeOrigin = async () => {
