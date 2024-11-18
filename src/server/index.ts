@@ -6,7 +6,7 @@ import { websocket, httpHandler } from '~s/handler'
 import { fill, maxWidth } from '~s/utils/cli'
 import { formatNs } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
-import { getStackTraces } from '~s/utils/error'
+import { getStackTraces, isOffline } from '~s/utils/error'
 import { format } from '~/shared/utils/date'
 import { isObject, omit } from '~/shared/utils/object'
 import { seed } from '~s/anime/seed'
@@ -226,7 +226,7 @@ if (firstTime) {
   })
 
   process.on('unhandledRejection', reason => {
-    if (reason instanceof SilentError) {
+    if (reason instanceof SilentError || isOffline(reason)) {
       return
     }
 

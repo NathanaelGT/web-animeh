@@ -6,3 +6,10 @@ export const getStackTraces = (error: Error) => {
     .split('\n')
     .slice(1)
 }
+
+export const isOffline = (error: unknown) => {
+  return (
+    error instanceof Error &&
+    (error.name === 'FailedToOpenSocket' || error.name === 'ConnectionRefused')
+  )
+}
