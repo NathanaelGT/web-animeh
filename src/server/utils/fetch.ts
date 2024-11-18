@@ -1,7 +1,6 @@
 import * as v from 'valibot'
 import ky, { type KyInstance, type Options } from 'ky'
 import { limitRequest } from '~s/external/limit'
-import { logger } from '~s/utils/logger'
 import { SilentError } from '~s/error'
 
 export const fetchText = async (url: string, options: Options = {}, kyInstance = ky) => {
@@ -16,9 +15,11 @@ export const fetchJson = async (url: string, options?: Options, kyInstance?: KyI
   try {
     return JSON.parse(responseText)
   } catch (error) {
-    logger.error('failed to parse fetch json', { url, options, response: responseText, error })
-
-    throw SilentError.from(error)
+    throw SilentError.from(error).log('failed to parse fetch json', {
+      url,
+      options,
+      response: responseText,
+    })
   }
 }
 

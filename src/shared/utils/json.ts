@@ -1,4 +1,3 @@
-import { logger } from '~s/utils/logger'
 import { SilentError } from '~s/error'
 
 export const parseFromJsObjectString = (input: string) => {
@@ -10,8 +9,6 @@ export const parseFromJsObjectString = (input: string) => {
   try {
     return JSON.parse(jsonString)
   } catch (error) {
-    logger.error('failed to parse from js object string', { error, input })
-
-    throw SilentError.from(error)
+    throw SilentError.from(error).log('failed to parse from js object string', { input })
   }
 }

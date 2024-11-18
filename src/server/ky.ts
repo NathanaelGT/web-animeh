@@ -1,6 +1,7 @@
 import ky from 'ky'
 import { logger } from '~s/utils/logger'
-import { getStackTraces, isOffline } from '~s/utils/error'
+import { isOffline } from '~s/utils/error'
+import { SilentError } from './error'
 
 type KuramanimeOrigin = `https://${string}/`
 
@@ -18,18 +19,15 @@ const getFreshKuramanimeOrigin = async () => {
     }
 
     logger.error(`fetch ${kuramalink} failed`, { response })
+
+    return kuramalink
   } catch (error) {
     if (isOffline(error)) {
       throw error
     }
 
-    logger.error(`fetch ${kuramalink} failed`, {
-      error,
-      stacktraces: error instanceof Error ? getStackTraces(error) : undefined,
-    })
+    throw SilentError.from(error).log(`fetch ${kuramalink} failed`)
   }
-
-  return kuramalink
 }
 
 export const getKuramanimeOrigin = async () => {
