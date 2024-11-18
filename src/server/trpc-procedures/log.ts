@@ -1,21 +1,12 @@
 import * as v from 'valibot'
 import { procedure } from '~s/trpc'
-import { logger } from '~s/utils/logger'
-
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-  ? I
-  : never
-
-type UnionToTuple<U> =
-  UnionToIntersection<U extends any ? (t: U) => void : never> extends (a: infer A) => void
-    ? [...UnionToTuple<Exclude<U, A>>, A]
-    : []
+import { logger, type LoggerLevel } from '~s/utils/logger'
 
 export const LogProcedure = procedure
   .input(
     v.parser(
       v.object({
-        level: v.picklist(Object.keys(logger) as UnionToTuple<keyof typeof logger>),
+        level: v.picklist(['info', 'warn', 'error', 'debug'] satisfies LoggerLevel[]),
         message: v.string(),
         context: v.optional(v.record(v.string(), v.unknown()), {}),
       }),

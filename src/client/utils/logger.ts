@@ -1,12 +1,8 @@
 import { rpc } from '~c/trpc'
 // @ts-ignore
-import type { logger as baseLogger } from '~s/utils/logger'
+import type { Logger, LoggerLevel, Context } from '~s/utils/logger'
 
-const log = (
-  level: keyof typeof baseLogger,
-  message: string,
-  context: Record<string, any> = {},
-) => {
+const log = (level: LoggerLevel, message: string, context: Record<string, any> = {}) => {
   const stackTraces = new Error().stack
     ?.split('\n')
     .slice(3)
@@ -32,21 +28,16 @@ const log = (
   console[level](message, context)
 }
 
-export const logger: typeof baseLogger = {
-  info(message: string, context?: Record<string, any>) {
-    log('info', message, context)
-  },
+const createLevelHandler = (level: LoggerLevel) => {
+  return (message: string, context?: Context) => {
+    log(level, message, context)
+  }
+}
 
-  warn(message: string, context?: Record<string, any>) {
-    log('warn', message, context)
-  },
-
-  error(message: string, context?: Record<string, any>) {
-    log('error', message, context)
-  },
-
+export const logger: Pick<Logger, LoggerLevel> = {
+  info: createLevelHandler('info'),
+  warn: createLevelHandler('warn'),
+  error: createLevelHandler('error'),
   /** @deprecated debug */
-  debug(message: string, context?: Record<string, any>) {
-    log('debug', message, context)
-  },
+  debug: createLevelHandler('debug'),
 }

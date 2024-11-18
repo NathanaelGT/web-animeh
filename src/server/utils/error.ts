@@ -1,3 +1,5 @@
+import { logger } from './logger'
+
 export const getStackTraces = (error: Error) => {
   const inspect = Bun.inspect(error)
 
@@ -7,9 +9,21 @@ export const getStackTraces = (error: Error) => {
     .slice(1)
 }
 
+let shouldNotifyOfflineStatus = true
 export const isOffline = (error: unknown) => {
-  return (
+  const isOffline =
     error instanceof Error &&
     (error.name === 'FailedToOpenSocket' || error.name === 'ConnectionRefused')
-  )
+
+  if (isOffline && shouldNotifyOfflineStatus) {
+    shouldNotifyOfflineStatus = false
+
+    setTimeout(() => {
+      shouldNotifyOfflineStatus = true
+    }, 300)
+
+    logger.console.warn('You are offline')
+  }
+
+  return isOffline
 }

@@ -9,7 +9,7 @@ import { format } from '~/shared/utils/date'
 import { isEmpty } from '~/shared/utils/object'
 import { buildNumber } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
-import type { WebSocketData } from '../index'
+import type { WebSocketData } from '~s/index'
 
 const logDir = path.join(basePath, 'logs')
 
@@ -34,7 +34,7 @@ const stringify = (obj: Record<string, unknown>) => {
 }
 
 type Level = 'INFO' | 'WARN' | 'ERROR' | 'DEBUG'
-type Context = Record<string, any> & {
+export type Context = Record<string, any> & {
   elapsedNs?: number
   client?: WebSocketData
   stacktraces?: string[]
@@ -98,10 +98,14 @@ const writeToFile = async (
   }
 }
 
+const TARGET_CONSOLE = 1
+const TARGET_FILE = 2
+
 const log = (
   level: Level,
   message: string,
   context: Context = {},
+  target: number = TARGET_CONSOLE | TARGET_FILE,
   fileLogPath = logPath,
   stringifyFn = stringify,
 ) => {
@@ -123,33 +127,50 @@ const log = (
 
   const date = now()
 
-  void writeToFile(date, level, message, context, fileLogPath, stringifyFn)
-
-  // @ts-ignore internal query logging
-  if (!isProduction() && level === 'QUERY') {
-    return
+  if (target & TARGET_FILE) {
+    void writeToFile(date, level, message, context, fileLogPath, stringifyFn)
   }
-  writeToConsole(date, level, message, context)
+
+  if (target & TARGET_CONSOLE) {
+    writeToConsole(date, level, message, context)
+  }
+}
+
+const createLevelHandler = (level: Level, target?: number) => {
+  return (message: string, context?: Context) => {
+    log(level, message, context, target)
+  }
+}
+
+const createDebugHandler = (target?: number) => {
+  return (message: string, context?: Context) => {
+    if (!isProduction()) {
+      log('DEBUG', message, context, target)
+    }
+  }
 }
 
 export const logger = {
-  info(message: string, context?: Context) {
-    log('INFO', message, context)
-  },
-
-  warn(message: string, context?: Context) {
-    log('WARN', message, context)
-  },
-
-  error(message: string, context?: Context) {
-    log('ERROR', message, context)
-  },
-
+  info: createLevelHandler('INFO'),
+  warn: createLevelHandler('WARN'),
+  error: createLevelHandler('ERROR'),
   /** @deprecated debug */
-  debug(message: string, context?: Context) {
-    if (!isProduction()) {
-      log('DEBUG', message, context)
-    }
+  debug: createDebugHandler(),
+
+  console: {
+    info: createLevelHandler('INFO', TARGET_CONSOLE),
+    warn: createLevelHandler('WARN', TARGET_CONSOLE),
+    error: createLevelHandler('ERROR', TARGET_CONSOLE),
+    /** @deprecated debug */
+    debug: createDebugHandler(TARGET_CONSOLE),
+  },
+
+  file: {
+    info: createLevelHandler('INFO', TARGET_FILE),
+    warn: createLevelHandler('WARN', TARGET_FILE),
+    error: createLevelHandler('ERROR', TARGET_FILE),
+    /** @deprecated debug */
+    debug: createDebugHandler(TARGET_FILE),
   },
 }
 
@@ -158,8 +179,12 @@ if (!isProduction()) {
 
   // @ts-ignore internal query logging
   logger.__internal__query = (query: string, context: Context) => {
-    log('QUERY' as Level, query, context, logPath, obj => {
+    log('QUERY' as Level, query, context, TARGET_FILE, logPath, obj => {
       return JSON.stringify(obj, undefined, 2)
     })
   }
 }
+
+export type Logger = typeof logger
+
+export type LoggerLevel = Lowercase<Level>
