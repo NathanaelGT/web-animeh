@@ -22,17 +22,9 @@ export const seed = async () => {
 
   const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
   if (firstAnime) {
-    // kalo dbnya sudah dipopulate, WALnya langsung dienable karena kemungkinan
-    // cuma bakal nulis sedikit data, jadi file WALnya sewajarnya
-    enableWAL()
-
     await sync()
   } else {
-    // kalo dbnya masih kosong, WALnya dienable setelah semua datanya sudah siap
-    // biar file WALnya engga membengkak
     await populate()
-
-    enableWAL()
   }
 
   if (!isProduction()) {
@@ -44,10 +36,6 @@ export const seed = async () => {
   await updateIncompleteAnimeEpisodes()
 
   await updateIncompleteAnimeCharacters()
-}
-
-const enableWAL = () => {
-  db.$client.exec('PRAGMA journal_mode=WAL')
 }
 
 const seedGenres = async () => {

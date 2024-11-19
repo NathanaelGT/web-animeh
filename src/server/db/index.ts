@@ -19,6 +19,9 @@ const createDatabase = () => {
     sqlite.close()
   })
 
+  sqlite.run('PRAGMA synchronous=normal')
+  sqlite.run('PRAGMA journal_mode=WAL')
+
   return sqlite
 }
 
