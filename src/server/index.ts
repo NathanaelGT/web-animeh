@@ -7,10 +7,12 @@ import { fill, maxWidth } from '~s/utils/cli'
 import { formatNs } from '~s/utils/time'
 import { logger } from '~s/utils/logger'
 import { getStackTraces, isOffline } from '~s/utils/error'
-import { format } from '~/shared/utils/date'
-import { isObject, omit } from '~/shared/utils/object'
 import { seed } from '~s/anime/seed'
 import { SilentError } from '~s/error'
+import { optimizeDatabase } from './db'
+import { format } from '~/shared/utils/date'
+import { isObject, omit } from '~/shared/utils/object'
+import { timeoutPromise } from '~/shared/utils/promise'
 import { serverType } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
@@ -282,10 +284,18 @@ if (firstTime) {
         if (startNs === undefined) {
           start()
 
-          await server.stop(true)
+          const stopPromise = server.stop(true)
+
+          await Promise.race([stopPromise, timeoutPromise(1000)])
+
+          optimizeDatabase()
+
+          await stopPromise
 
           logElapsed('Stopped')
         } else {
+          optimizeDatabase()
+
           logElapsed()
         }
 

@@ -31,6 +31,18 @@ const globalForDb = globalThis as unknown as {
 
 const sqlite = isProduction() ? createDatabase() : (globalForDb.sqlite ??= createDatabase())
 
+let isOptimized = false
+export const optimizeDatabase = () => {
+  if (isOptimized) {
+    return
+  }
+
+  isOptimized = true
+
+  sqlite.run('PRAGMA journal_mode=DELETE')
+  sqlite.run('PRAGMA optimize')
+}
+
 const config: DrizzleConfig<typeof schema> = {
   schema,
 }
