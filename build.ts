@@ -19,9 +19,32 @@ log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized p
 await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
 let appVersion = ''
-let resolveBuildNumber: (value: string) => void
-const buildNumberPromise = new Promise<string>(resolve => {
-  resolveBuildNumber = resolve
+
+let resolveBuildHash: (value: string) => void
+const buildHashPromise = new Promise<string>(resolve => {
+  resolveBuildHash = resolve
+})
+
+let resolveServerBuildHash: (value: string) => void
+const serverBuildHashPromise = new Promise<string>(resolve => {
+  resolveServerBuildHash = resolve
+}).then(result => {
+  clientBuildHashPromise.then(clientResult => {
+    resolveBuildHash(hash(result + clientResult))
+  })
+
+  return result
+})
+
+let resolveClientBuildHash: (value: string) => void
+const clientBuildHashPromise = new Promise<string>(resolve => {
+  resolveClientBuildHash = resolve
+}).then(result => {
+  serverBuildHashPromise.then(serverResult => {
+    resolveBuildHash(hash(result + serverResult))
+  })
+
+  return result
 })
 
 const buildStartNs = Bun.nanoseconds()
@@ -49,9 +72,7 @@ await Promise.all([
               (async () => {
                 const jsPath = path.join('./dist/public', jsRelPath)
 
-                const js = (await Bun.file(jsPath).text())
-                  .trim()
-                  .replace('$INJECT_VERSION$', await buildNumberPromise)
+                const js = (await Bun.file(jsPath).text()).trim()
 
                 indexHtml = indexHtml.split(identifier).join(`<script type="module">${js}</script>`)
 
@@ -90,6 +111,10 @@ await Promise.all([
           await fs.rmdir('./dist/public/assets')
         }
       })
+
+      resolveClientBuildHash(hash(indexHtml))
+
+      indexHtml = indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
 
       const buffer = Buffer.from(indexHtml, 'utf-8')
       const compressed = await compress(buffer)
@@ -148,8 +173,6 @@ await Promise.all([
     .then(async ([message, minified]) => {
       const result = '// @bun\n' + minified.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
 
-      await Bun.write('./dist/index.js', result)
-
       logBuildInfo(
         'server',
         message
@@ -179,11 +202,11 @@ await Promise.all([
 
       await $`bun ./dist -v`.text().then(version => {
         appVersion = version.trim()
-
-        resolveBuildNumber(
-          appVersion.slice(appVersion.indexOf('build ') + 'build '.length, appVersion.indexOf(')')),
-        )
       })
+
+      resolveServerBuildHash(hash(result))
+
+      await Bun.write('./dist/index.js', result.replace('$INJECT_VERSION$', await buildHashPromise))
     }),
 
   getFiles('./drizzle').then(async filePaths => {
@@ -271,6 +294,18 @@ async function handleError(e: any) {
 
 function getFiles(fromDirectory: string) {
   return Array.fromAsync(new Bun.Glob('**').scan(fromDirectory))
+}
+
+function hash(content: string) {
+  return (
+    new Bun.CryptoHasher('sha256')
+      .update(content)
+      .digest('base64')
+      // URL-safe
+      .replaceAll('+', '_')
+      .replaceAll('=', '.')
+      .replaceAll('/', '*')
+  )
 }
 
 log(

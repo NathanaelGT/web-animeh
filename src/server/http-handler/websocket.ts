@@ -3,7 +3,6 @@ import { db } from '~s/db'
 import { profiles } from '~s/db/schema'
 import { defaultSettings, parse } from '~/shared/profile/settings'
 import { isProduction } from '~s/env' with { type: 'macro' }
-import { buildNumber } from '~s/info' with { type: 'macro' }
 import type { WebSocketData } from '~s/index'
 
 const globalForId = globalThis as unknown as {
@@ -54,7 +53,7 @@ export const handleWebsocketRequest = async (request: Request, server: Bun.Serve
   const upgradeSuccess = server.upgrade(request, {
     data: {
       id:
-        isProduction() && version !== buildNumber()
+        isProduction() && version !== '$INJECT_VERSION$'
           ? ''
           : (isProduction() ? id : globalForId.id).toString(36),
       profile,
