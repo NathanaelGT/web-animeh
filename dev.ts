@@ -95,14 +95,15 @@ const log = (level: Level, message: string, elapsed: number | null = null) => {
   process.stdout.write(logMessage(level, message, elapsed))
 }
 
-const textDecoder = new TextDecoder()
-
+let shouldPrintExitCode = true
 const childProcesses = [client, server]
 childProcesses.forEach(cp => {
   const type = cp === client ? 'client' : 'server'
 
   cp.exited.then(code => {
-    process.stderr.write(logMessage(type, `Process exited with code ${code}`))
+    if (shouldPrintExitCode) {
+      process.stderr.write(logMessage(type, `Process exited with code ${code}`))
+    }
 
     childProcesses.forEach(otherCp => {
       if (otherCp !== cp) {
@@ -110,9 +111,23 @@ childProcesses.forEach(cp => {
       }
     })
 
-    process.exit(code)
+    const exitCode = [129, 130, 143].includes(code) ? 0 : code
+
+    process.exit(exitCode)
   })
 })
+
+const handleExitCode = (exitCode: NodeJS.Signals) => {
+  process.on(exitCode, () => {
+    shouldPrintExitCode = false
+
+    server.kill(exitCode)
+  })
+}
+
+handleExitCode('SIGHUP')
+handleExitCode('SIGINT')
+handleExitCode('SIGTERM')
 
 process.on('exit', () => {
   process.stderr.write('\x1b[0m')
@@ -124,6 +139,8 @@ process.on('exit', () => {
     void fs.rm(viteConfig)
   }
 })()
+
+const textDecoder = new TextDecoder()
 
 let regeneratingRoutesStartNs: number | null = null
 
