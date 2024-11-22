@@ -26,17 +26,19 @@ const maxWidth = 140
 process.stdout.moveCursor(0, -1)
 process.stdout.clearLine(0)
 
-const client = Bun.spawn(['bunx', '--bun', 'vite', '--port', '8888'], {
-  stdin: 'inherit',
-  stdout: 'pipe',
-  stderr: 'inherit',
-  env: {
-    MODE: 'development',
-    NO_COLOR: '1',
-  },
-})
+const client = serverOnly
+  ? null
+  : Bun.spawn(['bunx', '--bun', 'vite', '--port', '8888'], {
+      stdin: 'inherit',
+      stdout: 'pipe',
+      stderr: 'inherit',
+      env: {
+        MODE: 'development',
+        NO_COLOR: '1',
+      },
+    })
 const clientStartNs = Bun.nanoseconds()
-const clientStdout = client.stdout.getReader()
+const clientStdout = client?.stdout.getReader()
 
 await Promise.all(promises)
 
@@ -59,7 +61,7 @@ const server = Bun.spawn(
       ...process.env,
     },
     ipc(message) {
-      if (message === 'ready' && !serverOnly) {
+      if (message === 'ready' && clientStdout) {
         log('vite', 'Starting')
       }
     },
@@ -96,9 +98,9 @@ const log = (level: Level, message: string, elapsed: number | null = null) => {
 }
 
 let shouldPrintExitCode = true
-const childProcesses = [client, server]
+const childProcesses = client ? [client, server] : [server]
 childProcesses.forEach(cp => {
-  const type = cp === client ? 'client' : 'server'
+  const type = cp === server ? 'server' : 'client'
 
   cp.exited.then(code => {
     if (shouldPrintExitCode) {
@@ -140,58 +142,60 @@ process.on('exit', () => {
   }
 })()
 
-const textDecoder = new TextDecoder()
+if (clientStdout) {
+  const textDecoder = new TextDecoder()
 
-let regeneratingRoutesStartNs: number | null = null
+  let regeneratingRoutesStartNs: number | null = null
 
-while (true) {
-  const { done, value } = await clientStdout.read()
-  if (done) {
-    break
-  }
-
-  const messageArrivedAt = Bun.nanoseconds()
-
-  const message = textDecoder.decode(value).trim()
-
-  if (message === '') {
-    continue
-  }
-
-  if (message === '♻️  Regenerating routes...') {
-    regeneratingRoutesStartNs = Bun.nanoseconds()
-
-    continue
-  }
-
-  const hmrUpdateIndex = message.indexOf('[vite] hmr update ')
-  if (hmrUpdateIndex > -1) {
-    const files = message.slice(hmrUpdateIndex + 18).replaceAll('/src/', '')
-
-    let elapsedNs: number | null = null
-
-    if (regeneratingRoutesStartNs) {
-      elapsedNs = messageArrivedAt - regeneratingRoutesStartNs
-      regeneratingRoutesStartNs = null
+  while (true) {
+    const { done, value } = await clientStdout.read()
+    if (done) {
+      break
     }
 
-    log('hmr', files, elapsedNs)
+    const messageArrivedAt = Bun.nanoseconds()
 
-    continue
-  }
+    const message = textDecoder.decode(value).trim()
 
-  const pageReloadIndex = message.indexOf('[vite] page reload ')
-  if (pageReloadIndex > -1) {
-    const files = message.slice(pageReloadIndex + 19).replaceAll('/src/', '')
+    if (message === '') {
+      continue
+    }
 
-    log('reload', files)
+    if (message === '♻️  Regenerating routes...') {
+      regeneratingRoutesStartNs = Bun.nanoseconds()
 
-    continue
-  }
+      continue
+    }
 
-  if (message.includes('  ready in ')) {
-    log('vite', 'Started', Bun.nanoseconds() - clientStartNs)
+    const hmrUpdateIndex = message.indexOf('[vite] hmr update ')
+    if (hmrUpdateIndex > -1) {
+      const files = message.slice(hmrUpdateIndex + 18).replaceAll('/src/', '')
 
-    continue
+      let elapsedNs: number | null = null
+
+      if (regeneratingRoutesStartNs) {
+        elapsedNs = messageArrivedAt - regeneratingRoutesStartNs
+        regeneratingRoutesStartNs = null
+      }
+
+      log('hmr', files, elapsedNs)
+
+      continue
+    }
+
+    const pageReloadIndex = message.indexOf('[vite] page reload ')
+    if (pageReloadIndex > -1) {
+      const files = message.slice(pageReloadIndex + 19).replaceAll('/src/', '')
+
+      log('reload', files)
+
+      continue
+    }
+
+    if (message.includes('  ready in ')) {
+      log('vite', 'Started', Bun.nanoseconds() - clientStartNs)
+
+      continue
+    }
   }
 }
