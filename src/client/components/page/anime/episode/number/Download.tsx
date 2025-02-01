@@ -10,7 +10,7 @@ type Props = {
     id: string
     number: string
   }
-  isPending: boolean
+  isPending?: boolean
 }
 
 export function Download({ params, isPending }: Props) {

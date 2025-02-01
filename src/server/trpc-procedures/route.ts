@@ -277,11 +277,11 @@ export const RouteRouter = router({
     }),
 
   '/pengaturan/unduhan': procedure.query(() => {
-    const snapshot: Record<string, string> = {}
+    const snapshot: Record<string, episodeRepository.DownloadProgressDataWithoutDone> = {}
 
     downloadProgressSnapshot.forEach((data, name) => {
       if (!data.done) {
-        snapshot[name] = data.text
+        snapshot[name] = omit(data, 'done') as episodeRepository.DownloadProgressDataWithoutDone
       }
     })
 

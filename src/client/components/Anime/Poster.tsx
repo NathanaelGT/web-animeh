@@ -116,7 +116,9 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
           <ContextMenuSubContent className="w-48">
             {!episodeList.data ? (
               <ContextMenuItem>Memuat...</ContextMenuItem>
-            ) : episodeList.data.every(episode => episode.downloadStatus) ? (
+            ) : episodeList.data.every(
+                ({ download: { status } }) => status !== 'NOT_DOWNLOADED' && status !== 'RESUME',
+              ) ? (
               <ContextMenuItem>Semua episode sudah terunduh</ContextMenuItem>
             ) : (
               <>
@@ -126,15 +128,15 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
                 <ContextMenuSeparator />
                 <MapArray
                   data={episodeList.data}
-                  cb={({ number, downloadStatus }) => {
-                    if (downloadStatus) {
+                  cb={({ number, download }) => {
+                    if (!(download.status === 'NOT_DOWNLOADED' || download.status === 'RESUME')) {
                       return null
                     }
 
-                    const download = () => {
+                    const startDownload = () => {
                       const partialTitle = `${anime.title} episode ${number}`
                       const { dismiss } = toast({
-                        title: `${downloadStatus === '' ? 'Lanjut' : 'Mulai'} mengunduh ${partialTitle}`,
+                        title: `${download.status === 'RESUME' ? 'Lanjut' : 'Mulai'} mengunduh ${partialTitle}`,
                       })
 
                       downloadEpisode.mutate(
@@ -185,7 +187,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
                     return (
                       <ContextMenuItem
                         key={number}
-                        onClick={download}
+                        onClick={startDownload}
                         role="button"
                         className="cursor-pointer"
                       >

@@ -22,6 +22,6 @@ function PengaturanUnduhan() {
   return MapObject({
     data: downloadList,
     onEmpty: () => <p>Sedang tidak mengunduh apapun</p>,
-    cb: (text, name) => <DownloadState text={text} name={name} />,
+    cb: (data, name) => <DownloadState key={name} data={data} name={name} />,
   })
 }

@@ -12,7 +12,7 @@ import { metadataQueue, downloadQueue } from '~s/external/queue'
 import {
   downloadProgress,
   downloadProgressController,
-  downloadProgressSnapshot,
+  type DownloadProgressData,
 } from '~s/external/download/progress'
 import { downloadMeta } from '~s/external/download/meta'
 import { fetchText } from '~s/utils/fetch'
@@ -62,6 +62,7 @@ export const initDownloadEpisode = (
   const emitKey = generateEmitKey(animeData, episodeNumber)
 
   downloadProgress.emit(emitKey, {
+    status: 'OTHER',
     text: 'Menginisialisasi proses unduhan',
   })
 
@@ -80,8 +81,26 @@ export const downloadEpisode = async (
   initDownloadEpisode(animeData, episodeNumber)
 
   const emitKey = generateEmitKey(animeData, episodeNumber)
-  const emit = (text: string, done = false) => {
-    downloadProgress.emit(emitKey, { text, done })
+  const emit = (data: NonNullable<DownloadProgressData['progress']> | string) => {
+    if (typeof data === 'string') {
+      downloadProgress.emit(emitKey, {
+        status: 'OTHER',
+        text: data,
+      })
+    } else if ('percent' in data) {
+      downloadProgress.emit(emitKey, {
+        status: 'OPTIMIZING',
+        progress: data,
+      })
+    } else {
+      downloadProgress.emit(emitKey, {
+        status: 'DOWNLOADING',
+        progress: data,
+      })
+    }
+  }
+  const done = (text: string) => {
+    downloadProgress.emit(emitKey, { status: 'OTHER', done: true, text })
   }
 
   let animeDirPath = await animeVideoRealDirPath(animeData.id)
@@ -95,7 +114,7 @@ export const downloadEpisode = async (
   const filePath = animeDirPath + fileName + '.mp4'
 
   if (shouldCheck && (await Bun.file(filePath).exists())) {
-    emit('Episode ini telah diunduh', true)
+    done('Episode ini telah diunduh')
 
     return null
   }
@@ -108,13 +127,13 @@ export const downloadEpisode = async (
 
   signal.addEventListener('abort', event => {
     if (event.target instanceof AbortSignal && event.target.reason === 'pause') {
-      emit('Unduhan dijeda', true)
+      done('Unduhan dijeda')
     } else {
       // defaultnya cancel
       fs.rm(tempFilePath, { force: true })
       fs.rm(filePath, { force: true })
 
-      emit('Unduhan dibatalkan', true)
+      done('Unduhan dibatalkan')
     }
   })
 
@@ -179,7 +198,7 @@ export const downloadEpisode = async (
         }
       }
 
-      emit('Terjadi error yang tidak diketahui. Harap cek log', true)
+      done('Terjadi error yang tidak diketahui. Harap cek log')
 
       logger.error('Download episode: unknown error', {
         localAnime: animeData,
@@ -245,7 +264,7 @@ export const downloadEpisode = async (
       // kalo "error"nya dari `AbortController.abort`, variabel error nilainya sesuai parameternya
       // untuk sekarang parameternya antara undefined (default) atau string
       if (!(error === undefined || typeof error === 'string' || error instanceof DOMException)) {
-        emit('Terjadi kesalahan', true)
+        done('Terjadi kesalahan')
 
         throw error
       }
@@ -304,8 +323,8 @@ export const downloadEpisode = async (
             }
             const [url, preparedResponse] = prepared
 
-            const totalLength =
-              initialLength + Number(preparedResponse.headers?.get('Content-Length'))
+            const contentLength = preparedResponse.headers?.get('Content-Length')
+            const totalLength = contentLength ? initialLength + Number(contentLength) : null
             const formattedTotalLength = totalLength ? formatBytes(totalLength) : null
 
             formattedTotalLengthCb?.(formattedTotalLength)
@@ -347,22 +366,13 @@ export const downloadEpisode = async (
                 releaseMetadataLock()
               }
 
-              let text = 'Mengunduh: ' + formatBytes(receivedLength)
-              const speed = '@' + formatBytes((receivedLength - initialLength) / elapsedTime) + '/s'
+              const speed = (receivedLength - initialLength) / elapsedTime
 
-              if (totalLength) {
-                text +=
-                  ' / ' +
-                  formattedTotalLength +
-                  speed +
-                  ' (' +
-                  ((receivedLength / totalLength) * 100).toFixed(2) +
-                  '%)'
-              } else {
-                text += speed
-              }
-
-              emit(text)
+              emit({
+                speed,
+                receivedLength,
+                totalLength,
+              })
             }
 
             const setSkipIntervalId = setInterval(() => {
@@ -375,6 +385,8 @@ export const downloadEpisode = async (
               // jadi untuk ngakalin biar speednya normal, diawal bakal diemit progress kosong
               // kekurangannya untuk 1/20 detik diawal speednya bakal tulis "0 B/s"
               emitProgress(new Uint8Array())
+
+              skip = false
             }
 
             let firstTime = true
@@ -385,7 +397,7 @@ export const downloadEpisode = async (
 
               firstTime = false
 
-              const reader = request.body?.getReader()
+              const reader = (request.body as ReadableStream<Uint8Array> | null)?.getReader()
               if (!reader) {
                 throw new Error('no reader')
               }
@@ -421,7 +433,7 @@ export const downloadEpisode = async (
               signal.removeEventListener('abort', signalAbortHandler)
 
               // TODO: cari cara ngedetect unduhannya selesai kalo totalLengthnya engga ada (NaN)
-              if (signal.aborted || (!isNaN(totalLength) && receivedLength >= totalLength)) {
+              if (signal.aborted || (totalLength !== null && receivedLength >= totalLength)) {
                 break
               }
             }
@@ -439,26 +451,16 @@ export const downloadEpisode = async (
             downloadProgressController.delete(emitKey)
             gdriveAccessTokenCache.delete(url)
 
-            const lastProgress = downloadProgressSnapshot.get(emitKey)
-            if (lastProgress) {
-              const { text } = lastProgress
-
-              // pake slice, biar hasil outputnya konsisten (kadang ada persenannya, kadang engga)
-              emit('Mengunduh: ' + formattedTotalLength + text.slice(text.indexOf(' / ')))
-            }
+            // buat ngeemit final progressnya
+            skip = false
+            emitProgress(new Uint8Array())
 
             // biar keluar dari queue untuk proses selanjutnya
             ;(async () => {
               await writer.end()
 
-              let progress = 0
-              const emitProgress = () => {
-                emit(`Mengoptimalisasi video (${progress.toFixed(2)}%)`)
-              }
+              emit({ percent: 0 })
 
-              emitProgress()
-
-              // ffmpeg nulis hasilnya ke stderr, bukan stdout
               const ffmpeg = Bun.spawn(
                 [
                   'ffmpeg',
@@ -473,6 +475,7 @@ export const downloadEpisode = async (
                   '-stats',
                   filePath,
                 ],
+                // ffmpeg nulis hasilnya ke stderr, bukan stdout
                 {
                   stdin: 'ignore',
                   stdout: 'ignore',
@@ -491,9 +494,7 @@ export const downloadEpisode = async (
               while (true) {
                 const { done, value } = await ffmpegReader.read()
                 if (done) {
-                  progress = 100
-
-                  emitProgress()
+                  emit({ percent: 100 })
 
                   if (intervalId) {
                     clearInterval(intervalId)
@@ -506,9 +507,9 @@ export const downloadEpisode = async (
                 const sizeIndex = message.lastIndexOf('size=  ')
                 if (sizeIndex > -1) {
                   const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
-                  progress = ((sizeKilo * 1024) / videoSize) * 100
+                  let progress = ((sizeKilo * 1024) / videoSize) * 100
 
-                  emitProgress()
+                  emit({ percent: progress })
 
                   // setelah progress diatas 91%, ffmpegnya bakal stuck agak lama
                   // jadi biar progressnya ga stuck, dibuat progress palsu
@@ -517,7 +518,7 @@ export const downloadEpisode = async (
                       // 2 angka magic yang kira kira pas
                       progress += (100 - progress) / 2
 
-                      emitProgress()
+                      emit({ percent: progress })
                     }, 500) // ffmpeg nampilin progressnya tiap 500ms
                   }
                 }
@@ -527,7 +528,7 @@ export const downloadEpisode = async (
 
               onFinish?.()
 
-              emit('Video selesai diunduh', true)
+              done('Video selesai diunduh')
             })()
           },
           { signal },

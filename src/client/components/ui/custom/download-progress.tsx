@@ -1,35 +1,37 @@
 import { clsx } from 'clsx'
 import { Progress } from '@/ui/progress'
+import { formatBytes } from '~/shared/utils/byte'
 import type { ReactNode } from 'react'
+import type { DownloadProgress } from '~s/external/download/progress'
 
 type Props = {
-  text: string
+  progress: DownloadProgress
 }
 
-export function DownloadProgress({ text }: Props) {
-  const progressPercentage = text.endsWith('%)') ? text.slice(text.indexOf('(') + 1, -2) : null
-
-  const atIndex = text.indexOf('@')
-  const speed = text.slice(atIndex + 1, text.lastIndexOf('/s'))
-
-  const progressText = text.slice('Mengunduh: '.length, atIndex)
+export function DownloadProgress({ progress: { speed, receivedLength, totalLength } }: Props) {
+  const progressPercentage = totalLength && (receivedLength / totalLength) * 100
 
   return (
     <>
       {progressPercentage && (
         <Progress
-          value={Number(progressPercentage)}
+          value={progressPercentage}
           // progressnya bakal keupdate setiap 50ms
           indicatorClassName="duration-50"
         />
       )}
 
       <div className="grid gap-x-4 md:grid-cols-3">
-        <ConsistentWidthText text={speed} suffix="/s" className="md:mx-0" />
+        <ConsistentWidthText text={formatBytes(speed)} suffix="/s" className="md:mx-0" />
 
-        {progressPercentage && <ConsistentWidthText text={progressPercentage} suffix="%" />}
+        {progressPercentage && (
+          <ConsistentWidthText text={progressPercentage.toFixed(2)} suffix="%" />
+        )}
 
-        <ConsistentWidthText text={progressText} className="md:mr-0" />
+        <ConsistentWidthText
+          text={formatBytes(receivedLength) + (totalLength ? ' / ' + formatBytes(totalLength) : '')}
+          className="md:mr-0"
+        />
       </div>
     </>
   )

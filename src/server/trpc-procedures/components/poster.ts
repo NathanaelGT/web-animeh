@@ -35,7 +35,7 @@ export const PosterRouter = router({
           updateEpisode(animeData, {}, resolve)
         }))
 
-    return episodeList.map(picker('number', 'downloadStatus'))
+    return episodeList.map(picker('number', 'download'))
   }),
 
   download: procedure

@@ -1,17 +1,16 @@
 import { Progress } from '@/ui/progress'
 import type { PropsWithChildren } from 'react'
+import type { OptimizingProgress } from '~s/external/download/progress'
 
 type Props = PropsWithChildren<{
-  text: string
+  progress: OptimizingProgress
 }>
 
-export function OptimalizationProgress({ text, children }: Props) {
-  const progressPercentage = text.slice(text.indexOf('(') + 1, -2)
-
+export function OptimalizationProgress({ progress, children }: Props) {
   return (
     <>
       <Progress
-        value={Number(progressPercentage)}
+        value={progress.percent}
         // progressnya bakal keupdate setiap 500ms
         indicatorClassName="duration-500"
       />

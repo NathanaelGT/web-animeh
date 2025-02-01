@@ -1,10 +1,35 @@
 import mitt from 'mitt'
 import { downloadMeta } from './meta'
 
-export type DownloadProgressData = {
-  text: string
-  done?: boolean
+export type DownloadProgress = {
+  speed: number
+  receivedLength: number
+  totalLength: number | null
 }
+
+export type OptimizingProgress = {
+  percent: number
+}
+
+export type DownloadProgressData =
+  | {
+      status: 'DOWNLOADING'
+      progress: DownloadProgress
+      text?: undefined
+      done?: undefined
+    }
+  | {
+      status: 'OPTIMIZING'
+      progress: OptimizingProgress
+      text?: undefined
+      done?: undefined
+    }
+  | {
+      status: 'OTHER'
+      progress?: undefined
+      text: string
+      done?: true
+    }
 
 export const downloadProgress = mitt<Record<string, DownloadProgressData>>()
 

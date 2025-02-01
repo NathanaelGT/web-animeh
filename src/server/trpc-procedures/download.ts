@@ -7,17 +7,19 @@ import {
   downloadProgressController,
   type DownloadProgressData,
 } from '~s/external/download/progress'
-import { downloadMeta } from '../external/download/meta'
+import { downloadMeta } from '~s/external/download/meta'
+import { omit } from '~/shared/utils/object'
+import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
 
 export const DownloadRouter = router({
   list: procedure.subscription(async () => {
-    type DownloadList = Record<string, string>
+    type DownloadList = Record<string, DownloadProgressDataWithoutDone>
 
     return observable<DownloadList>(emit => {
       const downloadList: DownloadList = {}
 
       const handleUpdate = (data: DownloadProgressData, name: string) => {
-        downloadList[name] = data.text
+        downloadList[name] = omit(data, 'done') as DownloadProgressDataWithoutDone
 
         if (data.done) {
           setTimeout(() => {
