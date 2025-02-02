@@ -12,13 +12,17 @@ import { metadataQueue, downloadQueue } from '~s/external/queue'
 import {
   downloadProgress,
   downloadProgressController,
-  type DownloadProgressData,
+  type DownloadProgress,
+  type OptimizingProgress,
 } from '~s/external/download/progress'
 import { downloadMeta } from '~s/external/download/meta'
 import { fetchText } from '~s/utils/fetch'
+import { isOffline } from '~s/utils/error'
+import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { toSearchParamString } from '~/shared/utils/url'
+import { raceTimeoutPromise } from '~/shared/utils/promise'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -81,7 +85,11 @@ export const downloadEpisode = async (
   initDownloadEpisode(animeData, episodeNumber)
 
   const emitKey = generateEmitKey(animeData, episodeNumber)
-  const emit = (data: NonNullable<DownloadProgressData['progress']> | string) => {
+
+  function emit(data: string): void
+  function emit(data: OptimizingProgress): void
+  function emit(data: DownloadProgress, text?: string): void
+  function emit(data: string | OptimizingProgress | DownloadProgress, text?: string) {
     if (typeof data === 'string') {
       downloadProgress.emit(emitKey, {
         status: 'OTHER',
@@ -96,6 +104,7 @@ export const downloadEpisode = async (
       downloadProgress.emit(emitKey, {
         status: 'DOWNLOADING',
         progress: data,
+        text,
       })
     }
   }
@@ -134,6 +143,11 @@ export const downloadEpisode = async (
       fs.rm(filePath, { force: true })
 
       done('Unduhan dibatalkan')
+    }
+
+    // @ts-expect-error
+    emit = () => {
+      throw new DOMException()
     }
   })
 
@@ -261,6 +275,14 @@ export const downloadEpisode = async (
 
   const start = (formattedTotalLengthCb?: (formattedTotalLength: string | null) => void) => {
     const handleError = (error: any) => {
+      if (error instanceof TimeoutError) {
+        if (isOffline(error)) {
+          done('Tidak dapat terhubung dengan internet')
+        } else {
+          done('Kuramanime tidak dapat diakses')
+        }
+      }
+
       // kalo "error"nya dari `AbortController.abort`, variabel error nilainya sesuai parameternya
       // untuk sekarang parameternya antara undefined (default) atau string
       if (!(error === undefined || typeof error === 'string' || error instanceof DOMException)) {
@@ -273,13 +295,16 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      return ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
-        signal,
-        headers: {
-          Range: `bytes=${start}-`,
-          Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
-        },
-      })
+      return raceTimeoutPromise(
+        ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
+          signal,
+          headers: {
+            Range: `bytes=${start}-`,
+            Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
+          },
+        }),
+        5_000,
+      )
     }
 
     const metadataLock = new Promise<void>(releaseMetadataLock => {
@@ -389,52 +414,78 @@ export const downloadEpisode = async (
               skip = false
             }
 
-            let firstTime = true
+            let iteration = 0
+
             while (true) {
-              const request = firstTime
-                ? preparedResponse
-                : await downloadVideo(url, receivedLength)
+              const firstTime = ++iteration === 1
+              try {
+                const request = firstTime
+                  ? preparedResponse
+                  : await downloadVideo(url, receivedLength)
 
-              firstTime = false
+                iteration = 1
 
-              const reader = (request.body as ReadableStream<Uint8Array> | null)?.getReader()
-              if (!reader) {
-                throw new Error('no reader')
-              }
-
-              const signalAbortHandler = () => {
-                reader.cancel()
-              }
-
-              signal.addEventListener('abort', signalAbortHandler)
-
-              let lastCheckedReceivedLength = receivedLength
-              const checkIntervalId = setInterval(() => {
-                if (lastCheckedReceivedLength === receivedLength) {
-                  reader.cancel()
-                } else {
-                  lastCheckedReceivedLength = receivedLength
+                const reader = (request.body as ReadableStream<Uint8Array> | null)?.getReader()
+                if (!reader) {
+                  throw new ReaderNotFoundError()
                 }
-              }, 5_000)
 
-              while (true) {
-                const { done, value } = await reader.read()
-                if (done) {
+                const signalAbortHandler = () => {
+                  reader.cancel()
+                }
+
+                signal.addEventListener('abort', signalAbortHandler)
+
+                let lastCheckedReceivedLength = receivedLength
+                const checkIntervalId = setInterval(() => {
+                  if (lastCheckedReceivedLength === receivedLength) {
+                    reader.cancel()
+                  } else {
+                    lastCheckedReceivedLength = receivedLength
+                  }
+                }, 5_000)
+
+                while (true) {
+                  const { done, value } = await raceTimeoutPromise(reader.read(), 5_000)
+
+                  if (done) {
+                    break
+                  }
+
+                  writer.write(value)
+
+                  emitProgress(value)
+                }
+
+                clearInterval(checkIntervalId)
+
+                signal.removeEventListener('abort', signalAbortHandler)
+
+                // TODO: cari cara ngedetect unduhannya selesai kalo totalLengthnya engga ada (NaN)
+                if (signal.aborted || (totalLength !== null && receivedLength >= totalLength)) {
                   break
                 }
+              } catch (error) {
+                if (error instanceof ReaderNotFoundError) {
+                  break
+                } else if (error instanceof TimeoutError || isOffline(error, firstTime)) {
+                  if (iteration > 1) {
+                    const delaySeconds = Math.min(iteration ** 2, 30)
+                    const data: DownloadProgress = {
+                      speed: 0,
+                      receivedLength,
+                      totalLength,
+                    }
 
-                writer.write(value)
+                    for (let second = delaySeconds; second > 0; second--) {
+                      emit(data, `Mengunduh ulang dalam ${second} detik`)
 
-                emitProgress(value)
-              }
+                      await Bun.sleep(1000)
+                    }
 
-              clearInterval(checkIntervalId)
-
-              signal.removeEventListener('abort', signalAbortHandler)
-
-              // TODO: cari cara ngedetect unduhannya selesai kalo totalLengthnya engga ada (NaN)
-              if (signal.aborted || (totalLength !== null && receivedLength >= totalLength)) {
-                break
+                    emit(data, 'Mengunduh ulang')
+                  }
+                }
               }
             }
 

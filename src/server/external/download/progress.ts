@@ -15,7 +15,7 @@ export type DownloadProgressData =
   | {
       status: 'DOWNLOADING'
       progress: DownloadProgress
-      text?: undefined
+      text?: string
       done?: undefined
     }
   | {

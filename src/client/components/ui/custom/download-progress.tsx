@@ -6,9 +6,13 @@ import type { DownloadProgress } from '~s/external/download/progress'
 
 type Props = {
   progress: DownloadProgress
+  text?: string
 }
 
-export function DownloadProgress({ progress: { speed, receivedLength, totalLength } }: Props) {
+export function DownloadProgress({
+  progress: { speed, receivedLength, totalLength },
+  text,
+}: Props) {
   const progressPercentage = totalLength && (receivedLength / totalLength) * 100
 
   return (
@@ -16,13 +20,18 @@ export function DownloadProgress({ progress: { speed, receivedLength, totalLengt
       {progressPercentage && (
         <Progress
           value={progressPercentage}
+          className={text ? 'animate-pulse' : undefined}
           // progressnya bakal keupdate setiap 50ms
           indicatorClassName="duration-50"
         />
       )}
 
       <div className="grid gap-x-4 md:grid-cols-3">
-        <ConsistentWidthText text={formatBytes(speed)} suffix="/s" className="md:mx-0" />
+        {text ? (
+          <ConsistentWidthText text={text} className="md:mx-0" />
+        ) : (
+          <ConsistentWidthText text={formatBytes(speed)} suffix="/s" className="md:mx-0" />
+        )}
 
         {progressPercentage && (
           <ConsistentWidthText text={progressPercentage.toFixed(2)} suffix="%" />

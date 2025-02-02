@@ -72,7 +72,7 @@ export function DownloadState({ name, data }: Props) {
       </div>
 
       {data.status === 'DOWNLOADING' ? (
-        <DownloadProgress progress={data.progress} />
+        <DownloadProgress progress={data.progress} text={data.text} />
       ) : data.status === 'OPTIMIZING' ? (
         <OptimalizationProgress progress={data.progress}>
           <p className="text-center">Mengoptimalisasi video</p>

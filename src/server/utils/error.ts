@@ -10,12 +10,12 @@ export const getStackTraces = (error: Error) => {
 }
 
 let shouldNotifyOfflineStatus = true
-export const isOffline = (error: unknown) => {
+export const isOffline = (error: unknown, shouldLog = true) => {
   const isOffline =
     error instanceof Error &&
     (error.name === 'FailedToOpenSocket' || error.name === 'ConnectionRefused')
 
-  if (isOffline && shouldNotifyOfflineStatus) {
+  if (shouldLog && isOffline && shouldNotifyOfflineStatus) {
     shouldNotifyOfflineStatus = false
 
     setTimeout(() => {
