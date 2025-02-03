@@ -368,8 +368,14 @@ export const downloadEpisode = async (
 
             let skip = false
             let isResolved = false
+            let lastTimestamp: number
 
-            const startTime = performance.now()
+            const UPDATES_PER_SECOND = 20
+            const HISTORY_SIZE = UPDATES_PER_SECOND * 3
+            const speedHistory = Array(HISTORY_SIZE).fill(0)
+            let historyIndex = 0
+            let historyCount = 0
+
             const emitProgress = (data: Uint8Array) => {
               receivedLength += data.length
 
@@ -379,7 +385,17 @@ export const downloadEpisode = async (
 
               skip = true
 
-              const elapsedTime = (performance.now() - startTime) / 1e3 // ms -> s
+              const now = performance.now()
+              const elapsedSinceLastEmit = (now - lastTimestamp) / 1e3 // ms -> s
+              const intervalSpeed = data.length / elapsedSinceLastEmit
+
+              speedHistory[historyIndex] = intervalSpeed
+              historyIndex = (historyIndex + 1) % HISTORY_SIZE
+              historyCount = Math.min(historyCount + 1, HISTORY_SIZE)
+
+              const speed = speedHistory.reduce((sum, s) => sum + s, 0) / historyCount
+
+              lastTimestamp = now
 
               if (
                 !isResolved &&
@@ -391,8 +407,6 @@ export const downloadEpisode = async (
                 releaseMetadataLock()
               }
 
-              const speed = (receivedLength - initialLength) / elapsedTime
-
               emit({
                 speed,
                 receivedLength,
@@ -402,17 +416,7 @@ export const downloadEpisode = async (
 
             const setSkipIntervalId = setInterval(() => {
               skip = false
-            }, 50)
-
-            if (initialLength) {
-              // kalo ini downloadnya adalah lanjutan, pada saat diemit nanti speednya bakal tinggi banget diawal
-              // seharusnya engga gitu karena perhitungannya `receivedLength - initialLength`
-              // jadi untuk ngakalin biar speednya normal, diawal bakal diemit progress kosong
-              // kekurangannya untuk 1/20 detik diawal speednya bakal tulis "0 B/s"
-              emitProgress(new Uint8Array())
-
-              skip = false
-            }
+            }, 1000 / UPDATES_PER_SECOND)
 
             let iteration = 0
 
@@ -444,6 +448,8 @@ export const downloadEpisode = async (
                     lastCheckedReceivedLength = receivedLength
                   }
                 }, 5_000)
+
+                lastTimestamp = performance.now()
 
                 while (true) {
                   const { done, value } = await raceTimeoutPromise(reader.read(), 5_000)
