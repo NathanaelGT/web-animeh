@@ -100,7 +100,7 @@ export const update = async <TConfig extends UpdateConfig>(
 
   // ada beberapa sinonim yang duplikat, judulnya sama persis, cuma beda "type"
   const synonymList: (typeof animeSynonyms.$inferInsert)[] = []
-  const existingSynonyms = new Set<string>([jikanAnimeData.titles[0]!.title])
+  const existingSynonyms = new Set([jikanAnimeData.titles[0]!.title])
   for (let i = 1; i < jikanAnimeData.titles.length; i++) {
     const { title, type } = jikanAnimeData.titles[i]!
     if (existingSynonyms.has(title)) {
