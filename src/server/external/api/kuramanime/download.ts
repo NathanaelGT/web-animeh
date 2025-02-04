@@ -22,7 +22,7 @@ import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { toSearchParamString } from '~/shared/utils/url'
-import { raceTimeoutPromise } from '~/shared/utils/promise'
+import { timeoutThrow } from '~/shared/utils/promise'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -295,7 +295,7 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      return raceTimeoutPromise(
+      return timeoutThrow(
         ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
           signal,
           headers: {
@@ -452,7 +452,7 @@ export const downloadEpisode = async (
                 lastTimestamp = performance.now()
 
                 while (true) {
-                  const { done, value } = await raceTimeoutPromise(reader.read(), 5_000)
+                  const { done, value } = await timeoutThrow(reader.read(), 5_000)
 
                   if (done) {
                     break

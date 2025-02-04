@@ -12,7 +12,7 @@ import { SilentError } from '~s/error'
 import { optimizeDatabase } from './db'
 import { format } from '~/shared/utils/date'
 import { isObject, omit } from '~/shared/utils/object'
-import { timeoutPromise } from '~/shared/utils/promise'
+import { timeout } from '~/shared/utils/promise'
 import { serverType } from '~s/info' with { type: 'macro' }
 import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
@@ -286,7 +286,7 @@ if (firstTime) {
 
           const stopPromise = server.stop(true)
 
-          await Promise.race([stopPromise, timeoutPromise(1000)])
+          await timeout(stopPromise, 1000)
 
           optimizeDatabase()
 
