@@ -295,42 +295,45 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      return timeoutThrow(
-        ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
-          signal,
-          headers: {
-            Range: `bytes=${start}-`,
-            Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
-          },
-        }),
-        5_000,
-      )
+      return {
+        response: await timeoutThrow(
+          ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
+            signal,
+            headers: {
+              Range: `bytes=${start}-`,
+              Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
+            },
+          }),
+          5_000,
+        ),
+        requestedAt: performance.now(),
+      }
     }
 
     const metadataLock = new Promise<void>(releaseMetadataLock => {
       let downloadIsStarted = false
 
-      const prepareResponsePromise = new Promise<[string, Response]>(
-        (resolvePreparedResponse, reject) => {
-          metadataQueue
-            .add(
-              async () => {
-                const url = await getDownloadUrl()
-                const preparedResponse = await downloadVideo(url, tempFile.size)
+      const prepareResponsePromise = new Promise<
+        [string, { response: Response; requestedAt: number }]
+      >((resolvePreparedResponse, reject) => {
+        metadataQueue
+          .add(
+            async () => {
+              const url = await getDownloadUrl()
+              const preparedResponse = await downloadVideo(url, tempFile.size)
 
-                if (!downloadIsStarted) {
-                  emit('Menunggu unduhan sebelumnya selesai')
-                }
+              if (!downloadIsStarted) {
+                emit('Menunggu unduhan sebelumnya selesai')
+              }
 
-                resolvePreparedResponse([url, preparedResponse])
+              resolvePreparedResponse([url, preparedResponse])
 
-                await metadataLock
-              },
-              { signal },
-            )
-            .catch(reject)
-        },
-      ).catch(handleError)
+              await metadataLock
+            },
+            { signal },
+          )
+          .catch(reject)
+      }).catch(handleError)
 
       downloadQueue
         .add(
@@ -339,6 +342,7 @@ export const downloadEpisode = async (
 
             const initialLength = tempFile.size
             let receivedLength = initialLength
+            let fetchedLength = 0
 
             emit((initialLength ? 'Lanjut' : 'Mulai') + ' mengunduh')
 
@@ -348,7 +352,7 @@ export const downloadEpisode = async (
             }
             const [url, preparedResponse] = prepared
 
-            const contentLength = preparedResponse.headers?.get('Content-Length')
+            const contentLength = preparedResponse.response.headers?.get('Content-Length')
             const totalLength = contentLength ? initialLength + Number(contentLength) : null
             const formattedTotalLength = totalLength ? formatBytes(totalLength) : null
 
@@ -366,36 +370,36 @@ export const downloadEpisode = async (
               await writer.flush()
             }
 
-            let skip = false
+            const UPDATES_PER_SECOND = 16
+            const CALCULATE_SPEED_PER_SECOND = UPDATES_PER_SECOND / 2
+            const HISTORY_SIZE = CALCULATE_SPEED_PER_SECOND / 2
+            const speedHistory = Array(HISTORY_SIZE).fill(0)
+
             let isResolved = false
             let lastTimestamp: number
+            let lastFetchedLength = 0
 
-            const UPDATES_PER_SECOND = 20
-            const HISTORY_SIZE = UPDATES_PER_SECOND * 3
-            const speedHistory = Array(HISTORY_SIZE).fill(0)
+            let emitProgressCounter = 0
             let historyIndex = 0
             let historyCount = 0
 
-            const emitProgress = (data: Uint8Array) => {
-              receivedLength += data.length
+            let speed: number
 
-              if (skip) {
-                return
+            const emitProgress = () => {
+              if (emitProgressCounter++ % CALCULATE_SPEED_PER_SECOND === 0) {
+                const now = performance.now()
+                const elapsedSinceLastEmit = (now - lastTimestamp) / 1e3 // ms -> s
+                const intervalSpeed = (fetchedLength - lastFetchedLength) / elapsedSinceLastEmit
+
+                speedHistory[historyIndex] = intervalSpeed
+                historyIndex = (historyIndex + 1) % HISTORY_SIZE
+                historyCount = Math.min(historyCount + 1, HISTORY_SIZE)
+                lastFetchedLength = fetchedLength
+
+                speed = speedHistory.reduce((sum, s) => sum + s, 0) / historyCount
+
+                lastTimestamp = now
               }
-
-              skip = true
-
-              const now = performance.now()
-              const elapsedSinceLastEmit = (now - lastTimestamp) / 1e3 // ms -> s
-              const intervalSpeed = data.length / elapsedSinceLastEmit
-
-              speedHistory[historyIndex] = intervalSpeed
-              historyIndex = (historyIndex + 1) % HISTORY_SIZE
-              historyCount = Math.min(historyCount + 1, HISTORY_SIZE)
-
-              const speed = speedHistory.reduce((sum, s) => sum + s, 0) / historyCount
-
-              lastTimestamp = now
 
               if (
                 !isResolved &&
@@ -414,22 +418,22 @@ export const downloadEpisode = async (
               })
             }
 
-            const setSkipIntervalId = setInterval(() => {
-              skip = false
-            }, 1000 / UPDATES_PER_SECOND)
+            let emitIntervalId: Timer | undefined
 
             let iteration = 0
 
             while (true) {
               const firstTime = ++iteration === 1
               try {
-                const request = firstTime
+                const { response, requestedAt } = firstTime
                   ? preparedResponse
                   : await downloadVideo(url, receivedLength)
 
                 iteration = 1
 
-                const reader = (request.body as ReadableStream<Uint8Array> | null)?.getReader()
+                lastTimestamp = requestedAt
+
+                const reader = (response.body as ReadableStream<Uint8Array> | null)?.getReader()
                 if (!reader) {
                   throw new ReaderNotFoundError()
                 }
@@ -440,16 +444,7 @@ export const downloadEpisode = async (
 
                 signal.addEventListener('abort', signalAbortHandler)
 
-                let lastCheckedReceivedLength = receivedLength
-                const checkIntervalId = setInterval(() => {
-                  if (lastCheckedReceivedLength === receivedLength) {
-                    reader.cancel()
-                  } else {
-                    lastCheckedReceivedLength = receivedLength
-                  }
-                }, 5_000)
-
-                lastTimestamp = performance.now()
+                emitIntervalId = setInterval(emitProgress, 1000 / UPDATES_PER_SECOND)
 
                 while (true) {
                   const { done, value } = await timeoutThrow(reader.read(), 5_000)
@@ -460,10 +455,11 @@ export const downloadEpisode = async (
 
                   writer.write(value)
 
-                  emitProgress(value)
+                  fetchedLength += value.length
+                  receivedLength += value.length
                 }
 
-                clearInterval(checkIntervalId)
+                clearInterval(emitIntervalId)
 
                 signal.removeEventListener('abort', signalAbortHandler)
 
@@ -475,27 +471,32 @@ export const downloadEpisode = async (
                 if (error instanceof ReaderNotFoundError) {
                   break
                 } else if (error instanceof TimeoutError || isOffline(error, firstTime)) {
+                  if (emitIntervalId) {
+                    clearInterval(emitIntervalId)
+
+                    emitIntervalId = undefined
+                  }
+
+                  const data: DownloadProgress = {
+                    speed: 0,
+                    receivedLength,
+                    totalLength,
+                  }
+
                   if (iteration > 1) {
                     const delaySeconds = Math.min(iteration ** 2, 30)
-                    const data: DownloadProgress = {
-                      speed: 0,
-                      receivedLength,
-                      totalLength,
-                    }
 
                     for (let second = delaySeconds; second > 0; second--) {
                       emit(data, `Mengunduh ulang dalam ${second} detik`)
 
                       await Bun.sleep(1000)
                     }
-
-                    emit(data, 'Mengunduh ulang')
                   }
+
+                  emit(data, 'Mengunduh ulang')
                 }
               }
             }
-
-            clearInterval(setSkipIntervalId)
 
             if (signal.aborted) {
               if (!isResolved) {
@@ -508,9 +509,7 @@ export const downloadEpisode = async (
             downloadProgressController.delete(emitKey)
             gdriveAccessTokenCache.delete(url)
 
-            // buat ngeemit final progressnya
-            skip = false
-            emitProgress(new Uint8Array())
+            emitProgress()
 
             // biar keluar dari queue untuk proses selanjutnya
             ;(async () => {
