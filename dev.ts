@@ -1,12 +1,13 @@
 import Bun, { Glob, $ } from 'bun'
 import fs from 'fs/promises'
 import os from 'os'
+import { timeout } from 'src/shared/utils/promise'
 import { format } from 'src/shared/utils/date'
 import { formatNs } from 'src/server/utils/time'
 
 const serverOnly = Bun.argv.includes('--server-only')
 
-const promises: (Promise<void> | Bun.ShellPromise)[] = [
+const promises: (Promise<unknown> | Bun.ShellPromise)[] = [
   (async () => {
     if (!(await Bun.file('.env').exists())) {
       await Bun.write('.env', Bun.file('.env.example'))
@@ -18,13 +19,14 @@ const promises: (Promise<void> | Bun.ShellPromise)[] = [
 if (os.platform() === 'linux') {
   const port = serverOnly ? 8888 : 8887
 
-  promises.push($`fuser -k ${port}/tcp`.quiet().nothrow())
+  promises.push(timeout($`fuser -k ${port}/tcp`.quiet().nothrow(), 1000))
 }
 
 const maxWidth = 140
 
 process.stdout.moveCursor(0, -1)
 process.stdout.clearLine(0)
+process.env.MODE = 'development'
 
 const client = serverOnly
   ? null
@@ -33,7 +35,7 @@ const client = serverOnly
       stdout: 'pipe',
       stderr: 'inherit',
       env: {
-        MODE: 'development',
+        ...process.env,
         NO_COLOR: '1',
       },
     })
@@ -56,9 +58,8 @@ const server = Bun.spawn(
     stdout: 'inherit',
     stderr: 'inherit',
     env: {
-      MODE: 'development',
-      BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: '1',
       ...process.env,
+      BUN_CONFIG_NO_CLEAR_TERMINAL_ON_RELOAD: '1',
     },
     ipc(message) {
       if (message === 'ready' && clientStdout) {
