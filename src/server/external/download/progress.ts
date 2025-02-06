@@ -30,6 +30,12 @@ export type DownloadProgressData =
       text: string
       done?: true
     }
+  | {
+      status: 'OTHER'
+      progress?: undefined
+      text: 'Video selesai diunduh'
+      done: true
+    }
 
 export const downloadProgress = mitt<Record<string, DownloadProgressData>>()
 
