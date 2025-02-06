@@ -3,12 +3,12 @@ import * as v from 'valibot'
 import * as episodeRepository from '~s/db/repository/episode'
 import { procedure, router } from '~s/trpc'
 import { episodeMitt } from '~s/anime/episode/event'
-import { searchEpisode } from '~/shared/utils/episode'
 import {
   downloadProgress,
   downloadProgressSnapshot,
   type DownloadProgressData,
 } from '~s/external/download/progress'
+import { searchEpisode } from '~/shared/utils/episode'
 
 export const AnimeRouter = router({
   episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input: animeId }) => {
@@ -23,11 +23,14 @@ export const AnimeRouter = router({
 
     let episodeList = await episodeRepository.findByAnime(animeData)
 
-    const updateStatus = (episodeNumber: number, status: string | boolean) => {
+    const updateStatus = (
+      episodeNumber: number,
+      data: DownloadProgressData | { status: 'DOWNLOADED' },
+    ) => {
       const episode = searchEpisode(episodeList, episodeNumber)
 
       if (episode) {
-        episode.downloadStatus = status
+        episode.download = data
       }
     }
 
@@ -39,7 +42,7 @@ export const AnimeRouter = router({
           const oldEpisode = searchEpisode(episodeList, episode.number)
 
           if (oldEpisode) {
-            episode.downloadStatus = oldEpisode.downloadStatus
+            episode.download = oldEpisode.download
           }
         }
 
@@ -50,7 +53,7 @@ export const AnimeRouter = router({
         }
       }
 
-      const handleUpdate = (data: { text: string; done?: boolean }, name: string) => {
+      const handleUpdate = (data: DownloadProgressData, name: string) => {
         if (!(name === animeData.title || name.startsWith(animeData.title + ': Episode '))) {
           return false
         }
@@ -59,14 +62,26 @@ export const AnimeRouter = router({
         const episodeNumber =
           episodeIndex > -1 ? parseInt(name.slice(episodeIndex + 'Episode '.length)) : 1
 
-        updateStatus(episodeNumber, data.text)
+        updateStatus(episodeNumber, data)
 
         if (data.done) {
           setTimeout(() => {
-            updateStatus(episodeNumber, true)
+            updateStatus(episodeNumber, {
+              status: 'OTHER',
+              text: 'Video selesai diunduh',
+              done: true,
+            })
 
             emit.next(episodeList)
-          }, 250)
+
+            setTimeout(() => {
+              updateStatus(episodeNumber, {
+                status: 'DOWNLOADED',
+              })
+
+              emit.next(episodeList)
+            }, 100)
+          }, 100)
         }
 
         return true
