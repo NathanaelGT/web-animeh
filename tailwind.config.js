@@ -72,7 +72,6 @@ export default {
     },
   },
   plugins: [
-    require('@tailwindcss/line-clamp'),
     require('tailwindcss-animate'),
     require('tailwind-scrollbar')({ preferredStrategy: 'pseudoelements' }),
   ],
