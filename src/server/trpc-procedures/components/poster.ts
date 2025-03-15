@@ -2,10 +2,15 @@ import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import * as episodeRepository from '~s/db/repository/episode'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
-import { initDownloadEpisode, downloadEpisode } from '~s/external/api/kuramanime/download'
+import {
+  initDownloadEpisode,
+  downloadEpisode,
+  streamingEpisode,
+} from '~s/external/api/kuramanime/episode'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { updateEpisode } from '~s/anime/episode/update'
 import { picker } from '~/shared/utils/object'
+import { db } from '~/server/db'
 
 export const PosterRouter = router({
   episodeList: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
@@ -40,23 +45,8 @@ export const PosterRouter = router({
 
   download: procedure
     .input(v.parser(v.object({ animeId: v.number(), episodeNumber: v.number() })))
-    .mutation(async ({ ctx, input }) => {
-      const animeData = await ctx.db.query.anime.findFirst({
-        columns: { id: true, title: true, totalEpisodes: true },
-        where: (anime, { eq }) => eq(anime.id, input.animeId),
-        with: {
-          metadata: {
-            columns: { providerId: true, providerSlug: true },
-            limit: 1,
-          },
-        },
-      })
-
-      if (!animeData) {
-        throw new Error('404')
-      } else if (!animeData.metadata[0]?.providerSlug) {
-        throw new Error('invalid provider slug')
-      }
+    .mutation(async ({ input }) => {
+      const animeData = await getAnimeData(input.animeId)
 
       return downloadEpisode(animeData, animeData.metadata[0], input.episodeNumber)
     }),
@@ -130,4 +120,43 @@ export const PosterRouter = router({
 
     return episodes.length
   }),
+
+  streaming: procedure
+    .input(v.parser(v.object({ animeId: v.number(), episodeNumber: v.number() })))
+    .mutation(async ({ input }) => {
+      const animeData = await getAnimeData(input.animeId)
+
+      return streamingEpisode(animeData, animeData.metadata[0], input.episodeNumber)
+    }),
 })
+
+async function getAnimeData(animeId: number) {
+  const animeData = await db.query.anime.findFirst({
+    columns: { id: true, title: true, totalEpisodes: true },
+    where: (anime, { eq }) => eq(anime.id, animeId),
+    with: {
+      metadata: {
+        columns: { providerId: true, providerSlug: true },
+        limit: 1,
+      },
+    },
+  })
+
+  if (!animeData) {
+    throw new Error('404')
+  } else if (!animeData.metadata[0]?.providerSlug) {
+    throw new Error('invalid provider slug')
+  }
+
+  type NonEmptyArray<T> = [T, ...T[]]
+
+  return animeData as {
+    id: number
+    title: string
+    totalEpisodes: number | null
+    metadata: NonEmptyArray<{
+      providerId: number
+      providerSlug: string | null
+    }>
+  }
+}

@@ -1,3 +1,4 @@
+import { useState, useLayoutEffect, type PropsWithChildren, type ReactElement } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
 import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
@@ -7,17 +8,21 @@ import { DownloadProgress } from '@/ui/custom/download-progress'
 import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
 import { Download } from '@/page/anime/episode/number/Download'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
-import type { PropsWithChildren, ReactElement } from 'react'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,
 })
 
 function EpisodeNumber() {
+  const [streamingUrl, setStreamingUrl] = useState<string | undefined>()
   const params = Route.useParams()
   const episode = useStore(episodeListStore, episodeList => {
     return searchEpisode(episodeList, Number(params.number))
   })
+
+  useLayoutEffect(() => {
+    setStreamingUrl(undefined)
+  }, [params.id, params.number])
 
   if (!episode) {
     return <main className="m-auto">Episode {params.number} tidak ditemukan</main>
@@ -57,12 +62,16 @@ function EpisodeNumber() {
           >
             {download.text}
           </Status>
-        ) : status === 'DOWNLOADED' ? (
-          <VideoPlayer key={`${params.id}|${params.number}`} params={params} />
+        ) : status === 'DOWNLOADED' || streamingUrl ? (
+          <VideoPlayer
+            key={`${params.id}|${params.number}`}
+            streamingUrl={streamingUrl}
+            params={params}
+          />
         ) : status === 'NOT_DOWNLOADED' ? (
-          <Download params={params} />
+          <Download params={params} setStreamingUrl={setStreamingUrl} />
         ) : status === 'RESUME' ? (
-          <Download params={params} isPending />
+          <Download params={params} setStreamingUrl={setStreamingUrl} isPending />
         ) : (
           <p>Status tidak diketahui: {status}</p>
         )}

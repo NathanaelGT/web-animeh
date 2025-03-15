@@ -39,6 +39,7 @@ export const keybindSchema = object({
   watchPage: object({
     search: createKeybind('e'),
     download: createKeybind('u'),
+    streaming: createKeybind('Enter'),
     first: createKeybind('Shift', 'p'),
     last: createKeybind('Shift', 'n'),
   }),

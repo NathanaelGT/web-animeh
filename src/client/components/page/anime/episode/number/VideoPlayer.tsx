@@ -13,6 +13,7 @@ import type { settingsSchema } from '~/shared/profile/settings'
 type KeybindGroups = InferOutput<typeof settingsSchema>['keybind']
 
 type Props = {
+  streamingUrl: string | undefined
   params: {
     id: string
     number: string
@@ -25,7 +26,7 @@ const getSrc = (animeId: string, episodeString: string) => {
   return `${basePath}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
 }
 
-export function VideoPlayer({ params }: Props) {
+export function VideoPlayer({ streamingUrl, params }: Props) {
   const router = useRouter()
   const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -55,7 +56,7 @@ export function VideoPlayer({ params }: Props) {
       )
     }
 
-    const src = getSrc(params.id, params.number)
+    const src = streamingUrl || getSrc(params.id, params.number)
     if (video.dataset.id === watchSession.id) {
       if (video.src !== src) {
         video.src = src
@@ -77,9 +78,11 @@ export function VideoPlayer({ params }: Props) {
 
       const episodeString = episodeTarget.toString()
 
-      // downloadStatus typenya boolean|string
-      if (episode.downloadStatus === true && document.fullscreenElement === video) {
-        video.src = getSrc(params.id, episodeString)
+      if (
+        (episode.download.status === 'DOWNLOADED' || streamingUrl) &&
+        document.fullscreenElement === video
+      ) {
+        video.src = streamingUrl || getSrc(params.id, episodeString)
         video.play()
 
         gotoEpisodeRef.current = episodeString
@@ -230,7 +233,7 @@ export function VideoPlayer({ params }: Props) {
         }
       })
     }
-  }, [])
+  }, [streamingUrl])
 
-  return <div ref={containerRef} />
+  return <div ref={containerRef} className="h-full w-full" />
 }

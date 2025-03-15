@@ -61,6 +61,7 @@ export const keybindTranslation = {
   watchPage: {
     search: ['Cari episode'],
     download: ['Unduh episode sekarang', 'Saat episode belum terunduh'],
+    streaming: ['Streaming episode sekarang', 'Saat episode belum terunduh'],
     first: ['Pindah ke episode pertama'],
     last: ['Pindah ke episode terakhir'],
   },
