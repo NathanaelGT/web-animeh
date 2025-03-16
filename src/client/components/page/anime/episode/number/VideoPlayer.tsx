@@ -47,10 +47,18 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       video.addEventListener(
         'loadeddata',
         () => {
-          video.muted = true
-          video.play().then(() => {
-            video.muted = false
-          })
+          const play = () => {
+            video.muted = true
+            video.play().then(() => {
+              video.muted = false
+            })
+          }
+
+          if (document.hidden) {
+            document.addEventListener('visibilitychange', play, { once: true })
+          } else {
+            play()
+          }
         },
         { once: true },
       )
