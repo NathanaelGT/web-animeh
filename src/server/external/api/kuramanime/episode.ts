@@ -572,8 +572,7 @@ export const downloadEpisode = async (
 
                 // diwindows, output dari ffmpeg bisa kena buffer
                 // jadi progressnya kepisah jadi lebih dari 1 message
-                const output = textDecoder.decode(value)
-                buffer += output
+                buffer += textDecoder.decode(value)
 
                 const indexOfTerminator = buffer.indexOf('\r')
                 if (indexOfTerminator === -1) {
