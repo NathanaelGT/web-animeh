@@ -557,6 +557,7 @@ export const downloadEpisode = async (
 
               let intervalId: Timer | undefined
 
+              let buffer = ''
               while (true) {
                 const { done, value } = await ffmpegReader.read()
                 if (done) {
@@ -569,7 +570,19 @@ export const downloadEpisode = async (
                   break
                 }
 
-                const message = textDecoder.decode(value)
+                // diwindows, output dari ffmpeg bisa kena buffer
+                // jadi progressnya kepisah jadi lebih dari 1 message
+                const output = textDecoder.decode(value)
+                buffer += output
+
+                const indexOfTerminator = buffer.indexOf('\r')
+                if (indexOfTerminator === -1) {
+                  continue
+                }
+
+                const message = buffer.slice(0, indexOfTerminator)
+                buffer = buffer.slice(indexOfTerminator + 1)
+
                 const sizeIndex = message.lastIndexOf('size=  ')
                 if (sizeIndex > -1) {
                   const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
