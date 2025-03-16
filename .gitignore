@@ -6,6 +6,9 @@ videos
 *.local
 .env
 
+# Build hook
+build.after.ts
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

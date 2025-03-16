@@ -314,4 +314,9 @@ log(
     `Optimized production build created in [\x1b[1m${formatNs(Bun.nanoseconds())}\x1b[0m]\n`,
 )
 
+if (Bun.file('./build.after.ts').size) {
+  // @ts-ignore
+  await import('./build.after.ts')
+}
+
 process.exit(0)
