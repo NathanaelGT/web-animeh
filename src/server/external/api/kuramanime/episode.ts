@@ -298,18 +298,25 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      return {
-        response: await timeoutThrow(
-          ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
+      const requestedAt = performance.now()
+      const request = gdriveCredentials
+        ? ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
             signal,
             headers: {
               Range: `bytes=${start}-`,
               Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
             },
-          }),
-          5_000,
-        ),
-        requestedAt: performance.now(),
+          })
+        : ky.get(url, {
+            signal,
+            headers: {
+              Range: `bytes=${start}-`,
+            },
+          })
+
+      return {
+        response: await timeoutThrow(request, 5_000),
+        requestedAt,
       }
     }
 
@@ -658,14 +665,14 @@ type GDriveFilesResponse = {
     id: string
   }[]
 }
-type GDriveCredentialsReturn = {
+type GDriveCredentials = {
   data: GDriveCredentialsResponse
   id: string
 }
 
-const gdriveAccessTokenCache = new Map<string, GDriveCredentialsReturn>()
+const gdriveAccessTokenCache = new Map<string, GDriveCredentials>()
 /** source: https://kuramalink.me/serviceworker.js */
-async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredentialsReturn> {
+async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredentials | null> {
   const cache = gdriveAccessTokenCache.get(downloadUrl)
   if (cache) {
     return cache
@@ -693,11 +700,7 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
   } else if (downloadUrl.startsWith(komiOrigin)) {
     id = getSearchParams('fn')
   } else {
-    const message = `Unknown domain: ${downloadUrl}`
-
-    logger.error(message, { downloadUrl })
-
-    throw new SilentError(message)
+    return null
   }
 
   const clientId = getSearchParams('id')
@@ -707,9 +710,7 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
   if (nullValues.length > 0) {
     const message = `Download episode: ${nullValues.join(', ')} is null`
 
-    logger.error(message, { downloadUrl })
-
-    throw new SilentError(message)
+    throw new SilentError(message).log(message, { downloadUrl })
   }
 
   const accessTokenResponse = await ky.post<GDriveCredentialsResponse>(
@@ -729,7 +730,7 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
 
   const result = {
     data: await accessTokenResponse.json(),
-  } as GDriveCredentialsReturn
+  } as GDriveCredentials
 
   if (downloadUrl.startsWith(komiOrigin)) {
     const params = encodeURIComponent(`name ='${id}'`)
