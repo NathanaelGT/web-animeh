@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import ky from 'ky'
+import ky, { HTTPError } from 'ky'
 import * as v from 'valibot'
 import { env } from '~/env'
 import * as kyInstances from '~s/ky'
@@ -320,11 +320,96 @@ export const downloadEpisode = async (
       }
     }
 
+    const optimizeVideo = async () => {
+      emit({ percent: 0 })
+
+      const ffmpeg = Bun.spawn(
+        [
+          'ffmpeg',
+          '-i',
+          tempFilePath,
+          '-c',
+          'copy',
+          '-movflags',
+          '+faststart',
+          '-v',
+          'quiet',
+          '-stats',
+          filePath,
+        ],
+        // ffmpeg nulis hasilnya ke stderr, bukan stdout
+        {
+          stdin: 'ignore',
+          stdout: 'ignore',
+          stderr: 'pipe',
+        },
+      )
+
+      const ffmpegReader = ffmpeg.stderr.getReader()
+      const textDecoder = new TextDecoder()
+
+      // engga pake instance tempFile karena kena cache
+      const videoSize = Bun.file(tempFilePath).size
+
+      let intervalId: Timer | undefined
+
+      let buffer = ''
+      while (true) {
+        const { done, value } = await ffmpegReader.read()
+        if (done) {
+          emit({ percent: 100 })
+
+          if (intervalId) {
+            clearInterval(intervalId)
+          }
+
+          break
+        }
+
+        // diwindows, output dari ffmpeg bisa kena buffer
+        // jadi progressnya kepisah jadi lebih dari 1 message
+        buffer += textDecoder.decode(value)
+
+        const indexOfTerminator = buffer.indexOf('\r')
+        if (indexOfTerminator === -1) {
+          continue
+        }
+
+        const message = buffer.slice(0, indexOfTerminator)
+        buffer = buffer.slice(indexOfTerminator + 1)
+
+        const sizeIndex = message.lastIndexOf('size=  ')
+        if (sizeIndex > -1) {
+          const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
+          let progress = ((sizeKilo * 1024) / videoSize) * 100
+
+          emit({ percent: progress })
+
+          // setelah progress diatas 91%, ffmpegnya bakal stuck agak lama
+          // jadi biar progressnya ga stuck, dibuat progress palsu
+          if (!intervalId && progress > 91) {
+            intervalId = setInterval(() => {
+              // 2 angka magic yang kira kira pas
+              progress += (100 - progress) / 2
+
+              emit({ percent: progress })
+            }, 500) // ffmpeg nampilin progressnya tiap 500ms
+          }
+        }
+      }
+
+      await fs.rm(tempFilePath)
+
+      onFinish?.()
+
+      done('Video selesai diunduh')
+    }
+
     const metadataLock = new Promise<void>(releaseMetadataLock => {
       let downloadIsStarted = false
 
       const prepareResponsePromise = new Promise<
-        [string, { response: Response; requestedAt: number }]
+        [string] | [string, { response: Response; requestedAt: number }]
       >((resolvePreparedResponse, reject) => {
         metadataQueue
           .add(
@@ -337,13 +422,22 @@ export const downloadEpisode = async (
                 done,
                 signal,
               )
-              const preparedResponse = await downloadVideo(url, tempFile.size)
 
-              if (!downloadIsStarted) {
-                emit('Menunggu unduhan sebelumnya selesai')
+              try {
+                const preparedResponse = await downloadVideo(url, tempFile.size)
+
+                if (!downloadIsStarted) {
+                  emit('Menunggu unduhan sebelumnya selesai')
+                }
+
+                resolvePreparedResponse([url, preparedResponse])
+              } catch (error) {
+                if (error instanceof HTTPError && error.response.status === 416) {
+                  resolvePreparedResponse([url])
+                } else {
+                  throw error
+                }
               }
-
-              resolvePreparedResponse([url, preparedResponse])
 
               await metadataLock
             },
@@ -367,7 +461,13 @@ export const downloadEpisode = async (
             if (!prepared) {
               return
             }
+
             const [url, preparedResponse] = prepared
+            if (!preparedResponse) {
+              optimizeVideo()
+
+              return
+            }
 
             const contentLength = preparedResponse.response.headers?.get('Content-Length')
             const totalLength = contentLength ? initialLength + Number(contentLength) : null
@@ -529,92 +629,7 @@ export const downloadEpisode = async (
             emitProgress()
 
             // biar keluar dari queue untuk proses selanjutnya
-            ;(async () => {
-              await writer.end()
-
-              emit({ percent: 0 })
-
-              const ffmpeg = Bun.spawn(
-                [
-                  'ffmpeg',
-                  '-i',
-                  tempFilePath,
-                  '-c',
-                  'copy',
-                  '-movflags',
-                  '+faststart',
-                  '-v',
-                  'quiet',
-                  '-stats',
-                  filePath,
-                ],
-                // ffmpeg nulis hasilnya ke stderr, bukan stdout
-                {
-                  stdin: 'ignore',
-                  stdout: 'ignore',
-                  stderr: 'pipe',
-                },
-              )
-
-              const ffmpegReader = ffmpeg.stderr.getReader()
-              const textDecoder = new TextDecoder()
-
-              // engga pake instance tempFile karena kena cache
-              const videoSize = totalLength || Bun.file(tempFilePath).size
-
-              let intervalId: Timer | undefined
-
-              let buffer = ''
-              while (true) {
-                const { done, value } = await ffmpegReader.read()
-                if (done) {
-                  emit({ percent: 100 })
-
-                  if (intervalId) {
-                    clearInterval(intervalId)
-                  }
-
-                  break
-                }
-
-                // diwindows, output dari ffmpeg bisa kena buffer
-                // jadi progressnya kepisah jadi lebih dari 1 message
-                buffer += textDecoder.decode(value)
-
-                const indexOfTerminator = buffer.indexOf('\r')
-                if (indexOfTerminator === -1) {
-                  continue
-                }
-
-                const message = buffer.slice(0, indexOfTerminator)
-                buffer = buffer.slice(indexOfTerminator + 1)
-
-                const sizeIndex = message.lastIndexOf('size=  ')
-                if (sizeIndex > -1) {
-                  const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
-                  let progress = ((sizeKilo * 1024) / videoSize) * 100
-
-                  emit({ percent: progress })
-
-                  // setelah progress diatas 91%, ffmpegnya bakal stuck agak lama
-                  // jadi biar progressnya ga stuck, dibuat progress palsu
-                  if (!intervalId && progress > 91) {
-                    intervalId = setInterval(() => {
-                      // 2 angka magic yang kira kira pas
-                      progress += (100 - progress) / 2
-
-                      emit({ percent: progress })
-                    }, 500) // ffmpeg nampilin progressnya tiap 500ms
-                  }
-                }
-              }
-
-              await fs.rm(tempFilePath)
-
-              onFinish?.()
-
-              done('Video selesai diunduh')
-            })()
+            Promise.resolve(writer.end()).then(optimizeVideo)
           },
           { signal },
         )
