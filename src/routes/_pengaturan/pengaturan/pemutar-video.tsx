@@ -253,12 +253,12 @@ function InputNumberSwitch(props: InputNumberSwitchProps) {
       }
       childrenClassName="h-10 w-10 p-2"
     >
-      <div className="h-full w-full">
+      <div className="relative h-full w-full">
         <Checkbox
           id={props.switchName}
           checked={checked}
           onCheckedChange={onCheckedChange}
-          className="h-full w-full transition-colors"
+          className="absolute inset-0 h-full w-full transition-colors"
         />
       </div>
     </InputNumber>
