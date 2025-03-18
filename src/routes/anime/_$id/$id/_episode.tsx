@@ -241,7 +241,7 @@ function EpisodeLayout() {
     <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
         links={[
-          <Link to="/" preloadDelay={50}>
+          <Link to="/$" preloadDelay={50}>
             Web Animeh
           </Link>,
           <AnimeTitle animeData={animeData} tag="h1" asLink />,

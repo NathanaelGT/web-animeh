@@ -14,6 +14,7 @@ import { buildConflictUpdateColumns } from '~s/utils/db'
 import { jikanQueue, producerClient } from '~s/external/api/jikan'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { omit } from '~/shared/utils/object'
+import { RouteNotFoundError } from '~/shared/error'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
   AnyProcedure,
@@ -28,15 +29,19 @@ export const RouteRouter = router({
         v.object({
           cursor: v.nullish(v.number()),
           perPage: v.number(),
-          filter: v.optional(v.picklist(['ongoing', 'downloaded'])),
+          filter: v.string(),
         }),
       ),
     )
     .query(async ({ ctx, input }) => {
       const { cursor, perPage } = input
+      const inputFilter = input.filter as 'ongoing' | 'downloaded' | (string & {})
 
       let filter: SQL<unknown> | undefined
-      switch (input.filter) {
+      switch (inputFilter) {
+        case '':
+          break
+
         case 'ongoing':
           filter = isNull(anime.airedTo)
 
@@ -57,6 +62,9 @@ export const RouteRouter = router({
 
           break
         }
+
+        default:
+          throw new RouteNotFoundError(`Unknown filter: ${inputFilter}`)
       }
 
       const animeList = await ctx.db.query.anime.findMany({
@@ -66,7 +74,7 @@ export const RouteRouter = router({
           return and(
             eq(anime.isVisible, true),
             filter,
-            input.filter !== 'downloaded' && cursor ? lt(anime.id, cursor) : undefined,
+            inputFilter !== 'downloaded' && cursor ? lt(anime.id, cursor) : undefined,
           )
         },
         columns: {

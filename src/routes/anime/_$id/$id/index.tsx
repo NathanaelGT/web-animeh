@@ -98,7 +98,7 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
     <main key={animeData.id} className={MAIN_CLASSNAME}>
       <SimpleBreadcrumb
         links={[
-          <Link to="/" preloadDelay={50}>
+          <Link to="/$" preloadDelay={50}>
             Web Animeh
           </Link>,
           <AnimeTitle animeData={animeData} />,

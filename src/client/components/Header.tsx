@@ -165,23 +165,24 @@ export function Header() {
 
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
-          <Link to="/" preloadDelay={50} className="mr-8 font-extrabold">
+          {/* kalo engga dikasih params splat kosong, paramsnya bakal mengikuti splat yang lagi aktif */}
+          <Link to="/$" preloadDelay={50} params={{ _splat: '' }} className="mr-8 font-extrabold">
             Web Animeh
           </Link>
 
           <Link
-            to="/"
+            to="/$"
             preloadDelay={50}
-            search={() => ({ filter: 'ongoing' as const })}
+            params={{ _splat: 'ongoing' }}
             activeProps={{ className: 'font-bold' }}
           >
             Ongoing
           </Link>
 
           <Link
-            to="/"
+            to="/$"
             preloadDelay={50}
-            search={() => ({ filter: 'downloaded' as const })}
+            params={{ _splat: 'downloaded' }}
             activeProps={{ className: 'font-bold' }}
           >
             Terunduh
