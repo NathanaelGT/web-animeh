@@ -26,7 +26,6 @@ export const RouteRouter = router({
     .input(
       v.parser(
         v.object({
-          x: v.string(), // x cuma untuk cache busting
           cursor: v.nullish(v.number()),
           perPage: v.number(),
           filter: v.optional(v.picklist(['ongoing', 'downloaded'])),

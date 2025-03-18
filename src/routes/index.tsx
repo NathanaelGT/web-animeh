@@ -49,16 +49,16 @@ export const Route = createFileRoute('/')({
   loader: async ({ deps: { filter } }) => {
     const perPage = calculatePerPage()
     const params: Params = {
-      x: `${perPage}_${filter && Math.random()}`,
       perPage,
       filter,
     }
+    const id = (filter ? perPage + Math.random() : perPage) + '_'
 
     const getScrollThresholdPx = (cols: number) => {
       return (posterHeightPx + posterTextHeightPx) * cols + wrapperGapY * (cols - 1)
     }
 
-    return [params, getScrollThresholdPx(4), await fetchRouteData('/', params)] as const
+    return [params, getScrollThresholdPx(4), await fetchRouteData('/', params), id] as const
   },
 })
 
@@ -66,7 +66,7 @@ const wrapperClassName =
   'grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6 px-12 py-10'
 
 function Index() {
-  const [params, scrollThresholdPx, initialData] = Route.useLoaderData()
+  const [params, scrollThresholdPx, initialData, id] = Route.useLoaderData()
   const animeListQuery = api.route['/'].useInfiniteQuery(params, {
     getNextPageParam: lastPage => lastPage.at(-1)?.id,
     refetchOnMount: false,
@@ -90,7 +90,7 @@ function Index() {
         clearTimeout(timeoutId)
       }
     }
-  }, [params.x])
+  }, [id])
 
   useEffect(() => {
     return () => {
@@ -115,7 +115,7 @@ function Index() {
         className={wrapperClassName}
       >
         {pages.map((_, index) => (
-          <PosterDisplayGroup key={params.x + index} index={index} />
+          <PosterDisplayGroup key={id + index} index={index} />
         ))}
       </InfiniteScroll>
     </main>
