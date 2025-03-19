@@ -1,4 +1,4 @@
-import { isNull, inArray, type SQL } from 'drizzle-orm'
+import { isNull, inArray, sql, type SQL } from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { anime, studios, studioSynonyms } from '~s/db/schema'
@@ -69,12 +69,23 @@ export const RouteRouter = router({
 
       const animeList = await ctx.db.query.anime.findMany({
         limit: perPage,
-        orderBy: (anime, { desc }) => [desc(anime.id)],
-        where(anime, { and, eq, lt }) {
+        orderBy: (anime, { desc }) => [desc(anime.airedFrom), desc(anime.id)],
+        where(_, { and, eq, lt }) {
           return and(
             eq(anime.isVisible, true),
             filter,
-            inputFilter !== 'downloaded' && cursor ? lt(anime.id, cursor) : undefined,
+            inputFilter !== 'downloaded' && cursor
+              ? lt(
+                  sql.raw(`(${anime.airedFrom.name}, ${anime.id.name})`),
+                  ctx.db
+                    .select({
+                      [anime.airedFrom.name]: anime.airedFrom,
+                      [anime.id.name]: anime.id,
+                    })
+                    .from(anime)
+                    .where(eq(anime.id, cursor)),
+                )
+              : undefined,
           )
         },
         columns: {
