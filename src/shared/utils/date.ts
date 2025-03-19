@@ -8,3 +8,11 @@ export const format = (date: Date) => {
 
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
+
+export const getPastDate = (daysAgo: number) => {
+  const date = new Date()
+
+  date.setDate(date.getDate() - daysAgo)
+
+  return date
+}

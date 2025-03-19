@@ -1,4 +1,4 @@
-import { isNull, inArray, sql, type SQL } from 'drizzle-orm'
+import { isNull, inArray, or, gt, sql, type SQL } from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { anime, studios, studioSynonyms } from '~s/db/schema'
@@ -14,6 +14,7 @@ import { buildConflictUpdateColumns } from '~s/utils/db'
 import { jikanQueue, producerClient } from '~s/external/api/jikan'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { omit } from '~/shared/utils/object'
+import { getPastDate } from '~/shared/utils/date'
 import { RouteNotFoundError } from '~/shared/error'
 import type { FileRoutesByPath } from '@tanstack/react-router'
 import type {
@@ -43,7 +44,7 @@ export const RouteRouter = router({
           break
 
         case 'ongoing':
-          filter = isNull(anime.airedTo)
+          filter = or(isNull(anime.airedTo), gt(anime.airedTo, getPastDate(7)))
 
           break
 
