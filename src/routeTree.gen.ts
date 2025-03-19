@@ -14,12 +14,11 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as PengaturanImport } from './routes/_pengaturan'
-import { Route as IndexImport } from './routes/index'
+import { Route as SplatImport } from './routes/$'
 import { Route as AnimeIdImport } from './routes/anime/_$id'
 import { Route as PengaturanPengaturanIndexImport } from './routes/_pengaturan/pengaturan/index'
 import { Route as PengaturanPengaturanUnduhanImport } from './routes/_pengaturan/pengaturan/unduhan'
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
-import { Route as PengaturanPengaturanTagImport } from './routes/_pengaturan/pengaturan/tag'
 import { Route as PengaturanPengaturanPemutarVideoImport } from './routes/_pengaturan/pengaturan/pemutar-video'
 import { Route as PengaturanPengaturanKeybindImport } from './routes/_pengaturan/pengaturan/keybind'
 import { Route as AnimeIdIdIndexImport } from './routes/anime/_$id/$id/index'
@@ -44,8 +43,8 @@ const PengaturanRoute = PengaturanImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const IndexRoute = IndexImport.update({
-  path: '/',
+const SplatRoute = SplatImport.update({
+  path: '/$',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -75,11 +74,6 @@ const PengaturanPengaturanTampilanRoute =
     path: '/pengaturan/tampilan',
     getParentRoute: () => PengaturanRoute,
   } as any)
-
-const PengaturanPengaturanTagRoute = PengaturanPengaturanTagImport.update({
-  path: '/pengaturan/tag',
-  getParentRoute: () => PengaturanRoute,
-} as any)
 
 const PengaturanPengaturanPemutarVideoRoute =
   PengaturanPengaturanPemutarVideoImport.update({
@@ -119,11 +113,11 @@ const AnimeIdIdEpisodeEpisodeNumberRoute =
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatImport
       parentRoute: typeof rootRoute
     }
     '/_pengaturan': {
@@ -159,13 +153,6 @@ declare module '@tanstack/react-router' {
       path: '/pengaturan/pemutar-video'
       fullPath: '/pengaturan/pemutar-video'
       preLoaderRoute: typeof PengaturanPengaturanPemutarVideoImport
-      parentRoute: typeof PengaturanImport
-    }
-    '/_pengaturan/pengaturan/tag': {
-      id: '/_pengaturan/pengaturan/tag'
-      path: '/pengaturan/tag'
-      fullPath: '/pengaturan/tag'
-      preLoaderRoute: typeof PengaturanPengaturanTagImport
       parentRoute: typeof PengaturanImport
     }
     '/_pengaturan/pengaturan/tampilan': {
@@ -247,7 +234,6 @@ const PengaturanPengaturanUnduhanRouteWithChildren =
 interface PengaturanRouteChildren {
   PengaturanPengaturanKeybindRoute: typeof PengaturanPengaturanKeybindRoute
   PengaturanPengaturanPemutarVideoRoute: typeof PengaturanPengaturanPemutarVideoRoute
-  PengaturanPengaturanTagRoute: typeof PengaturanPengaturanTagRoute
   PengaturanPengaturanTampilanRoute: typeof PengaturanPengaturanTampilanRoute
   PengaturanPengaturanUnduhanRoute: typeof PengaturanPengaturanUnduhanRouteWithChildren
   PengaturanPengaturanIndexRoute: typeof PengaturanPengaturanIndexRoute
@@ -256,7 +242,6 @@ interface PengaturanRouteChildren {
 const PengaturanRouteChildren: PengaturanRouteChildren = {
   PengaturanPengaturanKeybindRoute: PengaturanPengaturanKeybindRoute,
   PengaturanPengaturanPemutarVideoRoute: PengaturanPengaturanPemutarVideoRoute,
-  PengaturanPengaturanTagRoute: PengaturanPengaturanTagRoute,
   PengaturanPengaturanTampilanRoute: PengaturanPengaturanTampilanRoute,
   PengaturanPengaturanUnduhanRoute:
     PengaturanPengaturanUnduhanRouteWithChildren,
@@ -314,12 +299,11 @@ const AnimeRouteChildren: AnimeRouteChildren = {
 const AnimeRouteWithChildren = AnimeRoute._addFileChildren(AnimeRouteChildren)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeIdRouteWithChildren
   '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
-  '/pengaturan/tag': typeof PengaturanPengaturanTagRoute
   '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
   '/pengaturan/unduhan': typeof PengaturanPengaturanUnduhanRouteWithChildren
   '/pengaturan': typeof PengaturanPengaturanIndexRoute
@@ -330,12 +314,11 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeIdRouteWithChildren
   '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
-  '/pengaturan/tag': typeof PengaturanPengaturanTagRoute
   '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
   '/pengaturan': typeof PengaturanPengaturanIndexRoute
   '/anime/$id': typeof AnimeIdIdIndexRoute
@@ -345,13 +328,12 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/_pengaturan': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeRouteWithChildren
   '/anime/_$id': typeof AnimeIdRouteWithChildren
   '/_pengaturan/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/_pengaturan/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
-  '/_pengaturan/pengaturan/tag': typeof PengaturanPengaturanTagRoute
   '/_pengaturan/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
   '/_pengaturan/pengaturan/unduhan': typeof PengaturanPengaturanUnduhanRouteWithChildren
   '/_pengaturan/pengaturan/': typeof PengaturanPengaturanIndexRoute
@@ -365,12 +347,11 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
+    | '/$'
     | ''
     | '/anime'
     | '/pengaturan/keybind'
     | '/pengaturan/pemutar-video'
-    | '/pengaturan/tag'
     | '/pengaturan/tampilan'
     | '/pengaturan/unduhan'
     | '/pengaturan'
@@ -380,12 +361,11 @@ export interface FileRouteTypes {
     | '/anime/$id/episode/$number'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/$'
     | ''
     | '/anime'
     | '/pengaturan/keybind'
     | '/pengaturan/pemutar-video'
-    | '/pengaturan/tag'
     | '/pengaturan/tampilan'
     | '/pengaturan'
     | '/anime/$id'
@@ -393,13 +373,12 @@ export interface FileRouteTypes {
     | '/anime/$id/episode/$number'
   id:
     | '__root__'
-    | '/'
+    | '/$'
     | '/_pengaturan'
     | '/anime'
     | '/anime/_$id'
     | '/_pengaturan/pengaturan/keybind'
     | '/_pengaturan/pengaturan/pemutar-video'
-    | '/_pengaturan/pengaturan/tag'
     | '/_pengaturan/pengaturan/tampilan'
     | '/_pengaturan/pengaturan/unduhan'
     | '/_pengaturan/pengaturan/'
@@ -412,13 +391,13 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
   PengaturanRoute: typeof PengaturanRouteWithChildren
   AnimeRoute: typeof AnimeRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  SplatRoute: SplatRoute,
   PengaturanRoute: PengaturanRouteWithChildren,
   AnimeRoute: AnimeRouteWithChildren,
 }
@@ -435,20 +414,19 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
+        "/$",
         "/_pengaturan",
         "/anime"
       ]
     },
-    "/": {
-      "filePath": "index.tsx"
+    "/$": {
+      "filePath": "$.tsx"
     },
     "/_pengaturan": {
       "filePath": "_pengaturan.tsx",
       "children": [
         "/_pengaturan/pengaturan/keybind",
         "/_pengaturan/pengaturan/pemutar-video",
-        "/_pengaturan/pengaturan/tag",
         "/_pengaturan/pengaturan/tampilan",
         "/_pengaturan/pengaturan/unduhan",
         "/_pengaturan/pengaturan/"
@@ -473,10 +451,6 @@ export const routeTree = rootRoute
     },
     "/_pengaturan/pengaturan/pemutar-video": {
       "filePath": "_pengaturan/pengaturan/pemutar-video.tsx",
-      "parent": "/_pengaturan"
-    },
-    "/_pengaturan/pengaturan/tag": {
-      "filePath": "_pengaturan/pengaturan/tag.tsx",
       "parent": "/_pengaturan"
     },
     "/_pengaturan/pengaturan/tampilan": {
