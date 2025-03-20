@@ -181,9 +181,7 @@ export const animeSynonyms = sqliteTable(
     synonym: text('synonym').notNull(),
     type: text('type').notNull(),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.synonym, t.type] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.synonym, t.type] })],
 )
 
 export const animeMetadata = sqliteTable(
@@ -197,9 +195,7 @@ export const animeMetadata = sqliteTable(
     providerSlug: text('provider_slug'),
     providerData: text('provider_data'),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.provider, t.providerId] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.provider, t.providerId] })],
 )
 
 export const animeRelationships = sqliteTable(
@@ -213,9 +209,7 @@ export const animeRelationships = sqliteTable(
       .references(() => anime.id, { onDelete: 'cascade' }),
     type: malAnimeRelationType('type').notNull(),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.relatedId] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.relatedId] })],
 )
 
 export const genres = sqliteTable('genres', {
@@ -233,9 +227,7 @@ export const animeToGenres = sqliteTable(
       .notNull()
       .references(() => genres.id),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.genreId] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.genreId] })],
 )
 
 export const studios = sqliteTable('studios', {
@@ -264,9 +256,7 @@ export const animeToStudios = sqliteTable(
     studioId: integer('studio_id').notNull(),
     type: text('type', { enum: ['studio', 'producer', 'licensor'] }).notNull(),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.studioId, t.type] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.studioId, t.type] })],
 )
 
 export const episodes = sqliteTable(
@@ -281,9 +271,7 @@ export const episodes = sqliteTable(
     isFiller: integer('is_filler', { mode: 'boolean' }),
     isRecap: integer('is_recap', { mode: 'boolean' }),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.number] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.number] })],
 )
 
 export const providerEpisodes = sqliteTable(
@@ -297,17 +285,19 @@ export const providerEpisodes = sqliteTable(
     number: integer('number').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' }),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.provider, t.providerId, t.number] }),
-    episodeReference: foreignKey({
+  t => [
+    primaryKey({ columns: [t.animeId, t.provider, t.providerId, t.number] }),
+
+    foreignKey({
       columns: [t.animeId, t.number],
       foreignColumns: [episodes.animeId, episodes.number],
     }).onDelete('cascade'),
-    metadataReference: foreignKey({
+
+    foreignKey({
       columns: [t.animeId, t.provider, t.providerId],
       foreignColumns: [animeMetadata.animeId, animeMetadata.provider, animeMetadata.providerId],
     }).onDelete('cascade'),
-  }),
+  ],
 )
 
 export const characters = sqliteTable('characters', {
@@ -333,9 +323,7 @@ export const animeToCharacters = sqliteTable(
       .references(() => characters.id, { onDelete: 'cascade' }),
     isMain: integer('is_main', { mode: 'boolean' }),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.animeId, t.characterId] }),
-  }),
+  t => [primaryKey({ columns: [t.animeId, t.characterId] })],
 )
 
 export const characterToPersons = sqliteTable(
@@ -349,9 +337,7 @@ export const characterToPersons = sqliteTable(
       .references(() => persons.id, { onDelete: 'cascade' }),
     language: text('language').notNull(),
   },
-  t => ({
-    pk: primaryKey({ columns: [t.characterId, t.personId] }),
-  }),
+  t => [primaryKey({ columns: [t.characterId, t.personId] })],
 )
 
 export const metadata = sqliteTable('metadata', {
