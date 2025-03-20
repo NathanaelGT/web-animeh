@@ -33,7 +33,11 @@ type UpdateConfig = Partial<{
   updateImage: boolean
 }>
 
-const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<any>['header']) => {
+const basicUpdateData = (
+  jikanAnimeData: JikanAnime,
+  header: JikanResponseFull<any>['header'],
+  now: Date,
+) => {
   const airedFrom = new Date(jikanAnimeData.aired.from)
 
   return {
@@ -58,6 +62,7 @@ const basicUpdateData = (jikanAnimeData: JikanAnime, header: JikanResponseFull<a
     popularity: jikanAnimeData.popularity,
     members: jikanAnimeData.members,
     type: jikanAnimeData.type,
+    fetchedAt: now,
   } satisfies SQLiteUpdateSetSource<typeof anime>
 }
 
@@ -78,7 +83,8 @@ export const update = async <TConfig extends UpdateConfig>(
 
   const promises: Promise<unknown>[] = []
 
-  const updateData = basicUpdateData(jikanAnimeData, header) as TReturn<TConfig['updateImage']>
+  const now = new Date()
+  const updateData = basicUpdateData(jikanAnimeData, header, now) as TReturn<TConfig['updateImage']>
 
   const updatingImage = (_updateData: any): _updateData is TReturn<true> => {
     return config?.updateImage === true
@@ -189,6 +195,7 @@ export const update = async <TConfig extends UpdateConfig>(
         id: entry.mal_id,
         title: entry.name,
         updatedAt: updateData.updatedAt,
+        fetchedAt: now,
       })
     }
   })

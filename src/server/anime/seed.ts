@@ -6,6 +6,7 @@ import { prepareStudioData } from '~s/studio/prepare'
 import { glob, imagesDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { extension } from '~/shared/utils/file'
+import { getPastDate } from '~/shared/utils/date'
 import { fetchAll, fetchPage } from '~s/external/api/kuramanime/fetch'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { insertKuramanimeAnimeListToDb } from '~s/external/api/kuramanime/insert'
@@ -33,9 +34,13 @@ export const seed = async () => {
 
   await updateIncompleteAnimeData()
 
+  await updateOngoingAnimeData()
+
   await updateIncompleteAnimeEpisodes()
 
   await updateIncompleteAnimeCharacters()
+
+  setInterval(updateOngoingAnimeData, 24 * 60 * 60 * 1000)
 }
 
 const seedGenres = async () => {
@@ -176,6 +181,33 @@ const updateIncompleteAnimeData = async () => {
       await fetchAndUpdate(animeData, {
         updateImage:
           ext !== 'webp' || (await Bun.file(imagesDirPath + animeData.id + '.' + ext).exists()),
+        priority: 0,
+      })
+    }
+  }
+}
+
+const updateOngoingAnimeData = async () => {
+  while (true) {
+    const animeList = await db.query.anime.findMany({
+      where(anime, { and, eq, isNull, lt }) {
+        return and(
+          eq(anime.isVisible, true),
+          isNull(anime.airedTo),
+          lt(anime.fetchedAt, getPastDate(1)),
+        )
+      },
+      orderBy: (anime, { desc }) => [desc(anime.airedFrom), desc(anime.id)],
+      columns: { id: true },
+      limit: 10,
+    })
+
+    if (animeList.length === 0) {
+      break
+    }
+
+    for (const animeData of animeList) {
+      await fetchAndUpdate(animeData, {
         priority: 0,
       })
     }

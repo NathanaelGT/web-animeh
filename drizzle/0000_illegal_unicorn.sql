@@ -19,6 +19,7 @@ CREATE TABLE `anime` (
 	`image_url` text,
 	`is_visible` integer,
 	`updated_at` integer NOT NULL,
+	`fetched_at` integer NOT NULL,
 	`episode_updated_at` integer,
 	`character_updated_at` integer
 );
@@ -108,6 +109,7 @@ CREATE TABLE `genres` (
 	`name` text NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `genres_name_unique` ON `genres` (`name`);--> statement-breakpoint
 CREATE TABLE `metadata` (
 	`key` text PRIMARY KEY NOT NULL,
 	`json` text NOT NULL,
@@ -125,6 +127,7 @@ CREATE TABLE `profiles` (
 	`settings` text NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `profiles_name_unique` ON `profiles` (`name`);--> statement-breakpoint
 CREATE TABLE `provider_episodes` (
 	`anime_id` integer NOT NULL,
 	`provider` integer NOT NULL,
@@ -152,6 +155,3 @@ CREATE TABLE `studios` (
 	`image_url` text,
 	`established_at` integer
 );
---> statement-breakpoint
-CREATE UNIQUE INDEX `genres_name_unique` ON `genres` (`name`);--> statement-breakpoint
-CREATE UNIQUE INDEX `profiles_name_unique` ON `profiles` (`name`);

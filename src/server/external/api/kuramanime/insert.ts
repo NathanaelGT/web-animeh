@@ -110,6 +110,7 @@ export const insertKuramanimeAnimeListToDb = async (
       imageUrl: imageFetchUrl,
       isVisible: true,
       updatedAt: now,
+      fetchedAt: now,
     })
 
     for (const post of animeData.posts) {

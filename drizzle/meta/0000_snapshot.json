@@ -147,6 +147,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
         "episode_updated_at": {
           "name": "episode_updated_at",
           "type": "integer",
@@ -165,7 +172,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_metadata": {
       "name": "anime_metadata",
@@ -232,7 +240,8 @@
           "name": "anime_metadata_anime_id_provider_provider_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_relationships": {
       "name": "anime_relationships",
@@ -297,7 +306,8 @@
           "name": "anime_relationships_anime_id_related_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_synonyms": {
       "name": "anime_synonyms",
@@ -350,7 +360,8 @@
           "name": "anime_synonyms_anime_id_synonym_type_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_to_characters": {
       "name": "anime_to_characters",
@@ -415,7 +426,8 @@
           "name": "anime_to_characters_anime_id_character_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_to_anime_genres": {
       "name": "anime_to_anime_genres",
@@ -473,7 +485,8 @@
           "name": "anime_to_anime_genres_anime_id_genre_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "anime_to_anime_studios": {
       "name": "anime_to_anime_studios",
@@ -526,7 +539,8 @@
           "name": "anime_to_anime_studios_anime_id_studio_id_type_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "character_to_persons": {
       "name": "character_to_persons",
@@ -591,7 +605,8 @@
           "name": "character_to_persons_character_id_person_id_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "characters": {
       "name": "characters",
@@ -628,7 +643,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "episodes": {
       "name": "episodes",
@@ -701,7 +717,8 @@
           "name": "episodes_anime_id_number_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "genres": {
       "name": "genres",
@@ -732,7 +749,8 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "metadata": {
       "name": "metadata",
@@ -762,7 +780,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "persons": {
       "name": "persons",
@@ -785,7 +804,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "profiles": {
       "name": "profiles",
@@ -823,7 +843,8 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "provider_episodes": {
       "name": "provider_episodes",
@@ -923,7 +944,8 @@
           "name": "provider_episodes_anime_id_provider_provider_id_number_pk"
         }
       },
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "studio_synonyms": {
       "name": "studio_synonyms",
@@ -974,7 +996,8 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "studios": {
       "name": "studios",
@@ -1018,9 +1041,11 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
     "schemas": {},

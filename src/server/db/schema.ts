@@ -167,6 +167,7 @@ export const anime = sqliteTable('anime', {
   imageUrl: malAnimeImage('image_url'),
   isVisible: integer('is_visible', { mode: 'boolean' }),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  fetchedAt: integer('fetched_at', { mode: 'timestamp' }).notNull(),
   episodeUpdatedAt: integer('episode_updated_at', { mode: 'timestamp' }),
   characterUpdatedAt: integer('character_updated_at', { mode: 'timestamp' }),
 })
