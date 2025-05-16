@@ -3,8 +3,8 @@ import fs from 'fs'
 import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
 
-export const handleVideoRequest = async (request: Request, target: string): Promise<Response> => {
-  const pathArr = target.slice('/videos/'.length).split('/')
+export const handleVideoRequest = async (request: Request, path: string): Promise<Response> => {
+  const pathArr = path.slice('videos/'.length).split('/')
   if (pathArr.length !== 2) {
     return new Response('Not found', { status: 404 })
   }

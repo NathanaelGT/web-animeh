@@ -102,8 +102,6 @@ await Promise.all([
           return identifier
         })
 
-      const compress = promisify(zlib.brotliCompress)
-
       await Promise.all(promises)
 
       const removeAssetDirPromise = getFiles('./dist/public/assets').then(async files => {
@@ -117,7 +115,7 @@ await Promise.all([
       indexHtml = indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
 
       const buffer = Buffer.from(indexHtml, 'utf-8')
-      const compressed = await compress(buffer)
+      const compressed = await promisify(zlib.gzip)(buffer)
 
       await Promise.all([Bun.write('./dist/public/index.html', compressed), removeAssetDirPromise])
 

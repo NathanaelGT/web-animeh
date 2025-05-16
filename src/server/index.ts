@@ -1,5 +1,6 @@
 // import argv ditaro dipaling atas biar hasil buildnya pengecekan argv dilakukan diawal
 import { argv } from '~s/argv'
+import os from 'os'
 import Bun from 'bun'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { websocket, httpHandler } from '~s/handler'
@@ -321,24 +322,41 @@ if (firstTime) {
 
   const elapsed = Bun.nanoseconds()
 
-  const url = isProduction() ? server.url.href.replace(/\/$/, '') : 'http://localhost:8888'
+  const messages = Object.values(os.networkInterfaces()).reduce<string[]>(
+    (r, list) => {
+      if (!list) {
+        return r
+      }
 
-  const messages = [
-    `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m ${serverType()} running on [\x1b[37m${url}\x1b[0m]`,
-    ' '.repeat(Math.floor(url.length - 5 + serverType().length) / 2) +
-      '\x1b[30m\x1b[37m\x1b[40mPress Ctrl+C to stop the server\x1b[0m\x1b[30m\x1b[0m',
+      return r.concat(
+        list.reduce<string[]>((rr, i) => {
+          if (i.family === 'IPv4' && !i.internal && i.address) {
+            rr.push(' '.repeat(25) + `\x1b[0m[\x1b[37mhttp://${i.address}:8888\x1b[0m]`)
+          }
+          return rr
+        }, []),
+      )
+    },
+    [
+      `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m ${serverType()} running on [\x1b[37mhttp://localhost:8888\x1b[0m]`,
+    ],
+  )
+
+  messages.push(
+    '',
+    '\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m \x1b[30m\x1b[37m\x1b[40mPress Ctrl+C to stop the server\x1b[0m\x1b[30m\x1b[0m',
     '',
     startingMessage,
     logMessage('server', 'Started', elapsed),
-  ].join('\n')
+  )
 
   process.stdout.clearLine(0)
   process.stdout.cursorTo(0)
 
   if (isProduction()) {
-    process.stdout.write(messages)
+    process.stdout.write(messages.join('\n'))
   } else {
-    process.stdout.write(messages, () => {
+    process.stdout.write(messages.join('\n'), () => {
       process.send?.('ready')
     })
   }

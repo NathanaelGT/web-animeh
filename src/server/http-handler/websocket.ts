@@ -14,8 +14,12 @@ if (!isProduction()) {
 
 let id = 1
 
-export const handleWebsocketRequest = async (request: Request, server: Bun.Server) => {
-  const [version, profileIdString] = request.url.slice(server.url.origin.length + 1).split('&')
+export const handleWebsocketRequest = async (
+  request: Request,
+  server: Bun.Server,
+  path: string,
+) => {
+  const [version, profileIdString] = path.split('&')
   const profileId = Number(profileIdString)
 
   let profile = await db.query.profiles.findFirst({

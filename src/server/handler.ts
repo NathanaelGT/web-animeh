@@ -28,19 +28,20 @@ export const httpHandler = async (
   request: Request,
   server: Bun.Server,
 ): Promise<undefined | Response> => {
+  const path = new URL(request.url).pathname.substring(1)
+
   if (request.headers.get('upgrade') === 'websocket') {
-    if (await handleWebsocketRequest(request, server)) {
+    if (await handleWebsocketRequest(request, server, path)) {
       return
     }
   }
 
-  const target = request.url.slice(server.url.origin.length)
-  if (target.startsWith('/videos')) {
-    return handleVideoRequest(request, target)
+  if (path.startsWith('videos')) {
+    return handleVideoRequest(request, path)
   }
 
   if (!isProduction() && !Bun.argv.includes('--server-only')) {
-    return Response.redirect(`http://localhost:8888${target}`, 302)
+    return Response.redirect(`http://localhost:8888/${path}`, 302)
   }
 
   // const file = Bun.file(safePath([import.meta.dir, 'public'], url))
@@ -51,7 +52,7 @@ export const httpHandler = async (
   return new Response(indexHtml, {
     headers: {
       'Content-Type': 'text/html;charset=utf-8',
-      'Content-Encoding': 'br',
+      'Content-Encoding': 'gzip',
     },
   })
 }
