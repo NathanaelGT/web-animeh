@@ -41,7 +41,7 @@ const logMessage = (
   const elapsedTime = elapsedNs ? ' ~ ' + formatNs(elapsedNs) : ''
 
   const dots = fill(
-    29,
+    31,
     message,
     elapsedTime,
     context ? context.length + 1 + contextBraces[0].length + contextBraces[1].length : 0,

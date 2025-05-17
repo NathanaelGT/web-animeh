@@ -15,7 +15,7 @@ export const fill = (minus: string | number = 0, ...args: (string | number)[]) =
     }
   }
 
-  const columns = process.stdout.columns ? Math.min(process.stdout.columns, maxWidth) : 30
+  const columns = process.stdout.columns ? Math.min(process.stdout.columns, maxWidth) : 50
 
-  return '.'.repeat(Math.max(columns - minus, 2))
+  return '.'.repeat(columns - (minus % columns))
 }
