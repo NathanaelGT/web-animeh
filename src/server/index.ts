@@ -1,6 +1,7 @@
 // import argv ditaro dipaling atas biar hasil buildnya pengecekan argv dilakukan diawal
 import { argv } from '~s/argv'
 import os from 'os'
+import readline from 'readline'
 import Bun from 'bun'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { websocket, httpHandler } from '~s/handler'
@@ -65,7 +66,7 @@ const log = (...params: Parameters<typeof logMessage>) => {
   process.stdout.write(logMessage(...params))
 }
 
-const startingMessage = logMessage('server', 'Starting').slice(0, -1) // slice untuk ngehilangin newline
+const startingMessage = logMessage('server', 'Starting')
 if (firstTime) {
   process.stdout.write('\n\n' + startingMessage)
 } else {
@@ -331,7 +332,10 @@ if (firstTime) {
       return r.concat(
         list.reduce<string[]>((rr, i) => {
           if (i.family === 'IPv4' && !i.internal && i.address) {
-            rr.push(' '.repeat(25) + `\x1b[0m[\x1b[37mhttp://${i.address}:8888\x1b[0m]`)
+            rr.push(
+              ' '.repeat(19 + serverType().length) +
+                `\x1b[0m[\x1b[37mhttp://${i.address}:8888\x1b[0m]`,
+            )
           }
           return rr
         }, []),
@@ -346,12 +350,13 @@ if (firstTime) {
     '',
     '\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m \x1b[30m\x1b[37m\x1b[40mPress Ctrl+C to stop the server\x1b[0m\x1b[30m\x1b[0m',
     '',
-    startingMessage,
+    startingMessage.slice(0, -1), // slice untuk ngehilangin newline
     logMessage('server', 'Started', elapsed),
   )
 
-  process.stdout.clearLine(0)
+  readline.moveCursor(process.stdout, 0, -1)
   process.stdout.cursorTo(0)
+  process.stdout.clearLine(0)
 
   if (isProduction()) {
     process.stdout.write(messages.join('\n'))
