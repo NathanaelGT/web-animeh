@@ -198,6 +198,18 @@ export const animeMetadata = sqliteTable(
   t => [primaryKey({ columns: [t.animeId, t.provider, t.providerId] })],
 )
 
+export const ongoingAnimeUpdates = sqliteTable(
+  'ongoing_anime_updates',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    provider: providerType('provider').notNull(),
+    lastEpisodeAiredAt: integer('last_episode_aired_at', { mode: 'timestamp' }),
+  },
+  t => [primaryKey({ columns: [t.animeId, t.provider] })],
+)
+
 export const animeRelationships = sqliteTable(
   'anime_relationships',
   {
@@ -346,10 +358,11 @@ export const metadata = sqliteTable('metadata', {
   meta: text('meta', { mode: 'json' }).$type<NonNullable<SuperJSONResult['meta']>>(),
 })
 
-export const animeRelations = relations(anime, ({ many }) => ({
+export const animeRelations = relations(anime, ({ one, many }) => ({
   synonyms: many(animeSynonyms),
   metadata: many(animeMetadata),
   episodes: many(episodes),
+  ongoingUpdates: one(ongoingAnimeUpdates),
   providerEpisodes: many(providerEpisodes),
   animeToGenres: many(animeToGenres),
   animeToStudios: many(animeToStudios),
@@ -362,6 +375,10 @@ export const animeSynonymsRelations = relations(animeSynonyms, ({ one }) => ({
 
 export const animeMetadataRelations = relations(animeMetadata, ({ one }) => ({
   anime: one(anime, { fields: [animeMetadata.animeId], references: [anime.id] }),
+}))
+
+export const ongoingAnimeUpdatesRelations = relations(ongoingAnimeUpdates, ({ one }) => ({
+  anime: one(anime, { fields: [ongoingAnimeUpdates.animeId], references: [anime.id] }),
 }))
 
 export const genresRelations = relations(genres, ({ many }) => ({

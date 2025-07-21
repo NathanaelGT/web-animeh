@@ -37,7 +37,7 @@ export const Route = createFileRoute('/$')({
   component: Index,
   pendingComponent: PendingIndex,
   loader: async ({ params: { _splat } }) => {
-    const perPage = calculatePerPage()
+    const perPage = _splat === 'ongoing' ? 1 : calculatePerPage()
     const params: Params = {
       perPage,
       filter: _splat ?? '',
@@ -48,7 +48,7 @@ export const Route = createFileRoute('/$')({
       return (posterHeightPx + posterTextHeightPx) * cols + wrapperGapY * (cols - 1)
     }
 
-    return [params, getScrollThresholdPx(4), await fetchRouteData('/', params), id] as const
+    return [params, getScrollThresholdPx(4), await fetchRouteData('/', params), id, _splat] as const
   },
 })
 
@@ -56,9 +56,9 @@ const wrapperClassName =
   'grid grid-cols-[repeat(auto-fit,minmax(162px,1fr))] gap-x-4 gap-y-6 px-12 py-10'
 
 function Index() {
-  const [params, scrollThresholdPx, initialData, id] = Route.useLoaderData()
+  const [params, scrollThresholdPx, initialData, id, splat] = Route.useLoaderData()
   const animeListQuery = api.route['/'].useInfiniteQuery(params, {
-    getNextPageParam: lastPage => lastPage.at(-1)?.id,
+    getNextPageParam: lastPage => (splat === 'ongoing' ? undefined : lastPage.at(-1)?.id),
     refetchOnMount: false,
     initialData: {
       pages: [initialData],

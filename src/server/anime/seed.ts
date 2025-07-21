@@ -1,13 +1,17 @@
+import * as v from 'valibot'
 import { db } from '~s/db'
-import { genres, studios, studioSynonyms } from '~s/db/schema'
+import { genres, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
 import { isProduction } from '~s/env'
+import * as kyInstances from '~s/ky'
 import { prepareStudioData } from '~s/studio/prepare'
 import { glob, imagesDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
+import { parseMalId } from '~s/utils/mal'
 import { extension } from '~/shared/utils/file'
-import { getPastDate } from '~/shared/utils/date'
+import { daysPassedSince, getPastDate } from '~/shared/utils/date'
 import { fetchAll, fetchPage } from '~s/external/api/kuramanime/fetch'
+import { limitRequest } from '~s/external/limit'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { insertKuramanimeAnimeListToDb } from '~s/external/api/kuramanime/insert'
 import { fetchAndUpdate } from './update'
@@ -28,19 +32,21 @@ export const seed = async () => {
     await populate()
   }
 
+  updateOngoingProviderData()
+
   if (!isProduction()) {
     return
   }
 
   await updateIncompleteAnimeData()
 
-  await updateOngoingAnimeData()
+  await updateOngoingJikanData()
 
   await updateIncompleteAnimeEpisodes()
 
   await updateIncompleteAnimeCharacters()
 
-  setInterval(updateOngoingAnimeData, 24 * 60 * 60 * 1000)
+  setInterval(updateOngoingJikanData, 24 * 60 * 60 * 1000)
 }
 
 const seedGenres = async () => {
@@ -161,6 +167,121 @@ const sync = async () => {
   }
 }
 
+let updateOngoingProviderDataTimer: Timer | null = null
+export const updateOngoingProviderData = async () => {
+  const animeSchema = v.object({
+    id: v.number(),
+    mal_url: v.nullable(v.pipe(v.string(), v.url())),
+    latest_post_at: v.nullable(v.string()),
+    country_code: v.nullable(v.string()),
+  })
+
+  const listResultSchema = v.object({
+    animes: v.object({
+      data: v.array(animeSchema),
+      last_page: v.number(),
+    }),
+  })
+
+  const fetchAnimeList = async (page: number) => {
+    const response = await limitRequest(() => {
+      return kyInstances.kuramanime.get(
+        `quick/ongoing?order_by=updated&page=${page}&need_json=true`,
+      )
+    })
+
+    return v.parse(listResultSchema, await response.json())
+  }
+
+  const firstAnimePagePromise = fetchAnimeList(1)
+  const animePagePromises = [firstAnimePagePromise]
+
+  const [firstAnimePage, kuramanimeOngoingLastFetchAt, kuramanimeOngoingLastResetAt] =
+    await Promise.all([
+      firstAnimePagePromise,
+      metadata.get('kuramanimeOngoingLastFetchAt'),
+      metadata.get('kuramanimeOngoingLastResetAt'),
+    ])
+
+  const shouldReset =
+    kuramanimeOngoingLastResetAt && daysPassedSince(kuramanimeOngoingLastResetAt) > 30
+
+  const newKuramanimeOngoingLastFetchAt = new Date()
+
+  let page = 2
+  const lastPage = firstAnimePage.animes.last_page
+  const maxPage = shouldReset
+    ? lastPage
+    : Math.min(
+        kuramanimeOngoingLastFetchAt
+          ? Math.ceil(daysPassedSince(kuramanimeOngoingLastFetchAt))
+          : Infinity,
+        lastPage,
+      )
+  for (; page <= maxPage; page++) {
+    animePagePromises[page - 1] = fetchAnimeList(page)
+  }
+
+  const ongoingAnimeUpdateList: (typeof ongoingAnimeUpdates.$inferInsert)[] = []
+  const processAnimeData = (animePage: v.InferOutput<typeof listResultSchema>) => {
+    for (const animeData of animePage.animes.data) {
+      if (animeData.mal_url && animeData.latest_post_at && animeData.country_code === 'JP') {
+        const id = parseMalId(animeData.mal_url)
+
+        if (!isNaN(id)) {
+          ongoingAnimeUpdateList.push({
+            animeId: id,
+            provider: 'kuramanime',
+            lastEpisodeAiredAt: new Date(animeData.latest_post_at.replace(' ', 'T') + '+07:00'),
+          })
+        }
+      }
+    }
+  }
+
+  for await (const animePage of animePagePromises) {
+    processAnimeData(animePage)
+  }
+
+  if (kuramanimeOngoingLastFetchAt) {
+    while (
+      ongoingAnimeUpdateList.at(-1)!.lastEpisodeAiredAt!.getTime() >
+        kuramanimeOngoingLastFetchAt.getTime() &&
+      page <= lastPage
+    ) {
+      const animePage = await fetchAnimeList(page++)
+
+      processAnimeData(animePage)
+    }
+  }
+
+  await db.transaction(async tx => {
+    if (shouldReset) {
+      await tx.delete(ongoingAnimeUpdates)
+    }
+
+    await tx
+      .insert(ongoingAnimeUpdates)
+      .values(ongoingAnimeUpdateList)
+      .onConflictDoUpdate({
+        target: [ongoingAnimeUpdates.animeId, ongoingAnimeUpdates.provider],
+        set: buildConflictUpdateColumns(ongoingAnimeUpdates, ['lastEpisodeAiredAt']),
+      })
+
+    await Promise.all([
+      metadata.set('kuramanimeOngoingLastFetchAt', newKuramanimeOngoingLastFetchAt, tx),
+      shouldReset !== false
+        ? metadata.set('kuramanimeOngoingLastResetAt', newKuramanimeOngoingLastFetchAt, tx)
+        : null,
+    ])
+  })
+
+  if (updateOngoingProviderDataTimer) {
+    clearTimeout(updateOngoingProviderDataTimer)
+  }
+  updateOngoingProviderDataTimer = setTimeout(updateOngoingProviderData, 15 * 60 * 1000)
+}
+
 const updateIncompleteAnimeData = async () => {
   while (true) {
     const animeList = await db.query.anime.findMany({
@@ -187,7 +308,7 @@ const updateIncompleteAnimeData = async () => {
   }
 }
 
-const updateOngoingAnimeData = async () => {
+const updateOngoingJikanData = async () => {
   while (true) {
     const animeList = await db.query.anime.findMany({
       where(anime, { and, eq, isNull, lt }) {

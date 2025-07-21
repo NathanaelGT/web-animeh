@@ -4,6 +4,7 @@ import { anime, animeMetadata, providerEpisodes } from '~s/db/schema'
 import { limitRequest } from '~s/external/limit'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { imagesDirPath } from '~s/utils/path'
+import { parseMalId } from '~s/utils/mal'
 import { extension } from '~/shared/utils/file'
 import { parseNumber } from '~/shared/utils/number'
 import type { Anime } from './fetch'
@@ -66,8 +67,7 @@ export const insertKuramanimeAnimeListToDb = async (
       continue
     }
 
-    const slicedMalUrl = animeData.mal_url.slice('https://myanimelist.net/anime/'.length)
-    const id = Number(slicedMalUrl?.slice(0, slicedMalUrl.indexOf('/')))
+    const id = parseMalId(animeData.mal_url)
     if (isNaN(id)) {
       continue
     }

@@ -1,12 +1,13 @@
-import { isNull, inArray, or, gt, sql, type SQL } from 'drizzle-orm'
+import { isNull, inArray, or, gt, sql, eq, and, lt, desc, type SQL } from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
-import { anime, studios, studioSynonyms } from '~s/db/schema'
+import { anime, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
 import * as episodeRepository from '~s/db/repository/episode'
 import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { updateCharacter } from '~s/anime/character/update'
+import { updateOngoingProviderData } from '~s/anime/seed'
 import { prepareStudioData } from '~s/studio/prepare'
 import { isMoreThanOneDay } from '~s/utils/time'
 import { glob, videosDirPath } from '~s/utils/path'
@@ -44,6 +45,9 @@ export const RouteRouter = router({
           break
 
         case 'ongoing':
+          // cari cara ngebuat client revalidate
+          updateOngoingProviderData()
+
           filter = or(isNull(anime.airedTo), gt(anime.airedTo, getPastDate(7)))
 
           break
@@ -68,37 +72,69 @@ export const RouteRouter = router({
           throw new RouteNotFoundError(`Unknown filter: ${inputFilter}`)
       }
 
-      const animeList = await ctx.db.query.anime.findMany({
-        limit: perPage,
-        orderBy: (anime, { desc }) => [desc(anime.airedFrom), desc(anime.id)],
-        where(_, { and, eq, lt }) {
-          return and(
-            eq(anime.isVisible, true),
-            filter,
-            inputFilter !== 'downloaded' && cursor
-              ? lt(
-                  sql.raw(`(${anime.airedFrom.name}, ${anime.id.name})`),
-                  ctx.db
-                    .select({
-                      [anime.airedFrom.name]: anime.airedFrom,
-                      [anime.id.name]: anime.id,
-                    })
-                    .from(anime)
-                    .where(eq(anime.id, cursor)),
-                )
-              : undefined,
+      let animeListQuery = ctx.db
+        .select({
+          id: anime.id,
+          title: anime.title,
+          type: anime.type,
+          rating: anime.rating,
+          duration: anime.duration,
+          totalEpisodes: anime.totalEpisodes,
+          imageUrl: anime.imageUrl,
+        })
+        .from(anime)
+        .$dynamic()
+
+      const createWhereCondition = (...extraConditions: (SQL | undefined)[]) => {
+        return and(eq(anime.isVisible, true), filter, ...extraConditions)
+      }
+
+      if (inputFilter === 'ongoing') {
+        const oau = ctx.db
+          .select({
+            animeId: ongoingAnimeUpdates.animeId,
+            lastEpisodeAiredAt: ongoingAnimeUpdates.lastEpisodeAiredAt,
+            rn: sql
+              .raw(
+                `row_number() over (partition by "${ongoingAnimeUpdates.animeId.name}" order by "${ongoingAnimeUpdates.lastEpisodeAiredAt.name}" asc)`,
+              )
+              .as('rn'),
+          })
+          .from(ongoingAnimeUpdates)
+          .as('oau')
+
+        animeListQuery = animeListQuery
+          .leftJoin(oau, and(eq(anime.id, oau.animeId), eq(oau.rn, 1)))
+          .where(createWhereCondition())
+          .orderBy(
+            sql.raw(
+              `max(${oau.lastEpisodeAiredAt.name}, ${anime.episodeUpdatedAt.name}, ${anime.airedFrom.name}) desc`,
+            ),
+            desc(anime.id),
           )
-        },
-        columns: {
-          id: true,
-          title: true,
-          type: true,
-          rating: true,
-          duration: true,
-          totalEpisodes: true,
-          imageUrl: true,
-        },
-      })
+      } else {
+        animeListQuery = animeListQuery
+          .where(
+            createWhereCondition(
+              inputFilter !== 'downloaded' && cursor
+                ? lt(
+                    sql.raw(`(${anime.airedFrom.name}, ${anime.id.name})`),
+                    ctx.db
+                      .select({
+                        [anime.airedFrom.name]: anime.airedFrom,
+                        [anime.id.name]: anime.id,
+                      })
+                      .from(anime)
+                      .where(eq(anime.id, cursor)),
+                  )
+                : undefined,
+            ),
+          )
+          .orderBy(desc(anime.airedFrom), desc(anime.id))
+          .limit(perPage)
+      }
+
+      const animeList = await animeListQuery
 
       for (const animeData of animeList) {
         ctx.loadAnimePoster(animeData)

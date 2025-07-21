@@ -16,3 +16,10 @@ export const getPastDate = (daysAgo: number) => {
 
   return date
 }
+
+export const daysPassedSince = (date: Date) => {
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+
+  return diff / (24 * 60 * 60 * 1000)
+}
