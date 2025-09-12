@@ -692,12 +692,16 @@ type GDriveCredentials = {
 const gdriveAccessTokenCache = new Map<string, GDriveCredentials>()
 /** source: https://kuramalink.me/serviceworker.js */
 async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredentials | null> {
+  const url = new URL(downloadUrl.replaceAll(';', '&'))
+
+  if (url.searchParams.has('kid')) {
+    return null
+  }
+
   const cache = gdriveAccessTokenCache.get(downloadUrl)
   if (cache) {
     return cache
   }
-
-  const url = new URL(downloadUrl.replaceAll(';', '&'))
 
   const nullValues: string[] = []
   const getSearchParams = (name: string) => {
