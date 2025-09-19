@@ -800,15 +800,15 @@ async function getKuramanimeInitProcess() {
 }
 
 async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
-  let kpsUrl = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
-  kpsUrl = kpsUrl.slice(kpsUrl.indexOf('data-kps="'))
-  kpsUrl = kpsUrl.slice(kpsUrl.indexOf('"') + 1, kpsUrl.indexOf('">'))
+  let kkUrl = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
+  kkUrl = kkUrl.slice(kkUrl.indexOf('data-kk="'))
+  kkUrl = kkUrl.slice(kkUrl.indexOf('"') + 1, kkUrl.indexOf('">'))
 
-  if (!kpsUrl) {
+  if (!kkUrl) {
     throw new EpisodeNotFoundError()
   }
 
-  const kProcessJs = await fetchText(`assets/js/${kpsUrl}.js`, {}, kyInstances.kuramanime)
+  const kProcessJs = await fetchText(`assets/js/${kkUrl}.js`, {}, kyInstances.kuramanime)
   const kProcess = v.parse(
     kuramanimeProcessSchema,
     parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
