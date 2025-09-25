@@ -11,16 +11,9 @@ let cachedKuramanimeOrigin: KuramanimeOrigin | undefined
 
 const getFreshKuramanimeOrigin = async () => {
   try {
-    const response = await fetch(kuramalink, { method: 'HEAD', redirect: 'manual' })
-    const origin = response.headers.get('location')
+    const response = await fetch(kuramalink, { method: 'HEAD', redirect: 'follow' })
 
-    if (origin) {
-      return origin as KuramanimeOrigin
-    }
-
-    logger.error(`fetch ${kuramalink} failed`, { response })
-
-    return kuramalink
+    return response.url as KuramanimeOrigin
   } catch (error) {
     if (isOffline(error)) {
       throw error
