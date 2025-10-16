@@ -18,6 +18,7 @@ import {
 import { downloadMeta } from '~s/external/download/meta'
 import { fetchText } from '~s/utils/fetch'
 import { isOffline } from '~s/utils/error'
+import { purgeStoredCache } from '~s/anime/episode/stored'
 import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
 import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
@@ -493,6 +494,10 @@ export const downloadEpisode = async (
               await writer.flush()
             }
 
+            if (!shouldCheck) {
+              purgeStoredCache()
+            }
+
             const UPDATES_PER_SECOND = 16
             const CALCULATE_SPEED_PER_SECOND = UPDATES_PER_SECOND / 2
             const HISTORY_SIZE = CALCULATE_SPEED_PER_SECOND / 2
@@ -675,11 +680,6 @@ export const streamingEpisode = (
 type GDriveCredentialsResponse = {
   access_token: string
   gid?: string
-}
-type GDriveFilesResponse = {
-  files: {
-    id: string
-  }[]
 }
 type GDriveCredentials = {
   data: GDriveCredentialsResponse

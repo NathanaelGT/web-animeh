@@ -1,4 +1,4 @@
-import { isNull, inArray, or, gt, sql, eq, and, lt, desc, type SQL } from 'drizzle-orm'
+import { isNull, inArray, or, gt, sql, eq, and, lt, asc, desc, type SQL } from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
 import { anime, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
@@ -7,10 +7,10 @@ import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
 import { updateEpisode } from '~s/anime/episode/update'
 import { updateCharacter } from '~s/anime/character/update'
+import { getStoredAnimeIds } from '~s/anime/episode/stored'
 import { updateOngoingProviderData } from '~s/anime/seed'
 import { prepareStudioData } from '~s/studio/prepare'
 import { isMoreThanOneDay } from '~s/utils/time'
-import { glob, videosDirPath } from '~s/utils/path'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { jikanQueue, producerClient } from '~s/external/api/jikan'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
@@ -53,17 +53,7 @@ export const RouteRouter = router({
           break
 
         case 'downloaded': {
-          const ids = (await glob(videosDirPath, '*', { onlyFiles: false }))
-            .map(dirName => {
-              const index = dirName.lastIndexOf('.')
-              const id = dirName.slice(index + 1)
-
-              return Number(id)
-            })
-            .filter(isFinite)
-            .sort((a, b) => b - a)
-
-          filter = inArray(anime.id, ids.slice((ids as (typeof cursor)[]).indexOf(cursor) + 1))
+          filter = inArray(anime.id, await getStoredAnimeIds())
 
           break
         }
@@ -107,16 +97,22 @@ export const RouteRouter = router({
           .leftJoin(oau, and(eq(anime.id, oau.animeId), eq(oau.rn, 1)))
           .where(createWhereCondition())
           .orderBy(
-            sql.raw(
-              `max(${oau.lastEpisodeAiredAt.name}, ${anime.episodeUpdatedAt.name}, ${anime.airedFrom.name}) desc`,
-            ),
+            asc(sql.raw(`${oau.lastEpisodeAiredAt.name} is null`)),
+            desc(oau.lastEpisodeAiredAt),
+
+            asc(sql.raw(`${anime.episodeUpdatedAt.name} is null`)),
+            desc(anime.episodeUpdatedAt),
+
+            asc(sql.raw(`${anime.airedFrom.name} is null`)),
+            desc(anime.airedFrom),
+
             desc(anime.id),
           )
       } else {
         animeListQuery = animeListQuery
           .where(
             createWhereCondition(
-              inputFilter !== 'downloaded' && cursor
+              cursor
                 ? lt(
                     sql.raw(`(${anime.airedFrom.name}, ${anime.id.name})`),
                     ctx.db
@@ -130,7 +126,12 @@ export const RouteRouter = router({
                 : undefined,
             ),
           )
-          .orderBy(desc(anime.airedFrom), desc(anime.id))
+          .orderBy(
+            // dibagi 100k karena kolomnya dateDiv100
+            desc(sql.raw(`(${anime.airedTo.name} is null or ${anime.airedTo.name} > ${new Date().getTime() / 100_000})`)),
+            desc(anime.airedFrom),
+            desc(anime.id)
+          )
           .limit(perPage)
       }
 
