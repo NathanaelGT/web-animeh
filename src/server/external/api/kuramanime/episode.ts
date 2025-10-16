@@ -674,10 +674,7 @@ export const streamingEpisode = (
 
 type GDriveCredentialsResponse = {
   access_token: string
-  expires_in: number
-  scope: string
-  token_type: string
-  id_token: string
+  gid?: string
 }
 type GDriveFilesResponse = {
   files: {
@@ -715,20 +712,15 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
     return value
   }
 
-  const komiOrigin = 'https://komi.my.id'
-
-  let id: string
-  if (downloadUrl.includes('.my.id/kdrive/')) {
-    id = getSearchParams('gid')
-  } else if (downloadUrl.startsWith(komiOrigin)) {
-    id = getSearchParams('fn')
-  } else {
+  if (downloadUrl.startsWith('https://komi.my.id')) {
+    // di sourcenya jadi return false, kurang tau maksudnya apa
+    logger.warn('Download from the komi domain', { downloadUrl })
+  } else if (!downloadUrl.includes('.my.id/kdrive/')) {
     return null
   }
 
-  const clientId = getSearchParams('id')
-  const clientSecret = getSearchParams('sc')
-  const refreshToken = getSearchParams('rt')
+  const pid = getSearchParams('pid')
+  const sid = getSearchParams('sid')
 
   if (nullValues.length > 0) {
     const message = `Download episode: ${nullValues.join(', ')} is null`
@@ -737,48 +729,43 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
   }
 
   const accessTokenResponse = await ky.post<GDriveCredentialsResponse>(
-    'https://www.googleapis.com/oauth2/v4/token',
+    (await kyInstances.getKuramanimeOrigin()) + 'misc/token/drive-token',
     {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: toSearchParamString({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
+      body: JSON.stringify({ pid, sid }),
     },
   )
-
   const result = {
     data: await accessTokenResponse.json(),
   } as GDriveCredentials
 
-  if (downloadUrl.startsWith(komiOrigin)) {
-    const params = encodeURIComponent(`name ='${id}'`)
+  if (!result.data.gid) {
+    throw new SilentError('No gid').log('No gid', { downloadUrl })
+    // const params = encodeURIComponent(`name ='${id}'`)
 
-    const fileListResponse = await ky.get<GDriveFilesResponse>(
-      `https://www.googleapis.com/drive/v3/files?q=${params}`,
-      {
-        headers: {
-          Authorization: `Bearer ${result.data.access_token}`,
-        },
-      },
-    )
+    // const fileListResponse = await ky.get<GDriveFilesResponse>(
+    //   `https://www.googleapis.com/drive/v3/files?q=${params}`,
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${result.data.access_token}`,
+    //     },
+    //   },
+    // )
 
-    const { files } = await fileListResponse.json()
-    if (files.length === 0) {
-      const message = `File not found: ${id}`
+    // const { files } = await fileListResponse.json()
+    // if (files.length === 0) {
+    //   const message = `File not found: ${id}`
 
-      logger.error(message, { downloadUrl, id })
+    //   logger.error(message, { downloadUrl, id })
 
-      throw new SilentError(message)
-    }
+    //   throw new SilentError(message)
+    // }
 
-    result.id = files[0]!.id
+    // result.id = files[0]!.id
   } else {
-    result.id = id
+    result.id = result.data.gid
   }
 
   gdriveAccessTokenCache.set(downloadUrl, result)
