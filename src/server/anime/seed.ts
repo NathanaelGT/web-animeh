@@ -169,11 +169,18 @@ const sync = async () => {
 
 let updateOngoingProviderDataTimer: Timer | null = null
 export const updateOngoingProviderData = async () => {
+  const postSchema = v.object({
+    type: v.string(),
+    episode: v.number(),
+    created_at: v.string(),
+  })
+
   const animeSchema = v.object({
     id: v.number(),
     mal_url: v.nullable(v.pipe(v.string(), v.url())),
     latest_post_at: v.nullable(v.string()),
     country_code: v.nullable(v.string()),
+    posts: v.array(postSchema),
   })
 
   const listResultSchema = v.object({
@@ -225,15 +232,24 @@ export const updateOngoingProviderData = async () => {
   const ongoingAnimeUpdateList: (typeof ongoingAnimeUpdates.$inferInsert)[] = []
   const processAnimeData = (animePage: v.InferOutput<typeof listResultSchema>) => {
     for (const animeData of animePage.animes.data) {
-      if (animeData.mal_url && animeData.latest_post_at && animeData.country_code === 'JP') {
+      if (animeData.mal_url && animeData.posts.length && animeData.country_code === 'JP') {
         const id = parseMalId(animeData.mal_url)
 
         if (!isNaN(id)) {
-          ongoingAnimeUpdateList.push({
-            animeId: id,
-            provider: 'kuramanime',
-            lastEpisodeAiredAt: new Date(animeData.latest_post_at.replace(' ', 'T') + '+07:00'),
-          })
+          let latestEpisode: v.InferOutput<typeof postSchema> | undefined
+          for (const post of animeData.posts) {
+            if (post.type === 'Episode' && (!latestEpisode || post.episode > latestEpisode.episode)) {
+              latestEpisode = post
+            }
+          }
+
+          if (latestEpisode) {
+            ongoingAnimeUpdateList.push({
+              animeId: id,
+              provider: 'kuramanime',
+              lastEpisodeAiredAt: new Date(latestEpisode.created_at),
+            })
+          }
         }
       }
     }
