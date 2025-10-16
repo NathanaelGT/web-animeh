@@ -11,8 +11,10 @@ process.on('unhandledRejection', handleError)
 
 const maxWidth = 90
 
-process.stdout.write('\x1b[1A\x1b[0G')
-process.stdout.clearLine(0)
+if (process.stdout.clearLine !== undefined) {
+  process.stdout.write('\x1b[1A\x1b[0G')
+  process.stdout.clearLine(0)
+}
 
 log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`)
 
@@ -48,6 +50,22 @@ const clientBuildHashPromise = new Promise<string>(resolve => {
 })
 
 const buildStartNs = Bun.nanoseconds()
+
+const copyDbFilesPromise = getFiles('./drizzle').then(async filePaths => {
+  const promises = filePaths
+    .map(filePath => {
+      if (filePath.startsWith('meta') && filePath.endsWith('_snapshot.json')) {
+        return
+      }
+
+      return fs.cp(path.join('./drizzle', filePath), path.join('./dist/db', filePath), {
+        recursive: true,
+      }).then(() => 'dist/db/' + filePath)
+    })
+    .filter(promise => promise !== undefined)
+
+  return Promise.all(promises)
+})
 
 await Promise.all([
   $`NO_COLOR=1 bunx --bun vite build --outDir ./dist/public | grep kB`
@@ -112,12 +130,11 @@ await Promise.all([
 
       resolveClientBuildHash(hash(indexHtml))
 
-      indexHtml = indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
+      const compressed = await promisify(zlib.gzip)(
+        indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
+      )
 
-      const buffer = Buffer.from(indexHtml, 'utf-8')
-      const compressed = await promisify(zlib.gzip)(buffer)
-
-      await Promise.all([Bun.write('./dist/public/index.html', compressed), removeAssetDirPromise])
+      await Promise.all([Bun.write('./dist/public/index.html', compressed.buffer), removeAssetDirPromise])
 
       logBuildInfo(
         'client',
@@ -170,33 +187,38 @@ await Promise.all([
     })
     .then(async ([message, minified]) => {
       const result = '// @bun\n' + minified.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
+      const serverFiles = message
+        .replace(/(index\.js) *[0-9.]+ .B/, `$1 ${formatBytes(result.length)}`)
+        .split('\n')
+        .map((line): File | null => {
+          const trimmedLine = line.trim()
 
-      logBuildInfo(
-        'server',
-        message
-          .replace(/ .\/index\.js {2}[0-9.]+ .B/, ` dist/index.js  ${formatBytes(result.length)}`)
-          .split('\n')
-          .map((line): File | null => {
-            const trimmedLine = line.trim()
+          if (trimmedLine === '') {
+            return null
+          }
 
-            if (trimmedLine === '') {
-              return null
-            }
+          const match = trimmedLine.match(/([a-zA-Z0-9\-_.\/]+) *([a-zA-Z0-9. ]+)/)
+          if (match === null) {
+            return null
+          }
 
-            const match = trimmedLine.match(/([a-zA-Z0-9\-_./]+) {2,}([a-zA-Z0-9. ]+)/)
-            if (match === null) {
-              return null
-            }
+          const [, path, size] = match as [string, string, string]
 
-            const [, path, size] = match as [string, string, string]
+          return {
+            path: 'dist/' + path,
+            size: size.trim(),
+          }
+        })
+        .filter(file => file !== null)
 
-            return {
-              path,
-              size,
-            }
-          })
-          .filter(file => file !== null),
-      )
+      for (const file of await copyDbFilesPromise) {
+        serverFiles.push({
+          path: file,
+          size: formatBytes(Bun.file(file).size),
+        })
+      }
+
+      logBuildInfo('server', serverFiles)
 
       await $`bun ./dist -v`.text().then(version => {
         appVersion = version.trim()
@@ -206,22 +228,6 @@ await Promise.all([
 
       await Bun.write('./dist/index.js', result.replace('$INJECT_VERSION$', await buildHashPromise))
     }),
-
-  getFiles('./drizzle').then(async filePaths => {
-    const promises = filePaths
-      .map(filePath => {
-        if (filePath.startsWith('meta') && filePath.endsWith('_snapshot.json')) {
-          return
-        }
-
-        return fs.cp(path.join('./drizzle', filePath), path.join('./dist/db', filePath), {
-          recursive: true,
-        })
-      })
-      .filter(promise => promise !== undefined)
-
-    return Promise.all(promises)
-  }),
 ])
 
 type File = {
@@ -240,15 +246,16 @@ function logBuildInfo(level: 'client' | 'server', files: File[]) {
   const messages = ['']
 
   for (const file of files) {
-    const compressedText = file.br ? ` br: ${file.br.padStart(9, ' ')} ...` : ''
-    const sizeText = (' ' + file.size).padStart(10, '.')
-    const dots = fill(1, file.path, sizeText, compressedText)
+    const sizeText = file.br
+      ? ` raw: ${file.size} ... ${file.br}`
+      : ' ' + file.size
+    const dots = fill(1, file.path, sizeText)
 
     const fileName = path.basename(file.path)
     const fileDir = file.path.slice(0, -fileName.length)
 
     messages.push(
-      `\x1b[90m${fileDir}\x1b[37m${fileName} \x1b[90m${dots}${compressedText}${sizeText}`,
+      `\x1b[90m${fileDir}\x1b[37m${fileName} \x1b[90m${dots}${sizeText}`,
     )
   }
 
