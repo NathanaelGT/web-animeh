@@ -4,6 +4,7 @@ import os from 'os'
 import readline from 'readline'
 import Bun from 'bun'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
+import { env } from '~/env'
 import { websocket, httpHandler } from '~s/handler'
 import { fill, maxWidth } from '~s/utils/cli'
 import { formatNs } from '~s/utils/time'
@@ -359,6 +360,11 @@ if (firstTime) {
   process.stdout.clearLine(0)
 
   if (isProduction()) {
+    const command = env.SERVER_STARTED_HOOK
+    if (command) {
+      Bun.spawn(command.split(' '))
+    }
+
     process.stdout.write(messages.join('\n'))
   } else {
     process.stdout.write(messages.join('\n'), () => {
