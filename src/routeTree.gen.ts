@@ -21,6 +21,7 @@ import { Route as PengaturanPengaturanUnduhanImport } from './routes/_pengaturan
 import { Route as PengaturanPengaturanTampilanImport } from './routes/_pengaturan/pengaturan/tampilan'
 import { Route as PengaturanPengaturanPemutarVideoImport } from './routes/_pengaturan/pengaturan/pemutar-video'
 import { Route as PengaturanPengaturanKeybindImport } from './routes/_pengaturan/pengaturan/keybind'
+import { Route as PengaturanPengaturanFilterImport } from './routes/_pengaturan/pengaturan/filter'
 import { Route as AnimeIdIdIndexImport } from './routes/anime/_$id/$id/index'
 import { Route as PengaturanPengaturanUnduhanIndexImport } from './routes/_pengaturan/pengaturan/unduhan.index'
 import { Route as AnimeIdIdEpisodeImport } from './routes/anime/_$id/$id/_episode'
@@ -87,6 +88,13 @@ const PengaturanPengaturanKeybindRoute =
     getParentRoute: () => PengaturanRoute,
   } as any)
 
+const PengaturanPengaturanFilterRoute = PengaturanPengaturanFilterImport.update(
+  {
+    path: '/pengaturan/filter',
+    getParentRoute: () => PengaturanRoute,
+  } as any,
+)
+
 const AnimeIdIdIndexRoute = AnimeIdIdIndexImport.update({
   path: '/',
   getParentRoute: () => AnimeIdIdRoute,
@@ -140,6 +148,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/anime'
       preLoaderRoute: typeof AnimeIdImport
       parentRoute: typeof AnimeRoute
+    }
+    '/_pengaturan/pengaturan/filter': {
+      id: '/_pengaturan/pengaturan/filter'
+      path: '/pengaturan/filter'
+      fullPath: '/pengaturan/filter'
+      preLoaderRoute: typeof PengaturanPengaturanFilterImport
+      parentRoute: typeof PengaturanImport
     }
     '/_pengaturan/pengaturan/keybind': {
       id: '/_pengaturan/pengaturan/keybind'
@@ -232,6 +247,7 @@ const PengaturanPengaturanUnduhanRouteWithChildren =
   )
 
 interface PengaturanRouteChildren {
+  PengaturanPengaturanFilterRoute: typeof PengaturanPengaturanFilterRoute
   PengaturanPengaturanKeybindRoute: typeof PengaturanPengaturanKeybindRoute
   PengaturanPengaturanPemutarVideoRoute: typeof PengaturanPengaturanPemutarVideoRoute
   PengaturanPengaturanTampilanRoute: typeof PengaturanPengaturanTampilanRoute
@@ -240,6 +256,7 @@ interface PengaturanRouteChildren {
 }
 
 const PengaturanRouteChildren: PengaturanRouteChildren = {
+  PengaturanPengaturanFilterRoute: PengaturanPengaturanFilterRoute,
   PengaturanPengaturanKeybindRoute: PengaturanPengaturanKeybindRoute,
   PengaturanPengaturanPemutarVideoRoute: PengaturanPengaturanPemutarVideoRoute,
   PengaturanPengaturanTampilanRoute: PengaturanPengaturanTampilanRoute,
@@ -302,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeIdRouteWithChildren
+  '/pengaturan/filter': typeof PengaturanPengaturanFilterRoute
   '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
   '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
@@ -317,6 +335,7 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeIdRouteWithChildren
+  '/pengaturan/filter': typeof PengaturanPengaturanFilterRoute
   '/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
   '/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
@@ -332,6 +351,7 @@ export interface FileRoutesById {
   '/_pengaturan': typeof PengaturanRouteWithChildren
   '/anime': typeof AnimeRouteWithChildren
   '/anime/_$id': typeof AnimeIdRouteWithChildren
+  '/_pengaturan/pengaturan/filter': typeof PengaturanPengaturanFilterRoute
   '/_pengaturan/pengaturan/keybind': typeof PengaturanPengaturanKeybindRoute
   '/_pengaturan/pengaturan/pemutar-video': typeof PengaturanPengaturanPemutarVideoRoute
   '/_pengaturan/pengaturan/tampilan': typeof PengaturanPengaturanTampilanRoute
@@ -350,6 +370,7 @@ export interface FileRouteTypes {
     | '/$'
     | ''
     | '/anime'
+    | '/pengaturan/filter'
     | '/pengaturan/keybind'
     | '/pengaturan/pemutar-video'
     | '/pengaturan/tampilan'
@@ -364,6 +385,7 @@ export interface FileRouteTypes {
     | '/$'
     | ''
     | '/anime'
+    | '/pengaturan/filter'
     | '/pengaturan/keybind'
     | '/pengaturan/pemutar-video'
     | '/pengaturan/tampilan'
@@ -377,6 +399,7 @@ export interface FileRouteTypes {
     | '/_pengaturan'
     | '/anime'
     | '/anime/_$id'
+    | '/_pengaturan/pengaturan/filter'
     | '/_pengaturan/pengaturan/keybind'
     | '/_pengaturan/pengaturan/pemutar-video'
     | '/_pengaturan/pengaturan/tampilan'
@@ -425,6 +448,7 @@ export const routeTree = rootRoute
     "/_pengaturan": {
       "filePath": "_pengaturan.tsx",
       "children": [
+        "/_pengaturan/pengaturan/filter",
         "/_pengaturan/pengaturan/keybind",
         "/_pengaturan/pengaturan/pemutar-video",
         "/_pengaturan/pengaturan/tampilan",
@@ -444,6 +468,10 @@ export const routeTree = rootRoute
       "children": [
         "/anime/_$id/$id"
       ]
+    },
+    "/_pengaturan/pengaturan/filter": {
+      "filePath": "_pengaturan/pengaturan/filter.tsx",
+      "parent": "/_pengaturan"
     },
     "/_pengaturan/pengaturan/keybind": {
       "filePath": "_pengaturan/pengaturan/keybind.tsx",

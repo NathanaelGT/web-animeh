@@ -1,7 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
-  content: ['./index.html', './src/client/**/*.tsx', './src/routes/**/*.tsx'],
+  content: [
+    './index.html',
+    './src/client/**/*.tsx',
+    './src/client/**/*.ts',
+    './src/routes/**/*.tsx',
+    './src/routes/**/*.ts',
+    './src/shared/**/*.ts',
+  ],
   prefix: '',
   theme: {
     container: {

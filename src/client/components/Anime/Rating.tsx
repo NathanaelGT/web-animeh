@@ -1,39 +1,23 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
+import { cn } from '~c/utils'
+import { ratingColor, ratings } from '~/shared/anime/rating'
+import type { PropsWithChildren } from 'react'
 
-type Props = {
+type Props = PropsWithChildren<{
   rating: string | null
-}
+  className?: string
+}>
 
-export function AnimeRating({ rating }: Props) {
-  const text = rating || '?'
-
-  const className =
-    {
-      'G': 'bg-green-100',
-      'PG': 'bg-blue-100',
-      'PG-13': 'bg-yellow-100',
-      'R': 'bg-orange-100',
-      'R+': 'bg-red-100',
-      'Rx': 'bg-red-400',
-    }[text] ?? 'bg-gray-200'
-
-  const tooltip =
-    {
-      'G': 'All Ages',
-      'PG': 'Children',
-      'PG-13': 'Teens 13 or older',
-      'R': '17+ (violence & profanity)',
-      'R+': 'Mild Nudity',
-      'Rx': 'Hentai',
-    }[text] ?? 'Rating'
+export function AnimeRating({ rating, className, children }: Props) {
+  const text = (rating || '?') as keyof typeof ratings
 
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger tabIndex={-1} className={`${className} px-2 py-1`}>
-          {text}
+        <TooltipTrigger tabIndex={-1} className={cn('px-2 py-1', ratingColor(text), className)}>
+          {children ?? text}
         </TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
+        <TooltipContent>{ratings[text] ?? 'Rating'}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )

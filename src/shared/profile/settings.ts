@@ -16,6 +16,11 @@ export const episodeFilterSchema = object({
   perPage: number(100),
 })
 
+export const animeFilterSchema = object({
+  hideRating: v.fallback(v.array(v.string()), []),
+  hideGenre: v.fallback(v.array(v.number()), []),
+})
+
 export const videoPlayerSchema = object({
   jumpSec: number(5, 0.1),
   longJumpSec: number(87, 0.1),
@@ -65,6 +70,7 @@ export const settingsSchema = v.object({
   theme: picklist(themes, 'system'),
   headerPosition: picklist(headerPositions, 'hybrid'),
   episodeFilter: episodeFilterSchema,
+  animeFilter: animeFilterSchema,
   videoPlayer: videoPlayerSchema,
   keybind: keybindSchema,
 })

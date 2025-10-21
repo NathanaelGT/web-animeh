@@ -64,6 +64,7 @@ function Index() {
       pages: [initialData],
       pageParams: [null],
     },
+    gcTime: 0,
   })
 
   useEffect(() => {

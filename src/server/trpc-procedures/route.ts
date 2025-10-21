@@ -1,7 +1,20 @@
-import { isNull, inArray, or, gt, sql, eq, and, lt, asc, desc, type SQL } from 'drizzle-orm'
+import {
+  isNull,
+  inArray,
+  or,
+  gt,
+  sql,
+  eq,
+  and,
+  lt,
+  asc,
+  desc,
+  notInArray,
+  type SQL,
+} from 'drizzle-orm'
 import * as v from 'valibot'
 import { procedure, router } from '~s/trpc'
-import { anime, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
+import { anime, animeToGenres, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
 import * as episodeRepository from '~s/db/repository/episode'
 import { promiseMap } from '~s/map'
 import { fetchAndUpdate } from '~s/anime/update'
@@ -76,7 +89,29 @@ export const RouteRouter = router({
         .$dynamic()
 
       const createWhereCondition = (...extraConditions: (SQL | undefined)[]) => {
-        return and(eq(anime.isVisible, true), filter, ...extraConditions)
+        const userFilterPreferences = ctx.data.profile.settings.animeFilter
+
+        return and(
+          eq(anime.isVisible, true),
+
+          userFilterPreferences.hideRating.length
+            ? notInArray(anime.rating, userFilterPreferences.hideRating)
+            : undefined,
+
+          userFilterPreferences.hideGenre.length
+            ? notInArray(
+                anime.id,
+                ctx.db
+                  .select({ animeId: animeToGenres.animeId })
+                  .from(animeToGenres)
+                  .where(inArray(animeToGenres.genreId, userFilterPreferences.hideGenre)),
+              )
+            : undefined,
+
+          filter,
+
+          ...extraConditions,
+        )
       }
 
       if (inputFilter === 'ongoing') {
@@ -127,10 +162,14 @@ export const RouteRouter = router({
             ),
           )
           .orderBy(
-            // dibagi 100k karena kolomnya dateDiv100
-            desc(sql.raw(`(${anime.airedTo.name} is null or ${anime.airedTo.name} > ${new Date().getTime() / 100_000})`)),
+            desc(
+              sql.raw(
+                // dibagi 100k karena kolomnya dateDiv100
+                `(${anime.airedTo.name} is null or ${anime.airedTo.name} > ${new Date().getTime() / 100_000})`,
+              ),
+            ),
             desc(anime.airedFrom),
-            desc(anime.id)
+            desc(anime.id),
           )
           .limit(perPage)
       }
@@ -342,6 +381,12 @@ export const RouteRouter = router({
     })
 
     return snapshot
+  }),
+
+  '/pengaturan/filter': procedure.query(async ({ ctx }) => {
+    return {
+      genres: await ctx.db.query.genres.findMany(),
+    }
   }),
 } satisfies Record<
   keyof FileRoutesByPath, // FIXME keyof FileRoutesByPath selalu never
