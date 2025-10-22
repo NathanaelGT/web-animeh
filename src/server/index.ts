@@ -192,6 +192,12 @@ const server = await (async () => {
   try {
     return Bun.serve(serverOption)
   } catch (error) {
+    const promises: Promise<unknown>[] = []
+    const command = env.SERVER_CANT_START_HOOK
+    if (command) {
+      promises.push(Bun.spawn(command.split(' ')).exited)
+    }
+
     let message: string
 
     if (error instanceof Error) {
@@ -209,6 +215,8 @@ const server = await (async () => {
     process.stdout.write('\n')
 
     log('server', `Failed to start: ${message}`)
+
+    await Promise.all(promises)
 
     process.exit(1)
   }

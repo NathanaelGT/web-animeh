@@ -14,6 +14,7 @@ const schema = v.object({
   PARALLEL_REQUEST_LIMIT: number(1),
   PARALLEL_DOWNLOAD_LIMIT: number(1),
   SERVER_STARTED_HOOK: v.optional(v.string()),
+  SERVER_CANT_START_HOOK: v.optional(v.string()),
 })
 
 const transformedEnv = process.env
