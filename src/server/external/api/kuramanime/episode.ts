@@ -778,7 +778,7 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
 }
 
 async function getKuramanimeInitProcess() {
-  const js = await fetchText('assets/js/sizzly.js', {}, kyInstances.kuramanime)
+  const js = await fetchText('assets/js/sizzlyb.js', {}, kyInstances.kuramanime)
 
   return v.parse(
     kuramanimeInitProcessSchema,
