@@ -58,6 +58,15 @@ export const serverType = once('serverType', () => {
   )[mode()]
 })
 
+export const latestChromeVersion = once('latestChromeVersion', async () => {
+  const res = await fetch(
+    'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Windows&num=1',
+  )
+  const [{ version }] = (await res.json()) as [{ version: string }]
+
+  return version.split('.')[0]!
+})
+
 function gitUsername() {
   try {
     const { stdout } = Bun.spawnSync({

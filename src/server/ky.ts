@@ -1,6 +1,7 @@
 import ky, { type KyResponse } from 'ky'
 import { isOffline } from '~s/utils/error'
 import { SilentError } from './error'
+import { latestChromeVersion } from '~s/info' with { type: 'macro' }
 
 type KuramanimeOrigin = `https://${string}/`
 
@@ -77,9 +78,11 @@ function getKuramanimeCookieHeader() {
   return cookie.slice(0, -2)
 }
 
+const chromeVersion = import.meta.env.PROD ? (latestChromeVersion() as unknown as string) : '145'
+
 const kuramanimeHeaders = {
-  'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36`,
-  'Sec-Ch-Ua': `"Not\\A;Brand";v="99", "Chromium";v="145", "Google Chrome";v="145"`,
+  'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion}.0.0.0 Safari/537.36`,
+  'Sec-Ch-Ua': `"Not\\A;Brand";v="99", "Chromium";v="${chromeVersion}", "Google Chrome";v="${chromeVersion}"`,
   'Sec-Ch-Ua-Platform': '"Windows"',
   'Sec-Ch-Ua-Platform-Version': '"14.0.0"',
   'Sec-Ch-Ua-Mobile': '?0',
