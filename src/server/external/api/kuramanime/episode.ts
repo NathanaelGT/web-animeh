@@ -34,6 +34,9 @@ const kuramanimeInitProcessSchema = v.object({
 
 const kuramanimeProcessSchema = v.object({
   env: v.object({
+    MIX_AUTH_KEY: v.string(),
+    MIX_AUTH_TOKEN: v.string(),
+    MIX_PREFIX_AUTH_ROUTE_PARAM: v.string(),
     MIX_AUTH_ROUTE_PARAM: v.string(),
     MIX_PAGE_TOKEN_KEY: v.string(),
     MIX_STREAM_SERVER_KEY: v.string(),
@@ -91,10 +94,9 @@ const getDownloadUrl = async (
 
       if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess) {
         emit('Mengambil token dari Kuramanime')
-        ;[[kMIX_PAGE_TOKEN_VALUE, kProcess], kInitProcess] = await Promise.all([
-          getKuramanimeProcess(episodeUrl),
-          getKuramanimeInitProcess(),
-        ])
+
+        kInitProcess = await getKuramanimeInitProcess()
+        ;[kMIX_PAGE_TOKEN_VALUE, kProcess] = await getKuramanimeProcess(kInitProcess!, episodeUrl)
       }
 
       const searchParams = toSearchParamString({
@@ -107,7 +109,16 @@ const getDownloadUrl = async (
 
       const responseHtml = await fetchText(
         `${episodeUrl}?${searchParams}`,
-        { signal },
+        {
+          signal,
+          method: 'POST',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: 'authorization=RYwEDrOO5QlbCtIxIebTNX0VqO5Dk1lMsXp',
+        },
         kyInstances.kuramanime,
       )
 
@@ -728,8 +739,8 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
     throw new SilentError(message).log(message, { downloadUrl })
   }
 
-  const accessTokenResponse = await ky.post<GDriveCredentialsResponse>(
-    (await kyInstances.getKuramanimeOrigin()) + 'misc/token/drive-token',
+  const accessTokenResponse = await kyInstances.kuramanime.post<GDriveCredentialsResponse>(
+    'misc/token/drive-token',
     {
       headers: {
         'Content-Type': 'application/json',
@@ -743,27 +754,6 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
 
   if (!result.data.gid) {
     throw new SilentError('No gid').log('No gid', { downloadUrl })
-    // const params = encodeURIComponent(`name ='${id}'`)
-
-    // const fileListResponse = await ky.get<GDriveFilesResponse>(
-    //   `https://www.googleapis.com/drive/v3/files?q=${params}`,
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${result.data.access_token}`,
-    //     },
-    //   },
-    // )
-
-    // const { files } = await fileListResponse.json()
-    // if (files.length === 0) {
-    //   const message = `File not found: ${id}`
-
-    //   logger.error(message, { downloadUrl, id })
-
-    //   throw new SilentError(message)
-    // }
-
-    // result.id = files[0]!.id
   } else {
     result.id = result.data.gid
   }
@@ -786,24 +776,36 @@ async function getKuramanimeInitProcess() {
   )
 }
 
-async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
-  let kkUrl = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
-  kkUrl = kkUrl.slice(kkUrl.indexOf('data-kk="'))
-  kkUrl = kkUrl.slice(kkUrl.indexOf('"') + 1, kkUrl.indexOf('">'))
+async function getKuramanimeProcess(
+  kuramanimeInitProcess: v.InferOutput<typeof kuramanimeInitProcessSchema>,
+  anyKuramanimeEpisodeUrl: string,
+) {
+  let mixEnvUrl = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
+  mixEnvUrl = mixEnvUrl.slice(
+    mixEnvUrl.indexOf(`${kuramanimeInitProcess.env.MIX_JS_ROUTE_PARAM_ATTR}="`),
+  )
+  mixEnvUrl = mixEnvUrl.slice(mixEnvUrl.indexOf('"') + 1, mixEnvUrl.indexOf('">'))
 
-  if (!kkUrl) {
+  if (!mixEnvUrl) {
     throw new EpisodeNotFoundError()
   }
 
-  const kProcessJs = await fetchText(`assets/js/${kkUrl}.js`, {}, kyInstances.kuramanime)
+  const kProcessJs = await fetchText(`assets/js/${mixEnvUrl}.js`, {}, kyInstances.kuramanime)
   const kProcess = v.parse(
     kuramanimeProcessSchema,
     parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
   )
-
+  const e = kProcess.env
   const pageToken = await fetchText(
-    `assets/${kProcess.env.MIX_AUTH_ROUTE_PARAM}`,
-    {},
+    e.MIX_PREFIX_AUTH_ROUTE_PARAM + e.MIX_AUTH_ROUTE_PARAM,
+    {
+      headers: {
+        'X-Fuck-ID': `${e.MIX_AUTH_KEY}:${e.MIX_AUTH_TOKEN}`,
+        'X-Request-ID': generateRandomString(6),
+        'X-Request-Index': '0',
+        'X-Request-With': 'XMLHttpRequest',
+      },
+    },
     kyInstances.kuramanime,
   )
 
@@ -825,4 +827,16 @@ function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'titl
   // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
 
   return result.replace(/\s+/g, ' ') + '.' + animeData.id
+}
+
+function generateRandomString(length: number) {
+  let result = ''
+  const len = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.length
+
+  for (let i = 0; i < length; i++)
+    result += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(
+      Math.floor(Math.random() * len),
+    )
+
+  return result
 }
