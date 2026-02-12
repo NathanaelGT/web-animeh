@@ -111,7 +111,6 @@ const getDownloadUrl = async (
         `${episodeUrl}?${searchParams}`,
         {
           signal,
-          method: 'POST',
           headers: {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0',
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
@@ -119,7 +118,7 @@ const getDownloadUrl = async (
           },
           body: 'authorization=RYwEDrOO5QlbCtIxIebTNX0VqO5Dk1lMsXp',
         },
-        kyInstances.kuramanime,
+        kyInstances.kuramanime.post,
       )
 
       const handleDownloadUrlNotFound = () => {

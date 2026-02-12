@@ -1,16 +1,22 @@
 import * as v from 'valibot'
-import ky, { type KyInstance, type Options } from 'ky'
+import ky, { type Input, type KyInstance, type Options, type ResponsePromise } from 'ky'
 import { limitRequest } from '~s/external/limit'
 import { SilentError } from '~s/error'
 
-export const fetchText = async (url: string, options: Options = {}, kyInstance = ky) => {
-  const response = await limitRequest(() => kyInstance(url, options))
+type Fetcher = (url: Input, options?: Options) => ResponsePromise<unknown>
+
+export const fetchText = async (
+  url: string,
+  options: Options = {},
+  fetcher: Fetcher = ky,
+): Promise<string> => {
+  const response = await limitRequest(() => fetcher(url, options))
 
   return response.text()
 }
 
-export const fetchJson = async (url: string, options?: Options, kyInstance?: KyInstance) => {
-  const responseText = await fetchText(url, options, kyInstance)
+export const fetchJson = async (url: string, options?: Options, fetcher?: Fetcher) => {
+  const responseText = await fetchText(url, options, fetcher)
 
   try {
     return JSON.parse(responseText)
