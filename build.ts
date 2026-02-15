@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs/promises'
 import zlib from 'zlib'
 import { promisify } from 'util'
+import * as esbuild from 'esbuild'
 import { formatNs } from 'src/server/utils/time'
 import { formatBytes } from 'src/shared/utils/byte'
 
@@ -58,9 +59,11 @@ const copyDbFilesPromise = getFiles('./drizzle').then(async filePaths => {
         return
       }
 
-      return fs.cp(path.join('./drizzle', filePath), path.join('./dist/db', filePath), {
-        recursive: true,
-      }).then(() => 'dist/db/' + filePath)
+      return fs
+        .cp(path.join('./drizzle', filePath), path.join('./dist/db', filePath), {
+          recursive: true,
+        })
+        .then(() => 'dist/db/' + filePath)
     })
     .filter(promise => promise !== undefined)
 
@@ -131,10 +134,13 @@ await Promise.all([
       resolveClientBuildHash(hash(indexHtml))
 
       const compressed = await promisify(zlib.gzip)(
-        indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
+        indexHtml.replace('$INJECT_VERSION$', await buildHashPromise),
       )
 
-      await Promise.all([Bun.write('./dist/public/index.html', compressed.buffer), removeAssetDirPromise])
+      await Promise.all([
+        Bun.write('./dist/public/index.html', compressed.buffer),
+        removeAssetDirPromise,
+      ])
 
       logBuildInfo(
         'client',
@@ -177,39 +183,53 @@ await Promise.all([
       )
     }),
 
-  $`bun build ./src/server/index.ts --define import.meta.env.PROD=true --outdir ./dist --target bun --minify | grep KB`
-    .text()
-    .then(async message => {
-      return [
-        message,
-        await $`./node_modules/.bin/esbuild --bundle --minify --format=esm --platform=node --external:bun:sqlite --allow-overwrite --legal-comments=none ./dist/index.js`.text(),
-      ] as const
+  // $`bun build ./src/server/index.ts --define import.meta.env.PROD=true --outdir ./dist --target bun --minify | grep KB`
+  Bun.build({
+    entrypoints: ['./src/server/index.ts'],
+    define: {
+      'import.meta.env.PROD': 'true',
+    },
+    target: 'bun',
+    minify: true,
+  })
+    .then(({ outputs }) => outputs[0]!.text())
+    .then(async code => {
+      const result = await esbuild.build({
+        bundle: true,
+        minify: true,
+        format: 'esm',
+        platform: 'node',
+        external: ['bun:sqlite'],
+        allowOverwrite: true,
+        legalComments: 'none',
+        entryPoints: ['virtual-entry'],
+        write: false,
+        plugins: [
+          {
+            name: 'in-memory',
+            setup(build) {
+              // Resolve the virtual entry path
+              build.onResolve({ filter: /^virtual-entry$/ }, () => ({
+                path: 'virtual-entry',
+                namespace: 'mem',
+              }))
+
+              // Provide the code from memory
+              build.onLoad({ filter: /.*/, namespace: 'mem' }, () => ({
+                contents: code,
+                loader: 'js',
+              }))
+            },
+          },
+        ],
+      })
+
+      return result.outputFiles[0]!.text.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
     })
-    .then(async ([message, minified]) => {
-      const result = '// @bun\n' + minified.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
-      const serverFiles = message
-        .replace(/(index\.js) *[0-9.]+ .B/, `$1 ${formatBytes(result.length)}`)
-        .split('\n')
-        .map((line): File | null => {
-          const trimmedLine = line.trim()
+    .then(async minified => {
+      // const result = '// @bun\n' + minified
 
-          if (trimmedLine === '') {
-            return null
-          }
-
-          const match = trimmedLine.match(/([a-zA-Z0-9\-_.\/]+) *([a-zA-Z0-9. ]+)/)
-          if (match === null) {
-            return null
-          }
-
-          const [, path, size] = match as [string, string, string]
-
-          return {
-            path: 'dist/' + path,
-            size: size.trim(),
-          }
-        })
-        .filter(file => file !== null)
+      const serverFiles: File[] = [{ path: 'dist/index.js', size: formatBytes(minified.length) }]
 
       for (const file of await copyDbFilesPromise) {
         serverFiles.push({
@@ -220,13 +240,26 @@ await Promise.all([
 
       logBuildInfo('server', serverFiles)
 
-      await $`bun ./dist -v`.text().then(version => {
-        appVersion = version.trim()
+      resolveServerBuildHash(hash(minified))
+
+      return [minified, await buildHashPromise] as const
+    })
+    .then(([minified, buildHash]) => {
+      return Bun.build({
+        entrypoints: ['/index.ts'],
+        files: {
+          '/index.ts': minified.replace('$INJECT_VERSION$', buildHash),
+        },
+        outdir: './dist',
+        minify: {
+          whitespace: true,
+        },
+        target: 'bun',
       })
-
-      resolveServerBuildHash(hash(result))
-
-      await Bun.write('./dist/index.js', result.replace('$INJECT_VERSION$', await buildHashPromise))
+    })
+    .then(() => $`bun ./dist -v`.text())
+    .then(version => {
+      appVersion = version.trim()
     }),
 ])
 
@@ -246,17 +279,13 @@ function logBuildInfo(level: 'client' | 'server', files: File[]) {
   const messages = ['']
 
   for (const file of files) {
-    const sizeText = file.br
-      ? ` raw: ${file.size} ... ${file.br}`
-      : ' ' + file.size
+    const sizeText = file.br ? ` raw: ${file.size} ... ${file.br}` : ' ' + file.size
     const dots = fill(1, file.path, sizeText)
 
     const fileName = path.basename(file.path)
     const fileDir = file.path.slice(0, -fileName.length)
 
-    messages.push(
-      `\x1b[90m${fileDir}\x1b[37m${fileName} \x1b[90m${dots}${sizeText}`,
-    )
+    messages.push(`\x1b[90m${fileDir}\x1b[37m${fileName} \x1b[90m${dots}${sizeText}`)
   }
 
   messages.push(
