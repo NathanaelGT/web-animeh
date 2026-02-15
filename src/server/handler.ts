@@ -1,5 +1,4 @@
 import Bun from 'bun'
-import fs from 'fs/promises'
 import { createBunWSHandler } from 'trpc-bun-adapter'
 import { createTRPCContext } from '~s/trpc'
 import { TRPCRouter } from '~s/router'
@@ -9,13 +8,15 @@ import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { handleVideoRequest } from '~s/http-handler/video'
 import { isProduction } from '~s/env' with { type: 'macro' }
 
-let indexHtml: Buffer
+let indexHtml: ArrayBuffer
 
 if (isProduction() || Bun.argv.includes('--server-only')) {
   // ada kemungkinan kecil race condition, tapi ga masalah
-  void fs.readFile(basePath + 'dist/public/index.html').then(html => {
-    indexHtml = html
-  })
+  void Bun.file(basePath + 'dist/public/index.html')
+    .arrayBuffer()
+    .then(html => {
+      indexHtml = html
+    })
 }
 
 export const websocket = createBunWSHandler({
@@ -52,7 +53,7 @@ export const httpHandler = async (
   return new Response(indexHtml, {
     headers: {
       'Content-Type': 'text/html;charset=utf-8',
-      'Content-Encoding': 'gzip',
+      'Content-Encoding': 'br',
     },
   })
 }

@@ -133,9 +133,16 @@ await Promise.all([
 
       resolveClientBuildHash(hash(indexHtml))
 
-      const compressed = await promisify(zlib.gzip)(
-        indexHtml.replace('$INJECT_VERSION$', await buildHashPromise),
-      )
+      indexHtml = indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
+
+      const compressed = await promisify(zlib.brotliCompress)(indexHtml, {
+        params: {
+          [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
+          [zlib.constants.BROTLI_PARAM_LGWIN]: 24,
+          [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
+          [zlib.constants.BROTLI_PARAM_SIZE_HINT]: indexHtml.length,
+        },
+      })
 
       await Promise.all([
         Bun.write('./dist/public/index.html', compressed.buffer),
