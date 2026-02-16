@@ -4,6 +4,17 @@ import path from 'path'
 import { mode } from '~s/env'
 import { format } from '~/shared/utils/date'
 
+type InfoJson = typeof import('info.json')
+type Info = {
+  [K in keyof InfoJson]: InfoJson[K]['v']
+}
+
+declare module 'bun' {
+  interface Env extends Info {
+    PROD: boolean
+  }
+}
+
 export const version = once('version', () => {
   const packageJsonPath = path.join(import.meta.dir, '../../package.json')
   const packageJsonRaw = fs.readFileSync(packageJsonPath, 'utf-8')
@@ -56,15 +67,6 @@ export const serverType = once('serverType', () => {
       [Key in ReturnType<typeof mode>]: string
     }
   )[mode()]
-})
-
-export const latestChromeVersion = once('latestChromeVersion', async () => {
-  const res = await fetch(
-    'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Windows&num=1',
-  )
-  const [{ version }] = (await res.json()) as [{ version: string }]
-
-  return version.split('.')[0]!
 })
 
 function gitUsername() {

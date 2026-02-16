@@ -17,7 +17,9 @@ if (process.stdout.clearLine !== undefined) {
   process.stdout.clearLine(0)
 }
 
-log('', `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m`)
+const { info } = await import('info.ts')
+
+log('', '\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m')
 
 await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
@@ -190,11 +192,24 @@ await Promise.all([
       )
     }),
 
-  // $`bun build ./src/server/index.ts --define import.meta.env.PROD=true --outdir ./dist --target bun --minify | grep KB`
   Bun.build({
     entrypoints: ['./src/server/index.ts'],
     define: {
       'import.meta.env.PROD': 'true',
+      ...Object.entries(info).reduce(
+        (acc, [key, value]) => {
+          acc[`Bun.env.${key}`] =
+            typeof value === 'string'
+              ? JSON.stringify(value)
+              : typeof value === 'boolean'
+                ? value
+                  ? 'true'
+                  : 'false'
+                : String(value)
+          return acc
+        },
+        {} as Record<string, string>,
+      ),
     },
     target: 'bun',
     minify: true,

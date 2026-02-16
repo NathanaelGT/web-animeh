@@ -7,7 +7,7 @@ import { formatNs } from 'src/server/utils/time'
 
 const serverOnly = Bun.argv.includes('--server-only')
 
-const promises: (Promise<unknown> | Bun.ShellPromise)[] = [
+const promises: (Promise<unknown> | $.ShellPromise)[] = [
   (async () => {
     if (!(await Bun.file('.env').exists())) {
       await Bun.write('.env', Bun.file('.env.example'))
@@ -42,6 +42,8 @@ const client = serverOnly
 const clientStartNs = Bun.nanoseconds()
 const clientStdout = client?.stdout.getReader()
 
+const { info } = await import('info.ts')
+
 await Promise.all(promises)
 
 const server = Bun.spawn(
@@ -50,6 +52,17 @@ const server = Bun.spawn(
     '--hot',
     '--define',
     'import.meta.env.PROD=false',
+    ...Object.entries(info).flatMap(([key, value]) => [
+      '--define',
+      `Bun.env.${key}=` +
+        (typeof value === 'string'
+          ? JSON.stringify(value)
+          : typeof value === 'boolean'
+            ? value
+              ? 'true'
+              : 'false'
+            : String(value)),
+    ]),
     './src/server/index.ts',
     ...Bun.argv.slice(2),
   ],

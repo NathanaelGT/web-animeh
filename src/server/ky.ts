@@ -1,7 +1,6 @@
 import ky, { type KyResponse } from 'ky'
 import { isOffline } from '~s/utils/error'
 import { SilentError } from './error'
-import { latestChromeVersion } from '~s/info' with { type: 'macro' }
 
 type KuramanimeOrigin = `https://${string}/`
 
@@ -78,7 +77,7 @@ function getKuramanimeCookieHeader() {
   return cookie.slice(0, -2)
 }
 
-const chromeVersion = import.meta.env.PROD ? (latestChromeVersion() as unknown as string) : '145'
+const chromeVersion = Bun.env.LATEST_CHROME_VERSION
 
 const kuramanimeHeaders = {
   'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion}.0.0.0 Safari/537.36`,

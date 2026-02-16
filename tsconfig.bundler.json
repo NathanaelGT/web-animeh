@@ -33,6 +33,7 @@
     "vite.config.ts",
     "dev.ts",
     "build.ts",
+    "info.ts",
     "src/shared/**/*.ts",
     "src/server/utils/*.ts"
   ]
