@@ -1,4 +1,3 @@
-import Bun from 'bun'
 import { createBunWSHandler } from 'trpc-bun-adapter'
 import { createTRPCContext } from '~s/trpc'
 import { TRPCRouter } from '~s/router'
@@ -6,12 +5,11 @@ import { basePath } from '~s/utils/path'
 // import { safePath } from '~s/utils/path'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { handleVideoRequest } from '~s/http-handler/video'
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { WebSocketData } from './index'
 
 let indexHtml: ArrayBuffer
 
-if (isProduction() || Bun.argv.includes('--server-only')) {
+if (Bun.env.PROD || Bun.argv.includes('--server-only')) {
   // ada kemungkinan kecil race condition, tapi ga masalah
   void Bun.file(basePath + 'dist/public/index.html')
     .arrayBuffer()
@@ -42,7 +40,7 @@ export const httpHandler = async (
     return handleVideoRequest(request, path)
   }
 
-  if (!isProduction() && !Bun.argv.includes('--server-only')) {
+  if (!Bun.env.PROD && !Bun.argv.includes('--server-only')) {
     return Response.redirect(`http://localhost:8888/${path}`, 302)
   }
 

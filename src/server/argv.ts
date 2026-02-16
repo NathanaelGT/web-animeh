@@ -1,7 +1,4 @@
-import Bun from 'bun'
 import { parseArgs } from 'util'
-import { isProduction } from '~s/env' with { type: 'macro' }
-import { version, build, compiled } from '~s/info' with { type: 'macro' }
 
 const parseArgv = () => {
   try {
@@ -12,7 +9,7 @@ const parseArgv = () => {
       options: {
         log: {
           type: 'boolean',
-          default: !isProduction(),
+          default: !Bun.env.PROD,
         },
         version: {
           type: 'boolean',
@@ -33,17 +30,19 @@ const parseArgv = () => {
           )
         }
 
-    let message = info(`Web Animeh v${version()} (${build()})`)
+    let message = info(
+      `Web Animeh v${Bun.env.VERSION} (${Bun.env.PROD ? 'build ' + Bun.env.BUILD_NUMBER : 'Development'})`,
+    )
 
     if (isFetchingVersion) {
-      message += '\n' + info(compiled()) + '\n'
+      message += '\n' + info(Bun.env.COMPILED) + '\n'
     } else {
       message = '\n' + message
     }
 
     process.stdout.write(message)
 
-    if (isProduction() && isFetchingVersion) {
+    if (Bun.env.PROD && isFetchingVersion) {
       process.exit(0)
     }
 
@@ -60,4 +59,4 @@ const globalForArgv = globalThis as unknown as {
   argv?: ReturnType<typeof parseArgv>
 }
 
-export const argv = isProduction() ? parseArgv() : (globalForArgv.argv ??= parseArgv())
+export const argv = Bun.env.PROD ? parseArgv() : (globalForArgv.argv ??= parseArgv())

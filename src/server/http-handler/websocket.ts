@@ -1,14 +1,12 @@
-import Bun from 'bun'
 import { db } from '~s/db'
 import { profiles } from '~s/db/schema'
 import { defaultSettings, parse } from '~/shared/profile/settings'
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { WebSocketData } from '~s/index'
 
 const globalForId = globalThis as unknown as {
   id: number
 }
-if (!isProduction()) {
+if (!Bun.env.PROD) {
   globalForId.id ??= 1
 }
 
@@ -58,15 +56,15 @@ export const handleWebsocketRequest = async (
     data: {
       req: request,
       id:
-        isProduction() && version !== '$INJECT_VERSION$'
+        Bun.env.PROD && version !== '$INJECT_VERSION$'
           ? ''
-          : (isProduction() ? id : globalForId.id).toString(36),
+          : (Bun.env.PROD ? id : globalForId.id).toString(36),
       profile,
     },
   })
 
   if (upgradeSuccess) {
-    if (isProduction()) {
+    if (Bun.env.PROD) {
       id++
     } else {
       globalForId.id++

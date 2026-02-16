@@ -17,7 +17,7 @@ export const parseLeviathanDict = (source: string) => {
     inlineStringVariable()
     processStringConcatenation()
 
-    if (!import.meta.env.PROD) {
+    if (!Bun.env.PROD) {
       convertDynamicFunctionCallToStatic()
     }
 
@@ -52,7 +52,7 @@ export const parseLeviathanDict = (source: string) => {
         }
       }
 
-      if (!import.meta.env.PROD) {
+      if (!Bun.env.PROD) {
         source = source
           .replace(new RegExp(`${deobfuscatorFnName}=${deobfuscatorFnName},?`, 'g'), '')
           .replaceAll('const ;', '')
@@ -112,7 +112,7 @@ export const parseLeviathanDict = (source: string) => {
 
       source = source.replace(/'([^']*?)'='\1'/g, '')
 
-      if (!import.meta.env.PROD) {
+      if (!Bun.env.PROD) {
         source = source.replaceAll('const ;', '')
       }
     }
@@ -155,7 +155,7 @@ export const parseLeviathanDict = (source: string) => {
       return dict
     }
   } catch (error) {
-    if (!import.meta.env.PROD) {
+    if (!Bun.env.PROD) {
       const write = (content = source) => {
         Bun.write(`./debug/leviathan.${Date.now().toString(36)}.js`, content)
       }

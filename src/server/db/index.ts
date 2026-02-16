@@ -6,7 +6,6 @@ import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
 import * as schema from './schema'
 import { basePath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { DrizzleConfig } from 'drizzle-orm'
 
 const createDatabase = () => {
@@ -29,7 +28,7 @@ const globalForDb = globalThis as unknown as {
   sqlite?: Database
 }
 
-const sqlite = isProduction() ? createDatabase() : (globalForDb.sqlite ??= createDatabase())
+const sqlite = Bun.env.PROD ? createDatabase() : (globalForDb.sqlite ??= createDatabase())
 
 let isOptimized = false
 export const optimizeDatabase = () => {
@@ -47,7 +46,7 @@ const config: DrizzleConfig<typeof schema> = {
   schema,
 }
 
-if (!isProduction()) {
+if (!Bun.env.PROD) {
   config.logger = {
     logQuery(query, params) {
       // @ts-ignore internal query logging
@@ -58,7 +57,7 @@ if (!isProduction()) {
 
 export const db = drizzle(sqlite, config)
 
-if (isProduction()) {
+if (Bun.env.PROD) {
   const migrationsFolder = path.join(import.meta.dir, 'db')
 
   if (fs.existsSync(migrationsFolder)) {

@@ -7,7 +7,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["ESNext"],
-    "typeRoots": ["./node_modules/@types", "./types"],
+    "typeRoots": ["./node_modules/@types", "./bundler.d.ts"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -29,7 +29,6 @@
     "baseUrl": "."
   },
   "include": [
-    "types/*.d.ts",
     "vite.config.ts",
     "dev.ts",
     "build.ts",

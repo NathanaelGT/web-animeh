@@ -51,6 +51,8 @@ const server = Bun.spawn(
     'bun',
     '--hot',
     '--define',
+    'Bun.env.PROD=false',
+    '--define',
     'import.meta.env.PROD=false',
     ...Object.entries(info).flatMap(([key, value]) => [
       '--define',

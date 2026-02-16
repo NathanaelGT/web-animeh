@@ -7,15 +7,16 @@ import { basePath } from './path'
 import { formatNs } from './time'
 import { format } from '~/shared/utils/date'
 import { isEmpty } from '~/shared/utils/object'
-import { buildNumber } from '~s/info' with { type: 'macro' }
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { WebSocketData } from '~s/index'
 
 const logDir = path.join(basePath, 'logs')
 
 void fs.mkdir(logDir, { recursive: true })
 
-const logPath = path.join(logDir, `web-animeh.${buildNumber()}${isProduction() ? '' : '.dev'}.log`)
+const logPath = path.join(
+  logDir,
+  `web-animeh.${Bun.env.BUILD_NUMBER}${Bun.env.PROD ? '' : '.dev'}.log`,
+)
 
 const now = () => format(new Date())
 
@@ -46,7 +47,7 @@ const writeToConsole = (date: string, level: Level, message: string, context: Co
   }
 
   let caller = ''
-  if (!isProduction()) {
+  if (!Bun.env.PROD) {
     let realCaller: string | undefined
     if (Array.isArray(context.client_stacktraces)) {
       realCaller = String(context.client_stacktraces[0])
@@ -144,7 +145,7 @@ const createLevelHandler = (level: Level, target?: number) => {
 
 const createDebugHandler = (target?: number) => {
   return (message: string, context?: Context) => {
-    if (!isProduction()) {
+    if (!Bun.env.PROD) {
       log('DEBUG', message, context, target)
     }
   }
@@ -174,8 +175,8 @@ export const logger = {
   },
 }
 
-if (!isProduction()) {
-  const logPath = path.join(logDir, `web-animeh.${buildNumber()}.query.log`)
+if (!Bun.env.PROD) {
+  const logPath = path.join(logDir, `web-animeh.${Bun.env.BUILD_NUMBER}.query.log`)
 
   // @ts-ignore internal query logging
   logger.__internal__query = (query: string, context: Context) => {

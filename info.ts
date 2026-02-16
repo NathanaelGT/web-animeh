@@ -1,11 +1,31 @@
 import type { MaybePromise } from 'bun'
+import os from 'os'
 import ky from 'ky'
 import { formatNs } from 'src/server/utils/time'
+import { format } from 'src/shared/utils/date'
 
 const infoPath = 'node_modules/info.json'
 const info = (await Bun.file(infoPath)
   .json()
-  .catch(() => ({}))) as Record<string, { v: unknown; t: number }>
+  .catch(() => ({}))) as Record<string, { v: unknown; t?: number }>
+
+const isProd = Bun.main.endsWith('build.ts') || false
+
+const buildNumberPromise = (async () => {
+  try {
+    const head = await Bun.file('.git/HEAD').text()
+
+    if (head.indexOf(':') === -1) {
+      return head.substring(0, 7)
+    }
+
+    const rev = await Bun.file('.git/' + head.substring(5).trim()).text()
+
+    return rev.substring(0, 7)
+  } catch {
+    return 'unknown'
+  }
+})()
 
 const sources = {
   LATEST_CHROME_VERSION: {
@@ -19,22 +39,68 @@ const sources = {
       return milestone
     },
   },
-} satisfies Record<string, { ttl: number; getter(): MaybePromise<unknown> }>
+  VERSION: {
+    async getter() {
+      const { version } = await import('package.json')
+
+      return version
+    },
+  },
+  BUILD_NUMBER: {
+    getter: () => buildNumberPromise,
+  },
+  BUILD: {
+    async getter() {
+      return isProd ? `build ${await buildNumberPromise}` : 'Development'
+    },
+  },
+  COMPILED: {
+    async getter() {
+      const compiledAt = format(new Date())
+      const compiledBy = (await gitUsername()) || os.userInfo().username
+
+      return `Compiled at ${compiledAt} by ${compiledBy}`
+
+      async function gitUsername() {
+        try {
+          const { stdout } = Bun.spawn({
+            cmd: ['git', 'config', '--global', 'user.name'],
+            stdout: 'pipe',
+          })
+
+          const output = await stdout.text()
+
+          return output.trim()
+        } catch {
+          //
+        }
+      }
+    },
+  },
+  SERVER_TYPE: {
+    getter() {
+      return isProd ? 'Server' : 'Dev Server'
+    },
+  },
+} satisfies Record<string, { ttl?: number; getter(): MaybePromise<unknown> }>
 
 const now = Math.floor(Date.now() / 1000)
 
 let shouldPersist = false
-const values = Object.entries(sources).map(([key, { ttl, getter }]) => {
+const values = Object.entries(sources).map(([key, data]) => {
+  const ttl = ((data as any).ttl as number | undefined) ?? 0
+  const { getter } = data
+
   const timestamp = info[key]?.t ?? 0
   const shouldRenew = now > timestamp + ttl
 
   const value = shouldRenew ? getter() : info[key]!.v
 
-  if (shouldRenew) {
+  if (ttl && shouldRenew) {
     shouldPersist = true
   }
 
-  return [key, value, shouldRenew] as const
+  return [key, value, ttl] as const
 })
 
 if (shouldPersist) {
@@ -53,22 +119,65 @@ if (shouldPersist) {
   )
 }
 
-const updatedInfo = Object.fromEntries(
-  values.map(([key, value]) => {
-    return [key, Bun.peek(value)]
-  }),
-) as {
+const generatedInfo: [string, string][] = []
+
+const peekedValues = values.map(([key, value, ttl]) => {
+  const peeked = Bun.peek(value)
+
+  if (ttl === 0) {
+    generatedInfo.push([key, typeof peeked])
+  }
+
+  return [key, peeked, ttl] as const
+})
+
+const updatedInfo = Object.fromEntries(peekedValues) as {
   [K in keyof typeof sources]: Awaited<ReturnType<(typeof sources)[K]['getter']>>
 }
 
 if (shouldPersist) {
   const newInfo = Object.fromEntries(
-    Object.entries(updatedInfo).map(([key, value]) => {
-      return [key, { v: value, t: now }]
-    }),
+    peekedValues
+      .map(([key, value, ttl]) => {
+        const shouldIncludeTimestamp = (sources as any)[key].ttl !== undefined
+
+        return ttl ? [key, { v: value, t: shouldIncludeTimestamp ? now : undefined }] : null
+      })
+      .filter(entry => entry !== null),
   )
 
-  Bun.write(infoPath, JSON.stringify(newInfo, null, 2) + '\n')
+  Bun.write(infoPath, JSON.stringify(newInfo))
 }
+
+const fileDTsPath = 'src/server/types/info.d.ts'
+Bun.file(fileDTsPath)
+  .text()
+  .then(content => {
+    const mark = '// Auto generated info'
+    const startMark = mark + ' start'
+    const endMark = mark + ' end'
+
+    const startMarkIndex = content.indexOf(startMark)
+    const endMarkIndex = content.indexOf(endMark)
+
+    if (startMarkIndex === -1 || endMarkIndex === -1) {
+      throw new Error('Could not find info markers in vite-env.d.ts')
+    }
+
+    const prefix = content.substring(0, startMarkIndex + startMark.length)
+    const suffix = content.substring(endMarkIndex)
+
+    const generated = generatedInfo
+      .map(([key, type]) => {
+        return `\n    ${key}: ${type}`
+      })
+      .join('')
+
+    const newContent = prefix + generated + '\n    ' + suffix
+
+    if (newContent !== content) {
+      return Bun.write(fileDTsPath, newContent)
+    }
+  })
 
 export { updatedInfo as info, shouldPersist as infoIsHot }

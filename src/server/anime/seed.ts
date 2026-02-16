@@ -2,7 +2,6 @@ import * as v from 'valibot'
 import { db } from '~s/db'
 import { genres, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
 import { metadata } from '~s/metadata'
-import { isProduction } from '~s/env'
 import * as kyInstances from '~s/ky'
 import { prepareStudioData } from '~s/studio/prepare'
 import { glob, imagesDirPath } from '~s/utils/path'
@@ -21,7 +20,7 @@ import { updateCharacter } from './character/update'
 export const seed = async () => {
   seedGenres()
 
-  if (isProduction()) {
+  if (Bun.env.PROD) {
     metadata.get('lastStudioPage').then(fetchStudio)
   }
 
@@ -34,7 +33,7 @@ export const seed = async () => {
 
   updateOngoingProviderData()
 
-  if (!isProduction()) {
+  if (!Bun.env.PROD) {
     return
   }
 
@@ -238,7 +237,10 @@ export const updateOngoingProviderData = async () => {
         if (!isNaN(id)) {
           let latestEpisode: v.InferOutput<typeof postSchema> | undefined
           for (const post of animeData.posts) {
-            if (post.type === 'Episode' && (!latestEpisode || post.episode > latestEpisode.episode)) {
+            if (
+              post.type === 'Episode' &&
+              (!latestEpisode || post.episode > latestEpisode.episode)
+            ) {
               latestEpisode = post
             }
           }

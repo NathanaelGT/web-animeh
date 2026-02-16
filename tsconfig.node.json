@@ -7,7 +7,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "lib": ["ESNext"],
-    "typeRoots": ["./node_modules/@types", "./types"],
+    "typeRoots": ["./node_modules/@types", "./src/server/types"],
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -35,11 +35,5 @@
       "~s/*": ["./src/server/*"]
     }
   },
-  "include": [
-    "types/*.d.ts",
-    "src/server/**/*",
-    "src/shared/**/*.ts",
-    "src/env.ts",
-    "src/shared/profile"
-  ]
+  "include": ["src/server/**/*", "src/shared/**/*.ts", "src/env.ts", "src/shared/profile"]
 }

@@ -2,7 +2,6 @@
 import { argv } from '~s/argv'
 import os from 'os'
 import readline from 'readline'
-import Bun from 'bun'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { env } from '~/env'
 import { websocket, httpHandler } from '~s/handler'
@@ -16,8 +15,6 @@ import { optimizeDatabase } from './db'
 import { format } from '~/shared/utils/date'
 import { isObject, omit } from '~/shared/utils/object'
 import { timeout } from '~/shared/utils/promise'
-import { serverType } from '~s/info' with { type: 'macro' }
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
 import type { Profile } from '~s/db/schema'
 
@@ -34,7 +31,7 @@ const globalForServer = globalThis as unknown as {
   server?: BunServer
 }
 
-const firstTime = isProduction() || globalForServer.server === undefined
+const firstTime = Bun.env.PROD || globalForServer.server === undefined
 let isShuttingdown = false
 
 type Level = 'server' | 'http' | 'ws' | 'route'
@@ -82,14 +79,14 @@ if (firstTime) {
 } else {
   globalForServer.server?.stop(true)
 
-  if (!isProduction()) {
+  if (!Bun.env.PROD) {
     log('server', 'Hot reload')
   }
 }
 
 const server = await (async (): Promise<BunServer> => {
   const serverOption: Bun.Serve.Options<WebSocketData> = {
-    port: isProduction() || Bun.argv.includes('--server-only') ? 8888 : 8887,
+    port: Bun.env.PROD || Bun.argv.includes('--server-only') ? 8888 : 8887,
     websocket: argv.log
       ? {
           ...websocket,
@@ -226,7 +223,7 @@ const server = await (async (): Promise<BunServer> => {
   }
 })()
 
-if (!isProduction()) {
+if (!Bun.env.PROD) {
   globalForServer.server = server
 }
 
@@ -254,7 +251,7 @@ if (firstTime) {
       context.stacktraces = getStackTraces(reason)
 
       message += ': ' + reason.message
-    } else if (!isProduction() && reason instanceof BuildMessage) {
+    } else if (!Bun.env.PROD && reason instanceof BuildMessage) {
       message += ': ' + reason.name + ': ' + reason.message
     }
 
@@ -346,7 +343,7 @@ if (firstTime) {
         list.reduce<string[]>((rr, i) => {
           if (i.family === 'IPv4' && !i.internal && i.address) {
             rr.push(
-              ' '.repeat(19 + serverType().length) +
+              ' '.repeat(19 + Bun.env.SERVER_TYPE.length) +
                 `\x1b[0m[\x1b[37mhttp://${i.address}:8888\x1b[0m]`,
             )
           }
@@ -355,7 +352,7 @@ if (firstTime) {
       )
     },
     [
-      `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m ${serverType()} running on [\x1b[37mhttp://localhost:8888\x1b[0m]`,
+      `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m ${Bun.env.SERVER_TYPE} running on [\x1b[37mhttp://localhost:8888\x1b[0m]`,
     ],
   )
 
@@ -371,7 +368,7 @@ if (firstTime) {
   process.stdout.cursorTo(0)
   process.stdout.clearLine(0)
 
-  if (isProduction()) {
+  if (Bun.env.PROD) {
     const command = env.SERVER_STARTED_HOOK
     if (command) {
       Bun.spawn(command.split(' '))

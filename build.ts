@@ -196,6 +196,7 @@ await Promise.all([
     entrypoints: ['./src/server/index.ts'],
     define: {
       'import.meta.env.PROD': 'true',
+      'Bun.env.PROD': 'true',
       ...Object.entries(info).reduce(
         (acc, [key, value]) => {
           acc[`Bun.env.${key}`] =

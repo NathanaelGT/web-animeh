@@ -1,9 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { isProduction } from '~s/env' with { type: 'macro' }
 import type { GlobScanOptions } from 'bun'
 
-export const basePath = isProduction()
+export const basePath = Bun.env.PROD
   ? path.join(import.meta.dir, '../')
   : path.join(import.meta.dir, '../../../')
 

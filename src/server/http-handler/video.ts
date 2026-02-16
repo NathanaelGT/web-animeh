@@ -1,4 +1,3 @@
-import Bun from 'bun'
 import fs from 'fs'
 import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
 import { parseNumber } from '~/shared/utils/number'
