@@ -51,15 +51,10 @@ const kuramanimeProcessSchema = v.object({
 
 let kMIX_PAGE_TOKEN_VALUE: string | null
 let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
-let authorizationToken: string | null
 let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
 
-const unsetCredentials = () => {
-  kMIX_PAGE_TOKEN_VALUE = null
-  kProcess = null
-  authorizationToken = null
-  kInitProcess = null
-}
+let authorizationToken: string | null
+const authorizationTokenMap = new Map<string, string>()
 
 const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
   env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
@@ -100,7 +95,7 @@ const getDownloadUrl = async (
     {
       const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
-      if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !authorizationToken || !kInitProcess) {
+      if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !authorizationToken) {
         emit('Mengambil token dari Kuramanime')
 
         kInitProcess = await getKuramanimeInitProcess()
@@ -144,9 +139,18 @@ const getDownloadUrl = async (
       )
 
       const handleDownloadUrlNotFound = () => {
+        // authorization tokennya expired
+        if (responseHtml.includes('Terjadi kesalahan saat mengambil video')) {
+          authorizationToken = null
+
+          return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
+        }
+
         // tokennya expired
         if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
-          unsetCredentials()
+          kMIX_PAGE_TOKEN_VALUE = null
+          kProcess = null
+          kInitProcess = null
 
           return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
         }
@@ -822,7 +826,23 @@ async function getKuramanimeProcess(
     fetchText(`assets/js/${mixEnvUrl}.js`, {}, kyInstances.kuramanime),
   ])
 
-  const authorizationToken = parseLeviathanDict(leviathanSource).get('authorization')!
+  const leviathanId = getLeviathanIdentifier(leviathanSrc)
+  let authorizationToken = authorizationTokenMap.get(leviathanId)
+  if (!authorizationToken) {
+    const leviathanDict = parseLeviathanDict(leviathanSource)
+    authorizationToken = leviathanDict.get('authorization')
+
+    if (!authorizationToken) {
+      logger.file.error('leviathan dict', {
+        leviathanSrc,
+        leviathanDict: Object.fromEntries(leviathanDict),
+      })
+
+      throw new LeviathanParseError('Authorization token not found in Leviathan dict')
+    }
+
+    authorizationTokenMap.set(leviathanId, authorizationToken)
+  }
 
   const kProcess = v.parse(
     kuramanimeProcessSchema,
@@ -872,4 +892,8 @@ function generateRandomString(length: number) {
     )
 
   return result
+}
+
+function getLeviathanIdentifier(leviathanSrc: string) {
+  return leviathanSrc.slice(leviathanSrc.indexOf('?') + 1)
 }
