@@ -522,7 +522,7 @@ export const downloadEpisode = async (
 
             // https://github.com/oven-sh/bun/issues/5821
             if (initialLength) {
-              const existingData = await Bun.readableStreamToBytes(tempFile.stream())
+              const existingData = await tempFile.stream().bytes()
 
               writer.write(existingData)
               await writer.flush()
