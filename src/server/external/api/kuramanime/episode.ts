@@ -56,9 +56,6 @@ let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
 let authorizationToken: string | null
 const authorizationTokenMap = new Map<string, string>()
 
-const PREDOWNLOAD_VIDEO_METADATA_THRESHOLD =
-  env.PREDOWNLOAD_VIDEO_METADATA_AT_LESS_THAN_MB * 1024 * 1024
-
 export const generateEmitKey = (
   animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
   episodeNumber: number,
@@ -566,14 +563,14 @@ export const downloadEpisode = async (
                 lastTimestamp = now
               }
 
-              if (
-                !isResolved &&
-                totalLength &&
-                totalLength - receivedLength < PREDOWNLOAD_VIDEO_METADATA_THRESHOLD
-              ) {
-                isResolved = true
+              if (!isResolved && totalLength) {
+                const remainingTime = (totalLength - receivedLength) / speed
 
-                releaseMetadataLock()
+                if (remainingTime < 2) {
+                  isResolved = true
+
+                  releaseMetadataLock()
+                }
               }
 
               emit({
