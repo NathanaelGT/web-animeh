@@ -107,7 +107,9 @@ const getDownloadUrl = async (
           )
         } catch (error) {
           if (error instanceof LeviathanParseError || error instanceof LeviathanSrcNotFoundError) {
-            emit('Gagal mendapatkan token Kuramanime, harap update Web Animeh ke versi terbaru')
+            emit(
+              'Gagal mendapatkan token auth Kuramanime\nHarap update Web Animeh ke versi terbaru',
+            )
 
             await new Promise(() => {}) // block selamanya
           }

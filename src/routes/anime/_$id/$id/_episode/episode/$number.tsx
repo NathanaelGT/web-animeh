@@ -89,9 +89,9 @@ function Status({ icon, progress, children }: StatusProps) {
   return (
     <div className="m-auto grid w-11/12 gap-2 lg:max-w-xl">
       <div className="mx-auto flex gap-2">
-        <div className="w-6">{icon}</div>
+        <div className="my-auto w-6">{icon}</div>
 
-        <p className="flex-1">{children}</p>
+        <p className="flex-1 whitespace-pre-wrap">{children}</p>
       </div>
 
       {progress}
