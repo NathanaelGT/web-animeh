@@ -7,6 +7,7 @@ import { basePath } from '~s/utils/path'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { handleVideoRequest } from '~s/http-handler/video'
 import { isProduction } from '~s/env' with { type: 'macro' }
+import type { WebSocketData } from './index'
 
 let indexHtml: ArrayBuffer
 
@@ -23,11 +24,11 @@ export const websocket = createBunWSHandler({
   router: TRPCRouter,
   createContext: createTRPCContext as () => ReturnType<typeof createTRPCContext>,
   allowBatching: false,
-})
+}) as unknown as Bun.WebSocketHandler<WebSocketData>
 
 export const httpHandler = async (
   request: Request,
-  server: Bun.Server,
+  server: Bun.Server<WebSocketData>,
 ): Promise<undefined | Response> => {
   const path = new URL(request.url).pathname.substring(1)
 

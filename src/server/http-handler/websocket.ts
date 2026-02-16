@@ -16,7 +16,7 @@ let id = 1
 
 export const handleWebsocketRequest = async (
   request: Request,
-  server: Bun.Server,
+  server: Bun.Server<WebSocketData>,
   path: string,
 ) => {
   const [version, profileIdString] = path.split('&')
@@ -56,12 +56,13 @@ export const handleWebsocketRequest = async (
 
   const upgradeSuccess = server.upgrade(request, {
     data: {
+      req: request,
       id:
         isProduction() && version !== '$INJECT_VERSION$'
           ? ''
           : (isProduction() ? id : globalForId.id).toString(36),
       profile,
-    } satisfies WebSocketData,
+    },
   })
 
   if (upgradeSuccess) {

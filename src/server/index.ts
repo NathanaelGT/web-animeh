@@ -21,8 +21,17 @@ import { isProduction } from '~s/env' with { type: 'macro' }
 import type { BunWSClientCtx } from 'trpc-bun-adapter'
 import type { Profile } from '~s/db/schema'
 
+// typenya trpc-bun-adapter kayanya salah
+export type WebSocketData = {
+  req: BunWSClientCtx['req']
+  id: string
+  profile: Profile
+}
+
+type BunServer = Bun.Server<WebSocketData>
+
 const globalForServer = globalThis as unknown as {
-  server?: Bun.Server
+  server?: BunServer
 }
 
 const firstTime = isProduction() || globalForServer.server === undefined
@@ -78,13 +87,8 @@ if (firstTime) {
   }
 }
 
-export type WebSocketData = {
-  id: string
-  profile: Profile
-}
-
-const server = await (async () => {
-  const serverOption: Bun.Serve<WebSocketData & BunWSClientCtx> = {
+const server = await (async (): Promise<BunServer> => {
+  const serverOption: Bun.Serve.Options<WebSocketData> = {
     port: isProduction() || Bun.argv.includes('--server-only') ? 8888 : 8887,
     websocket: argv.log
       ? {
