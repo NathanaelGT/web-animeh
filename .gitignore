@@ -5,6 +5,7 @@ images
 videos
 *.local
 .env
+debug
 
 # Build hook
 build.after.ts

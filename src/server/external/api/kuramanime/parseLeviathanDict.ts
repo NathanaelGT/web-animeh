@@ -155,6 +155,21 @@ export const parseLeviathanDict = (source: string) => {
       return dict
     }
   } catch (error) {
+    if (!import.meta.env.PROD) {
+      const write = (content = source) => {
+        Bun.write(`./debug/leviathan.${Date.now().toString(36)}.js`, content)
+      }
+
+      import('prettier')
+        .then(({ default: prettier }) => {
+          prettier
+            .format(source, { parser: 'babel' })
+            .then(write)
+            .catch(() => write())
+        })
+        .catch(() => write())
+    }
+
     let message = 'Failed to parse Leviathan source code'
     if (error instanceof Error) {
       if ((error as any).code === 'ERR_SCRIPT_EXECUTION_TIMEOUT') {
