@@ -1,4 +1,5 @@
 import fs from 'fs/promises'
+import { createWriteStream } from 'fs'
 import path from 'path'
 import ky, { HTTPError } from 'ky'
 import * as v from 'valibot'
@@ -300,7 +301,7 @@ export const downloadEpisode = async (
   }
 
   const tempFilePath = animeDirPath + fileName + '_.mp4'
-  const tempFile = Bun.file(tempFilePath)
+  const initialLength = Bun.file(tempFilePath).size
 
   const abortController = new AbortController()
   const { signal } = abortController
@@ -472,7 +473,7 @@ export const downloadEpisode = async (
               )
 
               try {
-                const preparedResponse = await downloadVideo(url, tempFile.size)
+                const preparedResponse = await downloadVideo(url, initialLength)
 
                 if (!downloadIsStarted) {
                   emit('Menunggu unduhan sebelumnya selesai')
@@ -499,7 +500,6 @@ export const downloadEpisode = async (
           async () => {
             downloadIsStarted = true
 
-            const initialLength = tempFile.size
             let receivedLength = initialLength
             let fetchedLength = 0
 
@@ -524,16 +524,6 @@ export const downloadEpisode = async (
             formattedTotalLengthCb?.(formattedTotalLength)
 
             await fs.mkdir(animeDirPath, { recursive: true })
-
-            const writer = tempFile.writer({ highWaterMark: 4 * 1024 * 1024 }) // 4 MB
-
-            // https://github.com/oven-sh/bun/issues/5821
-            if (initialLength) {
-              const existingData = await tempFile.stream().bytes()
-
-              writer.write(existingData)
-              await writer.flush()
-            }
 
             if (!shouldCheck) {
               purgeStoredCache()
@@ -587,6 +577,11 @@ export const downloadEpisode = async (
               })
             }
 
+            const tempFileStream = createWriteStream(tempFilePath, {
+              flags: 'a',
+              highWaterMark: 4 * 1024 * 1024, // 4 MB
+            })
+
             let emitIntervalId: Timer | undefined
 
             let iteration = 0
@@ -622,7 +617,7 @@ export const downloadEpisode = async (
                     break
                   }
 
-                  writer.write(value)
+                  tempFileStream.write(value)
 
                   fetchedLength += value.length
                   receivedLength += value.length
@@ -680,8 +675,7 @@ export const downloadEpisode = async (
 
             emitProgress()
 
-            // biar keluar dari queue untuk proses selanjutnya
-            Promise.resolve(writer.end()).then(optimizeVideo)
+            tempFileStream.end(optimizeVideo)
           },
           { signal },
         )
