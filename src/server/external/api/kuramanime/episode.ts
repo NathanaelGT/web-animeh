@@ -9,7 +9,7 @@ import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
 import {
   EpisodeNotFoundError,
-  LeviathanParseError,
+  LeviathanExecutionError,
   LeviathanSrcNotFoundError,
   SilentError,
 } from '~s/error'
@@ -21,7 +21,7 @@ import {
   type OptimizingProgress,
 } from '~s/external/download/progress'
 import { downloadMeta } from '~s/external/download/meta'
-import { parseLeviathanDict } from '~s/external/api/kuramanime/parseLeviathanDict'
+import { executeLeviathan } from '~s/external/api/kuramanime/executeLeviathan'
 import { fetchText } from '~s/utils/fetch'
 import { isOffline } from '~s/utils/error'
 import { purgeStoredCache } from '~s/anime/episode/stored'
@@ -103,10 +103,17 @@ const getDownloadUrl = async (
             episodeUrl,
           )
         } catch (error) {
-          if (error instanceof LeviathanParseError || error instanceof LeviathanSrcNotFoundError) {
+          if (
+            error instanceof LeviathanExecutionError ||
+            error instanceof LeviathanSrcNotFoundError
+          ) {
             emit(
               'Gagal mendapatkan token auth Kuramanime\nHarap update Web Animeh ke versi terbaru',
             )
+
+            logger.error('Failed to get Kuramanime auth token', {
+              message: error.message,
+            })
 
             await new Promise(() => {}) // block selamanya
           }
@@ -807,7 +814,7 @@ async function getKuramanimeProcess(
 
   const leviathanSrc = source.match(/<input type="hidden" id="tokenAuthJs" value="\/(.*?)"/)?.[1]
   if (!leviathanSrc) {
-    throw new LeviathanSrcNotFoundError()
+    throw new LeviathanSrcNotFoundError('Leviathan source not found')
   }
 
   let mixEnvUrl = source.slice(
@@ -827,17 +834,7 @@ async function getKuramanimeProcess(
   const leviathanId = getLeviathanIdentifier(leviathanSrc)
   let authorizationToken = authorizationTokenMap.get(leviathanId)
   if (!authorizationToken) {
-    const leviathanDict = parseLeviathanDict(leviathanSource)
-    authorizationToken = leviathanDict.get('authorization')
-
-    if (!authorizationToken) {
-      logger.file.error('leviathan dict', {
-        leviathanSrc,
-        leviathanDict: Object.fromEntries(leviathanDict),
-      })
-
-      throw new LeviathanParseError('Authorization token not found in Leviathan dict')
-    }
+    authorizationToken = await executeLeviathan(leviathanSource)
 
     authorizationTokenMap.set(leviathanId, authorizationToken)
   }
