@@ -1,11 +1,11 @@
-export const formatBytes = (bytes: number) => {
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+export const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'] as const
 
-  if (bytes === 0) {
-    return '0 B'
+export const formatBytes = (bytes: number) => {
+  let i = 0
+  while (bytes > 999) {
+    bytes /= 1024
+    i++
   }
 
-  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1e3)).toString(), 10)
-
-  return `${(bytes / Math.pow(1e3, i)).toFixed(2)} ${sizes[i]}`
+  return bytes.toFixed(2) + ' ' + units[i]
 }
