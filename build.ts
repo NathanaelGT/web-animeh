@@ -215,8 +215,31 @@ await Promise.all([
     target: 'bun',
     minify: true,
   })
-    .then(({ outputs }) => outputs[0]!.text())
-    .then(async code => {
+    .then(async ({ outputs }) => {
+      const promises = [outputs[0]!.text()]
+
+      for (let i = 1; i < outputs.length; i++) {
+        promises.push(outputs[i]!.text())
+      }
+
+      const out: [
+        string,
+        ...{
+          path: string
+          content: string
+        }[],
+      ] = [await promises[0]!]
+
+      for (let i = 1; i < outputs.length; i++) {
+        out.push({
+          path: path.join('dist', outputs[i]!.path),
+          content: await promises[i]!,
+        })
+      }
+
+      return out
+    })
+    .then(async ([mainCode, ...scripts]) => {
       const result = await esbuild.build({
         bundle: true,
         minify: true,
@@ -239,7 +262,7 @@ await Promise.all([
 
               // Provide the code from memory
               build.onLoad({ filter: /.*/, namespace: 'mem' }, () => ({
-                contents: code,
+                contents: mainCode,
                 loader: 'js',
               }))
             },
@@ -247,12 +270,20 @@ await Promise.all([
         ],
       })
 
-      return result.outputFiles[0]!.text.trim().replace(/\r?\n/g, '\\n').slice(0, -1)
+      return [
+        result.outputFiles[0]!.text.trim().replace(/\r?\n/g, '\\n').slice(0, -1),
+        scripts,
+      ] as const
     })
-    .then(async minified => {
-      // const result = '// @bun\n' + minified
-
+    .then(async ([minified, scripts]) => {
       const serverFiles: File[] = [{ path: 'dist/index.js', size: formatBytes(minified.length) }]
+
+      for (const script of scripts) {
+        serverFiles.push({
+          path: script.path,
+          size: formatBytes(script.content.length),
+        })
+      }
 
       for (const file of await copyDbFilesPromise) {
         serverFiles.push({
@@ -265,10 +296,12 @@ await Promise.all([
 
       resolveServerBuildHash(hash(minified))
 
-      return [minified, await buildHashPromise] as const
+      return [minified, await buildHashPromise, scripts] as const
     })
-    .then(([minified, buildHash]) => {
-      return Bun.build({
+    .then(async ([minified, buildHash, scripts]) => {
+      const promises = scripts.map(script => Bun.write(script.path, script.content))
+
+      await Bun.build({
         entrypoints: ['/index.ts'],
         files: {
           '/index.ts': minified.replace('$INJECT_VERSION$', buildHash),
@@ -279,10 +312,14 @@ await Promise.all([
         },
         target: 'bun',
       })
+
+      return promises
     })
-    .then(() => $`bun ./dist -v`.text())
-    .then(version => {
+    .then(async promises => [await $`bun ./dist -v`.text(), promises] as const)
+    .then(([version, promises]) => {
       appVersion = version.trim()
+
+      return Promise.all(promises)
     }),
 ])
 
