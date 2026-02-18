@@ -1,7 +1,7 @@
 {
   "name": "web-animeh",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "bun run dev.ts",
@@ -9,7 +9,9 @@
     "preview": "bun run build.ts && bun ./dist --log",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check"
   },
   "dependencies": {
     "@ivaniuk/moov-faststart": "^1.0.9",
@@ -73,8 +75,7 @@
     "eslint-plugin-react": "^7.36.1",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.12",
-    "prettier": "^3.3.3",
-    "prettier-plugin-tailwindcss": "^0.7.2",
+    "oxfmt": "^0.33.0",
     "tailwind-scrollbar": "^4.0.2",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.6.2",

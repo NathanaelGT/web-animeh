@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "semi": false,
+  "singleQuote": true,
+  "arrowParens": "avoid",
+  "quoteProps": "consistent",
+  "ignorePatterns": ["drizzle/**", "index.html", "src/routeTree.gen.ts"],
+  "experimentalSortImports": {
+    "newlinesBetween": false,
+    "partitionByComment": true,
+    "groups": [
+      "value-builtin",
+      "value-external",
+      "value-internal",
+      "value-parent",
+      "value-sibling",
+      "value-index",
+      "type",
+      "unknown"
+    ]
+  },
+  "experimentalTailwindcss": {
+    "stylesheet": "src/client/index.css",
+    "functions": ["clsx", "cn", "cva"],
+    "attributes": [
+      "data-subs-header",
+      "indicatorClassName",
+      "childrenClassName",
+      "wrapperClassName",
+      "tipClassName"
+    ]
+  }
+}
