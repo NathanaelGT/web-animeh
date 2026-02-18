@@ -1,5 +1,6 @@
 import mitt, { type Emitter } from 'mitt'
 import { downloadMeta } from './meta'
+import type * as downloadText from '~/shared/anime/episode/downloadText'
 
 export type DownloadProgress = {
   speed: number
@@ -7,21 +8,11 @@ export type DownloadProgress = {
   totalLength: number | null
 }
 
-export type OptimizingProgress = {
-  percent: number
-}
-
 export type DownloadProgressData =
   | {
       status: 'DOWNLOADING'
       progress: DownloadProgress
       text?: string
-      done?: undefined
-    }
-  | {
-      status: 'OPTIMIZING'
-      progress: OptimizingProgress
-      text?: undefined
       done?: undefined
     }
   | {
@@ -33,7 +24,7 @@ export type DownloadProgressData =
   | {
       status: 'OTHER'
       progress?: undefined
-      text: 'Video selesai diunduh'
+      text: typeof downloadText.FINISH
       done: true
     }
 

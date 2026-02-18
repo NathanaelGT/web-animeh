@@ -9,6 +9,7 @@ import {
   type DownloadProgressData,
 } from '~s/external/download/progress'
 import { searchEpisode } from '~/shared/utils/episode'
+import * as downloadText from '~/shared/anime/episode/downloadText'
 
 export const AnimeRouter = router({
   episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input: animeId }) => {
@@ -68,7 +69,7 @@ export const AnimeRouter = router({
           setTimeout(() => {
             updateStatus(episodeNumber, {
               status: 'OTHER',
-              text: 'Video selesai diunduh',
+              text: downloadText.FINISH,
               done: true,
             })
 

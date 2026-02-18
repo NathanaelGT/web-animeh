@@ -193,7 +193,7 @@ await Promise.all([
     }),
 
   Bun.build({
-    entrypoints: ['./src/server/index.ts'],
+    entrypoints: ['./src/server/index.ts', './src/server/faststart.ts'],
     define: {
       'import.meta.env.PROD': 'true',
       'Bun.env.PROD': 'true',

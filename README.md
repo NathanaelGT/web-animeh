@@ -4,7 +4,6 @@
 
 - [Git](https://git-scm.com/) (dev)
 - [Bun](https://bun.sh)
-- [FFmpeg](https://www.ffmpeg.org)
 
 # Installation
 

@@ -4,11 +4,11 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { episodeListStore } from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
-import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
 import { Status } from '@/page/anime/episode/number/Status'
 import { Download } from '@/page/anime/episode/number/Download'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
 import { VideoPlayerOrStatus } from '@/page/anime/episode/number/VideoPlayerOrStatus'
+import * as downloadText from '~/shared/anime/episode/downloadText'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,
@@ -41,18 +41,13 @@ function EpisodeNumber() {
             params={params}
             progress={download.progress}
           />
-        ) : status === 'OPTIMIZING' ? (
-          <Status
-            icon={<Wand />}
-            progress={<OptimalizationProgress progress={download.progress} />}
-          >
-            Mengoptimalisasi video
-          </Status>
         ) : status === 'OTHER' ? (
           <Status
             icon={
-              download.text === 'Video selesai diunduh' ? (
+              download.text === downloadText.FINISH ? (
                 <CircleCheckBig />
+              ) : download.text === downloadText.OPTIMIZING ? (
+                <Wand />
               ) : download.text.startsWith('Menunggu') ? (
                 <Hourglass />
               ) : (

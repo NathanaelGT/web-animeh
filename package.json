@@ -12,6 +12,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@ivaniuk/moov-faststart": "^1.0.9",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-context-menu": "^2.2.1",
     "@radix-ui/react-dialog": "^1.1.1",

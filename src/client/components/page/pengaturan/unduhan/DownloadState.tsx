@@ -3,8 +3,8 @@ import { useRouter } from '@tanstack/react-router'
 import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { rpc } from '~c/trpc'
 import { DownloadProgress } from '@/ui/custom/download-progress'
-import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
 import { DownloadDropdown } from './DownloadDropdown'
+import * as downloadText from '~/shared/anime/episode/downloadText'
 import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
 import type { DownloadMeta } from '~s/external/download/meta'
 
@@ -53,12 +53,12 @@ export function DownloadState({ name, data }: Props) {
         <div className="my-auto w-6">
           {data.status === 'DOWNLOADING' ? (
             <DownloadIcon />
-          ) : data.status === 'OPTIMIZING' ? (
+          ) : data.text === downloadText.OPTIMIZING ? (
             <Wand />
+          ) : data.text === downloadText.FINISH ? (
+            <CircleCheckBig />
           ) : data.text.startsWith('Menunggu') ? (
             <Hourglass />
-          ) : data.text === 'Video selesai diunduh' ? (
-            <CircleCheckBig />
           ) : (
             <LoaderCircle className="animate-spin" />
           )}
@@ -66,19 +66,15 @@ export function DownloadState({ name, data }: Props) {
 
         <Title name={name} />
 
-        {data.status !== 'OPTIMIZING' && data.text !== 'Video selesai diunduh' && (
+        {data.text !== downloadText.OPTIMIZING && data.text !== downloadText.FINISH && (
           <DownloadDropdown downloadName={name} />
         )}
       </div>
 
       {data.status === 'DOWNLOADING' ? (
         <DownloadProgress progress={data.progress} text={data.text} />
-      ) : data.status === 'OPTIMIZING' ? (
-        <OptimalizationProgress progress={data.progress}>
-          <p className="text-center">Mengoptimalisasi video</p>
-        </OptimalizationProgress>
       ) : (
-        <p>{data.text}</p>
+        <p className="text-center">{data.text}</p>
       )}
     </div>
   )

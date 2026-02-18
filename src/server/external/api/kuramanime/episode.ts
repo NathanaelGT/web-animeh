@@ -20,7 +20,6 @@ import {
   downloadProgressController,
   downloadSizeMap,
   type DownloadProgress,
-  type OptimizingProgress,
 } from '~s/external/download/progress'
 import { downloadMeta } from '~s/external/download/meta'
 import { executeLeviathan } from '~s/external/api/kuramanime/executeLeviathan'
@@ -33,6 +32,8 @@ import { formatBytes } from '~/shared/utils/byte'
 import { parseFromJsObjectString } from '~/shared/utils/json'
 import { toSearchParamString } from '~/shared/utils/url'
 import { timeoutThrow } from '~/shared/utils/promise'
+import { dir } from '~/shared/utils/file'
+import * as downloadText from '~/shared/anime/episode/downloadText'
 
 const kuramanimeInitProcessSchema = v.object({
   env: v.object({
@@ -261,18 +262,12 @@ export const downloadEpisode = async (
   const emitKey = generateEmitKey(animeData, episodeNumber)
 
   function emit(data: string): void
-  function emit(data: OptimizingProgress): void
   function emit(data: DownloadProgress, text?: string): void
-  function emit(data: string | OptimizingProgress | DownloadProgress, text?: string) {
+  function emit(data: string | DownloadProgress, text?: string) {
     if (typeof data === 'string') {
       downloadProgress.emit(emitKey, {
         status: 'OTHER',
         text: data,
-      })
-    } else if ('percent' in data) {
-      downloadProgress.emit(emitKey, {
-        status: 'OPTIMIZING',
-        progress: data,
       })
     } else {
       downloadProgress.emit(emitKey, {
@@ -379,96 +374,20 @@ export const downloadEpisode = async (
     const optimizeVideo = async () => {
       if (await (isVideoAlreadyOptimizedPromise ?? isMoovAtomInFront())) {
         await fs.rename(tempFilePath, filePath)
+      } else {
+        emit(downloadText.OPTIMIZING)
 
-        onFinish?.()
-
-        done('Video selesai diunduh')
-
-        return
-      }
-
-      emit({ percent: 0 })
-
-      const ffmpeg = Bun.spawn(
-        [
-          'ffmpeg',
-          '-i',
+        await Bun.spawn([
+          'bun',
+          dir(Bun.main) + '/faststart.' + (Bun.env.PROD ? 'js' : 'ts'),
           tempFilePath,
-          '-c',
-          'copy',
-          '-movflags',
-          '+faststart',
-          '-v',
-          'quiet',
-          '-stats',
           filePath,
-        ],
-        // ffmpeg nulis hasilnya ke stderr, bukan stdout
-        {
-          stdin: 'ignore',
-          stdout: 'ignore',
-          stderr: 'pipe',
-        },
-      )
-
-      const ffmpegReader = ffmpeg.stderr.getReader()
-      const textDecoder = new TextDecoder()
-
-      // engga pake instance tempFile karena kena cache
-      const videoSize = Bun.file(tempFilePath).size
-
-      let intervalId: Timer | undefined
-
-      let buffer = ''
-      while (true) {
-        const { done, value } = await ffmpegReader.read()
-        if (done) {
-          emit({ percent: 100 })
-
-          if (intervalId) {
-            clearInterval(intervalId)
-          }
-
-          break
-        }
-
-        // diwindows, output dari ffmpeg bisa kena buffer
-        // jadi progressnya kepisah jadi lebih dari 1 message
-        buffer += textDecoder.decode(value)
-
-        const indexOfTerminator = buffer.indexOf('\r')
-        if (indexOfTerminator === -1) {
-          continue
-        }
-
-        const message = buffer.slice(0, indexOfTerminator)
-        buffer = buffer.slice(indexOfTerminator + 1)
-
-        const sizeIndex = message.lastIndexOf('size=  ')
-        if (sizeIndex > -1) {
-          const sizeKilo = parseInt(message.slice(sizeIndex + 'size=  '.length))
-          let progress = ((sizeKilo * 1024) / videoSize) * 100
-
-          emit({ percent: progress })
-
-          // setelah progress diatas 91%, ffmpegnya bakal stuck agak lama
-          // jadi biar progressnya ga stuck, dibuat progress palsu
-          if (!intervalId && progress > 91) {
-            intervalId = setInterval(() => {
-              // 2 angka magic yang kira kira pas
-              progress += (100 - progress) / 2
-
-              emit({ percent: progress })
-            }, 500) // ffmpeg nampilin progressnya tiap 500ms
-          }
-        }
+        ]).exited
       }
-
-      await fs.rm(tempFilePath)
 
       onFinish?.()
 
-      done('Video selesai diunduh')
+      done(downloadText.FINISH)
     }
 
     const metadataLock = new Promise<void>(releaseMetadataLock => {
