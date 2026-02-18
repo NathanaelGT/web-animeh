@@ -1,8 +1,8 @@
 import { memo } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { rpc } from '~c/trpc'
 import { DownloadProgress } from '@/ui/custom/download-progress'
+import { EpisodeStateIcon } from '@/ui/custom/episode-state-icon'
 import { DownloadDropdown } from './DownloadDropdown'
 import * as downloadText from '~/shared/anime/episode/downloadText'
 import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
@@ -51,17 +51,7 @@ export function DownloadState({ name, data }: Props) {
     <div className="grid gap-3">
       <div className="flex gap-4">
         <div className="my-auto w-6">
-          {data.status === 'DOWNLOADING' ? (
-            <DownloadIcon />
-          ) : data.text === downloadText.OPTIMIZING ? (
-            <Wand />
-          ) : data.text === downloadText.FINISH ? (
-            <CircleCheckBig />
-          ) : data.text.startsWith('Menunggu') ? (
-            <Hourglass />
-          ) : (
-            <LoaderCircle className="animate-spin" />
-          )}
+          <EpisodeStateIcon data={data} />
         </div>
 
         <Title name={name} />

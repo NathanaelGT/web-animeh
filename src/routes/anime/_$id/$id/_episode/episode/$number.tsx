@@ -1,14 +1,13 @@
 import { useState, useLayoutEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
-import { Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { episodeListStore } from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
 import { Status } from '@/page/anime/episode/number/Status'
 import { Download } from '@/page/anime/episode/number/Download'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
 import { VideoPlayerOrStatus } from '@/page/anime/episode/number/VideoPlayerOrStatus'
-import * as downloadText from '~/shared/anime/episode/downloadText'
+import { EpisodeStateIcon } from '@/ui/custom/episode-state-icon'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,
@@ -42,21 +41,7 @@ function EpisodeNumber() {
             progress={download.progress}
           />
         ) : status === 'OTHER' ? (
-          <Status
-            icon={
-              download.text === downloadText.FINISH ? (
-                <CircleCheckBig />
-              ) : download.text === downloadText.OPTIMIZING ? (
-                <Wand />
-              ) : download.text.startsWith('Menunggu') ? (
-                <Hourglass />
-              ) : (
-                <LoaderCircle className="animate-spin" />
-              )
-            }
-          >
-            {download.text}
-          </Status>
+          <Status icon={<EpisodeStateIcon data={download} />}>{download.text}</Status>
         ) : status === 'DOWNLOADED' || streamingUrl ? (
           <VideoPlayer
             key={`${params.id}|${params.number}`}
