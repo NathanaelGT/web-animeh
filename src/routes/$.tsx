@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import InfiniteScroll from 'react-infinite-scroll-component'
 import { scrollbarWidth } from '~c/main'
-import { api, type rpc } from '~c/trpc'
 import { fetchRouteData } from '~c/route'
 import { animeListPages } from '~c/stores'
-import { randomBetween } from '~/shared/utils/number'
+import { api, type rpc } from '~c/trpc'
 import { oneRemInPx } from '~c/utils/css'
-import { Skeleton } from '@/ui/skeleton'
 import { PosterDisplayGroup } from '@/page/home/PosterDisplayGroup'
+import { Skeleton } from '@/ui/skeleton'
+import { randomBetween } from '~/shared/utils/number'
 
 type Params = Parameters<(typeof rpc.route)['/']['query']>[0]
 
@@ -145,7 +145,7 @@ function PendingIndex() {
     for (let i = 0; i < perPage; i++) {
       children[i] = (
         <div key={i} className={`mx-auto w-[162px] ${delays[i % delays.length]}`}>
-          <Skeleton className="h-[229px] w-[162px] rounded-md shadow-sm outline-solid outline-1 outline-slate-600/20" />
+          <Skeleton className="h-[229px] w-[162px] rounded-md shadow-sm outline-1 outline-slate-600/20 outline-solid" />
 
           <Skeleton
             style={{

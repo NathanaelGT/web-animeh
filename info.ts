@@ -1,4 +1,3 @@
-import type { MaybePromise } from 'bun'
 import os from 'os'
 import ky from 'ky'
 import { formatNs } from 'src/server/utils/time'
@@ -82,7 +81,7 @@ const sources = {
       return isProd ? 'Server' : 'Dev Server'
     },
   },
-} satisfies Record<string, { ttl?: number; getter(): MaybePromise<unknown> }>
+} satisfies Record<string, { ttl?: number; getter(): Bun.MaybePromise<unknown> }>
 
 const now = Math.floor(Date.now() / 1000)
 

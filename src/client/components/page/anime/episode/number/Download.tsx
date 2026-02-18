@@ -1,10 +1,10 @@
-import { useState, useEffect, type Dispatch, type SetStateAction } from 'react'
 import { useStore } from '@tanstack/react-store'
-import { api } from '~c/trpc'
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react'
 import { animeDataStore } from '~c/stores'
+import { api } from '~c/trpc'
 import { createKeybindHandler } from '~c/utils/eventHandler'
-import { combineFunction } from '~/shared/utils/function'
 import { Button } from '@/ui/button'
+import { combineFunction } from '~/shared/utils/function'
 
 type Props = {
   params: {
@@ -79,10 +79,20 @@ export function Download({ params, isPending, setStreamingUrl }: Props) {
         {title} belum{isPending ? ' selesai' : ''} diunduh
       </p>
       <div className="grid w-full max-w-96 grid-cols-2 gap-4">
-        <Button onClick={requestDownload} variant="indigo" size="sm" className="font-bold">
+        <Button
+          onClick={requestDownload}
+          variant="indigo"
+          size="sm"
+          className="cursor-pointer font-bold"
+        >
           {isPending ? 'Lanjutkan Unduhan' : 'Unduh'}
         </Button>
-        <Button onClick={requestStreaming} variant="secondary" size="sm" className="font-bold">
+        <Button
+          onClick={requestStreaming}
+          variant="secondary"
+          size="sm"
+          className="cursor-pointer font-bold"
+        >
           Streaming
         </Button>
       </div>

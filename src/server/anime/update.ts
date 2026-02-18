@@ -1,5 +1,5 @@
-import ky from 'ky'
 import { eq } from 'drizzle-orm'
+import ky from 'ky'
 import { db } from '~s/db'
 import {
   animeToGenres,
@@ -8,13 +8,13 @@ import {
   animeRelationships,
   studios,
 } from '~s/db/schema'
-import { imagesDirPath } from '~s/utils/path'
 import { anime } from '~s/db/schema'
-import { limitRequest } from '~s/external/limit'
-import { extension } from '~/shared/utils/file'
 import { jikanQueue, jikanClient } from '~s/external/api/jikan'
-import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
+import { limitRequest } from '~s/external/limit'
+import { imagesDirPath } from '~s/utils/path'
+import { extension } from '~/shared/utils/file'
 import type { Anime as JikanAnime, JikanResponseFull } from '@tutkli/jikan-ts'
+import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
 
 const parseMalDurationRegex = new RegExp('(?:([0-9]+)hr)?(?:([0-9]+)min)?')
 const parseMalDuration = (duration: string | null | undefined) => {

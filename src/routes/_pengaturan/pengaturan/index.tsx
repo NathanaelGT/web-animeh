@@ -1,5 +1,5 @@
-import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import { profileStore } from '~c/stores'
 import { api } from '~c/trpc'
 import { Input } from '@/ui/input'

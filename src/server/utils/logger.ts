@@ -2,11 +2,11 @@ import fs from 'fs/promises'
 import path from 'path'
 import SuperJSON from 'superjson'
 import { argv } from '~s/argv'
+import { format } from '~/shared/utils/date'
+import { isEmpty } from '~/shared/utils/object'
 import { fill } from './cli'
 import { basePath } from './path'
 import { formatNs } from './time'
-import { format } from '~/shared/utils/date'
-import { isEmpty } from '~/shared/utils/object'
 import type { WebSocketData } from '~s/index'
 
 const logDir = path.join(basePath, 'logs')

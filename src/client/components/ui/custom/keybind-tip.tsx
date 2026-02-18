@@ -26,7 +26,7 @@ export function KeybindTip<TGroup extends keyof KeybindGroups>({
   return (
     <div
       className={cn(
-        'min-w-5 whitespace-nowrap rounded-sm border p-1 text-center text-xs text-muted-foreground transition-opacity',
+        'min-w-5 rounded-sm border p-1 text-center text-xs whitespace-nowrap text-muted-foreground transition-opacity',
         className,
         show ? 'opacity-100' : 'opacity-0',
       )}

@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import ky from 'ky'
 import { db } from '~s/db'
-import { buildConflictUpdateColumns } from '~s/utils/db'
 import { anime, characters, persons, animeToCharacters, characterToPersons } from '~s/db/schema'
 import { jikanClient, jikanQueue } from '~s/external/api/jikan'
-import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
-import { imagesDirPath } from '~s/utils/path'
 import { limitRequest } from '~s/external/limit'
+import { buildConflictUpdateColumns } from '~s/utils/db'
+import { imagesDirPath } from '~s/utils/path'
+import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { extension } from '~/shared/utils/file'
 
 type Config = { priority?: number }

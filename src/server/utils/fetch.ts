@@ -1,7 +1,7 @@
-import * as v from 'valibot'
 import ky, { type Input, type KyInstance, type Options, type ResponsePromise } from 'ky'
-import { limitRequest } from '~s/external/limit'
+import * as v from 'valibot'
 import { SilentError } from '~s/error'
+import { limitRequest } from '~s/external/limit'
 
 type Fetcher = (url: Input, options?: Options) => ResponsePromise<unknown>
 

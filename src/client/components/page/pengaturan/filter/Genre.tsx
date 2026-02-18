@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Card } from '@/ui/card'
 import { Input } from '@/ui/input'
-import { Section } from './Section'
 import { Icon } from './Icon'
+import { Section } from './Section'
 import type { TRPCResponse } from '~/shared/utils/types'
-import type { RouteRouter } from '~/server/trpc-procedures/route'
+import type { RouteRouter } from '~s/trpc-procedures/route'
 
 type Props = {
   genres: TRPCResponse<(typeof RouteRouter)['/pengaturan/filter']>['genres']

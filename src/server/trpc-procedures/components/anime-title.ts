@@ -1,6 +1,6 @@
 import * as v from 'valibot'
-import { procedure, router } from '~s/trpc'
 import { getKuramanimeOrigin } from '~s/ky'
+import { procedure, router } from '~s/trpc'
 import { omit } from '~/shared/utils/object'
 
 export const AnimeTitleRouter = router({

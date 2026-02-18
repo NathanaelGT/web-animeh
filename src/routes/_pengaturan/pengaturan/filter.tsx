@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { RatingSection } from '@/page/pengaturan/filter/Rating'
-import { GenreSection } from '@/page/pengaturan/filter/Genre'
 import { fetchRouteData } from '~c/route'
+import { GenreSection } from '@/page/pengaturan/filter/Genre'
+import { RatingSection } from '@/page/pengaturan/filter/Rating'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/filter')({
   component: PengaturanKeybind,

@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useState } from 'react'
 import { api } from '~c/trpc'
-import { useToast } from '@/ui/use-toast'
+import { Image } from '@/Image'
 import { MapArray } from '@/logic/MapArray'
 import { MapTrpc } from '@/logic/MapTrpc'
-import { ToastAction } from '@/ui/toast'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -15,7 +14,8 @@ import {
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 } from '@/ui/context-menu'
-import { Image } from '@/Image'
+import { ToastAction } from '@/ui/toast'
+import { useToast } from '@/ui/use-toast'
 import type { PropsWithChildren } from 'react'
 
 type Props = PropsWithChildren<{
@@ -44,7 +44,7 @@ export function AnimePoster({ small, asLink, anime, tabIndex, className, childre
       style={{ viewTransitionName: `anime-poster-${anime.id}` }}
       className={
         (small ? 'h-[229px] w-[162px]' : 'h-[318px] w-[225px]') +
-        ' rounded-md bg-muted object-cover shadow-sm outline-solid outline-1 outline-slate-600/20'
+        ' rounded-md bg-muted object-cover shadow-sm outline-1 outline-slate-600/20 outline-solid'
       }
     />
   )

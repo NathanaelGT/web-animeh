@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { PlusCircledIcon } from '@radix-ui/react-icons'
 import { useStore } from '@tanstack/react-store'
 import { Check, ChevronsUpDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { clientProfileNameStore } from '~c/stores'
-import { PlusCircledIcon } from '@radix-ui/react-icons'
+import { api } from '~c/trpc'
 import { cn } from '~c/utils'
 import { Button } from '@/ui/button'
 import { Command, CommandGroup, CommandItem, CommandList, CommandSeparator } from '@/ui/command'
@@ -18,9 +19,8 @@ import {
 import { Input } from '@/ui/input'
 import { Label } from '@/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
-import { api } from '~c/trpc'
-import type { ProfileRouter } from '~s/trpc-procedures/profile'
 import type { TRPCResponse } from '~/shared/utils/types'
+import type { ProfileRouter } from '~s/trpc-procedures/profile'
 
 type Profiles = TRPCResponse<(typeof ProfileRouter)['list']>
 

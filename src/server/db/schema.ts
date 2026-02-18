@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm'
 import {
   customType,
   text,
@@ -6,9 +7,8 @@ import {
   sqliteTable,
   foreignKey,
 } from 'drizzle-orm/sqlite-core'
-import { relations } from 'drizzle-orm'
-import type * as v from 'valibot'
 import type { SuperJSONResult } from 'superjson'
+import type * as v from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
 const dateDiv100 = customType<{ data: Date }>({

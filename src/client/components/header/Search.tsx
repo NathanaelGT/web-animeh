@@ -1,20 +1,20 @@
+import { Link } from '@tanstack/react-router'
 import React, { useRef, useState, useEffect } from 'react'
 import { flushSync } from 'react-dom'
-import { Link } from '@tanstack/react-router'
-import { api } from '~c/trpc'
 import { clientProfileSettingsStore, headerSubscribersStore, headerLatestYStore } from '~c/stores'
-import { createKeybindMatcher } from '~c/utils/keybind'
+import { api } from '~c/trpc'
 import { createKeybindHandler, globalKeydownHandlerState } from '~c/utils/eventHandler'
+import { createKeybindMatcher } from '~c/utils/keybind'
+import { AnimeDuration } from '@/Anime/Duration'
+import { AnimeEpisode } from '@/Anime/Episode'
+import { AnimeRating } from '@/Anime/Rating'
+import { AnimeType } from '@/Anime/Type'
+import { HYBRID_HEADER_CLASS_ON_HIDDEN } from '@/Header'
 import { Image } from '@/Image'
 import { InputKeybind } from '@/ui/custom/input-keybind'
 import { SimpleTooltip } from '@/ui/tooltip'
-import { AnimeType } from '@/Anime/Type'
-import { AnimeRating } from '@/Anime/Rating'
-import { AnimeDuration } from '@/Anime/Duration'
-import { AnimeEpisode } from '@/Anime/Episode'
-import { HYBRID_HEADER_CLASS_ON_HIDDEN } from '@/Header'
-import type { SearchProcedure } from '~s/trpc-procedures/search'
 import type { TRPCResponse } from '~/shared/utils/types'
+import type { SearchProcedure } from '~s/trpc-procedures/search'
 
 type Props = {
   headerRef: React.MutableRefObject<HTMLElement | null>
@@ -303,7 +303,7 @@ export function Search({ headerRef, className }: Props) {
                     <Image
                       src={result.id}
                       tabIndex={-1}
-                      className="h-[89px] w-[63px] rounded-md shadow-sm outline-solid outline-1 outline-slate-600/20"
+                      className="h-[89px] w-[63px] rounded-md shadow-sm outline-1 outline-slate-600/20 outline-solid"
                     />
                   </Link>
 

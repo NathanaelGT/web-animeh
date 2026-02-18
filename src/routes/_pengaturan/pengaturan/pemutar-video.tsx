@@ -1,19 +1,19 @@
-import React, { useState, type PropsWithChildren, type ReactNode } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
+import React, { useState, type PropsWithChildren, type ReactNode } from 'react'
 import TextTransition, { presets } from 'react-text-transition'
-import { clientProfileSettingsStore, profileStore } from '~c/stores'
-import { api } from '~c/trpc'
 import { useStoreState } from '~c/hooks/useStoreState'
 import { keybindTranslation } from '~c/keybind'
+import { clientProfileSettingsStore, profileStore } from '~c/stores'
+import { api } from '~c/trpc'
 import { cn } from '~c/utils'
 import { formatKeybind } from '~c/utils/keybind'
-import { ucFirst } from '~/shared/utils/string'
-import { clamp } from '~/shared/utils/number'
-import { Label } from '@/ui/label'
-import { Checkbox } from '@/ui/checkbox'
 import { Card } from '@/ui/card'
+import { Checkbox } from '@/ui/checkbox'
+import { Label } from '@/ui/label'
 import { SimpleTooltip } from '@/ui/tooltip'
+import { clamp } from '~/shared/utils/number'
+import { ucFirst } from '~/shared/utils/string'
 import type { InferOutput } from 'valibot'
 import type { videoPlayerSchema, settingsSchema } from '~/shared/profile/settings'
 
@@ -166,7 +166,7 @@ function InputNumber({
         'w-fit transition-transform' +
         (value === clientProfileSettingsStore.state.videoPlayer[name] * multiplier
           ? ''
-          : ' translate-x-[.1rem] -skew-x-18')
+          : 'translate-x-[.1rem] -skew-x-18')
       }
     >
       {label}
@@ -299,7 +299,7 @@ function KeybindCombination<TGroup extends keyof KeybindGroups>({
         })}
       </div>
 
-      <div className="flex select-none items-center gap-2">
+      <div className="flex items-center gap-2 select-none">
         {combination.length ? (
           combination.map((key, index) => (
             <React.Fragment key={index}>

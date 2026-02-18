@@ -1,13 +1,13 @@
 import { observable } from '@trpc/server/observable'
 import * as v from 'valibot'
-import { procedure, router } from '~s/trpc'
+import { downloadMeta } from '~s/external/download/meta'
 import {
   downloadProgress,
   downloadProgressSnapshot,
   downloadProgressController,
   type DownloadProgressData,
 } from '~s/external/download/progress'
-import { downloadMeta } from '~s/external/download/meta'
+import { procedure, router } from '~s/trpc'
 import { omit } from '~/shared/utils/object'
 import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
 

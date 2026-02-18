@@ -1,13 +1,13 @@
+import { useStore } from '@tanstack/react-store'
+import { Filter } from 'lucide-react'
 import React, { useId } from 'react'
 import { flushSync } from 'react-dom'
-import { Filter } from 'lucide-react'
-import { useStore } from '@tanstack/react-store'
 import { clientProfileSettingsStore } from '~c/stores'
-import { episodeDisplayMode } from '~/shared/profile/settings'
 import { Button } from '@/ui/button'
 import { Label } from '@/ui/label'
 import { Popover, PopoverContent, PopoverTrigger, PopoverArrow } from '@/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select'
+import { episodeDisplayMode } from '~/shared/profile/settings'
 
 type FilterInputProps<TValue> = {
   label: string

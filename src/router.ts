@@ -1,6 +1,6 @@
 import { createRouter as createTanstackRouter } from '@tanstack/react-router'
-import { routeTree } from '~/routeTree.gen'
 import { Pending } from '@/Pending'
+import { routeTree } from '~/routeTree.gen'
 
 export const createRouter = () => {
   return createTanstackRouter({

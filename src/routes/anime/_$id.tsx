@@ -1,8 +1,8 @@
-import { useLayoutEffect } from 'react'
 import { createFileRoute, useRouter, Outlet } from '@tanstack/react-router'
+import { useLayoutEffect } from 'react'
 import { fetchRouteData } from '~c/route'
-import { Image } from '@/Image'
 import { animeDataStore, headerChildStore } from '~c/stores'
+import { Image } from '@/Image'
 
 export const Route = createFileRoute('/anime/_$id')({
   component: AnimeIdLayout,

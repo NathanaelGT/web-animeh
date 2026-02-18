@@ -6,8 +6,9 @@ import type { settingsSchema } from '~/shared/profile/settings'
 
 type KeybindGroups = InferOutput<typeof settingsSchema>['keybind']
 
-export interface InputKeybindProps<TGroup extends keyof KeybindGroups>
-  extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputKeybindProps<
+  TGroup extends keyof KeybindGroups,
+> extends React.InputHTMLAttributes<HTMLInputElement> {
   keybindId: [TGroup, keyof KeybindGroups[TGroup]]
   wrapperRef?:
     | React.MutableRefObject<HTMLDivElement | null>
@@ -46,7 +47,7 @@ export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function Inp
         }
       }}
       className={cn(
-        'flex h-10 rounded-md border border-input ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2',
+        'flex h-10 rounded-md border border-input ring-0! ring-ring ring-offset-transparent focus-within:ring-2 focus-within:ring-offset-2 focus-within:outline-hidden',
         wrapperClassName,
       )}
     >

@@ -1,6 +1,6 @@
 import { Store } from '@tanstack/store'
-import { profileStore } from './profile'
 import { parse, defaultSettings } from '~/shared/profile/settings'
+import { profileStore } from './profile'
 
 const localStorageKey = 'profileSettings'
 

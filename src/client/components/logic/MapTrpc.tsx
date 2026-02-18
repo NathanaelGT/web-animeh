@@ -1,6 +1,6 @@
 import { MapArray } from './MapArray'
-import type { ReactNode } from 'react'
 import type { UseTRPCQueryResult } from '@trpc/react-query/shared'
+import type { ReactNode } from 'react'
 
 export function MapTrpc<TArray extends unknown[], TError extends unknown, TFilter extends boolean>({
   query,

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { api } from '~c/trpc'
-import { profileStore } from '~c/stores'
 import { keybindGroupConflicts, keybindTranslation } from '~c/keybind'
+import { profileStore } from '~c/stores'
+import { api } from '~c/trpc'
 import { createKeybindMatcher, keybindCombinationsMatch, formatKeybind } from '~c/utils/keybind'
-import { Label } from '@/ui/label'
-import { Input } from '@/ui/input'
 import { Button } from '@/ui/button'
 import { DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogClose } from '@/ui/dialog'
+import { Input } from '@/ui/input'
+import { Label } from '@/ui/label'
 
 type Props = {
   group: string

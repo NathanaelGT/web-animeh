@@ -1,10 +1,10 @@
 import { createBunWSHandler } from 'trpc-bun-adapter'
-import { createTRPCContext } from '~s/trpc'
-import { TRPCRouter } from '~s/router'
-import { basePath } from '~s/utils/path'
+import { handleVideoRequest } from '~s/http-handler/video'
 // import { safePath } from '~s/utils/path'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
-import { handleVideoRequest } from '~s/http-handler/video'
+import { TRPCRouter } from '~s/router'
+import { createTRPCContext } from '~s/trpc'
+import { basePath } from '~s/utils/path'
 import type { WebSocketData } from './index'
 
 let indexHtml: ArrayBuffer

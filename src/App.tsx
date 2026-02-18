@@ -1,5 +1,5 @@
-import { StrictMode } from 'react'
 import { RouterProvider } from '@tanstack/react-router'
+import { StrictMode } from 'react'
 import TRPCReactProvider from '~c/TRPCReactProvider'
 import { createRouter } from '~/router'
 import '~c/index.css'

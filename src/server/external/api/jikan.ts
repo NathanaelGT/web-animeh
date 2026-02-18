@@ -1,6 +1,6 @@
+import { BaseURL, JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
 import ky from 'ky'
 import PQueue from 'p-queue'
-import { BaseURL, JikanClient, type JikanPagination } from '@tutkli/jikan-ts'
 
 const kyJikan = ky.create({
   prefixUrl: BaseURL,

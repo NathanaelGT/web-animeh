@@ -1,7 +1,7 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
 import { useStoreState } from '~c/hooks/useStoreState'
 import { clientProfileSettingsStore, profileStore } from '~c/stores'
 import { api } from '~c/trpc'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card'
 import type { ReactNode, JSX } from 'react'
 
 type Filters = NonNullable<typeof profileStore.state>['settings']['animeFilter']

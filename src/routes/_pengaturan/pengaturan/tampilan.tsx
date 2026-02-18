@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
+import { useStore } from '@tanstack/react-store'
 import { Check, ChevronsUpDown } from 'lucide-react'
-import { api } from '~c/trpc'
+import { useState } from 'react'
 import { profileStore, clientProfileSettingsStore } from '~c/stores'
-import { picker } from '~/shared/utils/object'
-import { ucFirst } from '~/shared/utils/string'
-import { themes, headerPositions } from '~/shared/profile/settings'
+import { api } from '~c/trpc'
 import { Button } from '@/ui/button'
 import { Command, CommandGroup, CommandItem, CommandList } from '@/ui/command'
 import { labelVariants } from '@/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/popover'
+import { themes, headerPositions } from '~/shared/profile/settings'
+import { picker } from '~/shared/utils/object'
+import { ucFirst } from '~/shared/utils/string'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/tampilan')({
   component: PengaturanTampilan,

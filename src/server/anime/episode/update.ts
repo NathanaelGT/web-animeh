@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { db } from '~s/db'
+import * as episodeRepository from '~s/db/repository/episode'
+import { anime, episodes, providerEpisodes } from '~s/db/schema'
+import { jikanClient, jikanQueue } from '~s/external/api/jikan'
 import * as kyInstances from '~s/ky'
 import { buildConflictUpdateColumns } from '~s/utils/db'
-import { anime, episodes, providerEpisodes } from '~s/db/schema'
-import * as episodeRepository from '~s/db/repository/episode'
-import { jikanClient, jikanQueue } from '~s/external/api/jikan'
-import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { fetchText } from '~s/utils/fetch'
+import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
 import { episodeMitt } from './event'
 
 type Config = { priority?: number }

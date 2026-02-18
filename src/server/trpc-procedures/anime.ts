@@ -1,15 +1,15 @@
 import { observable } from '@trpc/server/observable'
 import * as v from 'valibot'
-import * as episodeRepository from '~s/db/repository/episode'
-import { procedure, router } from '~s/trpc'
 import { episodeMitt } from '~s/anime/episode/event'
+import * as episodeRepository from '~s/db/repository/episode'
 import {
   downloadProgress,
   downloadProgressSnapshot,
   type DownloadProgressData,
 } from '~s/external/download/progress'
-import { searchEpisode } from '~/shared/utils/episode'
+import { procedure, router } from '~s/trpc'
 import * as downloadText from '~/shared/anime/episode/downloadText'
+import { searchEpisode } from '~/shared/utils/episode'
 
 export const AnimeRouter = router({
   episodes: procedure.input(v.parser(v.number())).subscription(async ({ ctx, input: animeId }) => {

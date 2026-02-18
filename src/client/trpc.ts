@@ -1,19 +1,19 @@
-import { transformResult } from '@trpc/server/unstable-core-do-not-import'
-import { createWSClient, TRPCClientError } from '@trpc/client'
 import { QueryClient } from '@tanstack/react-query'
+import { createWSClient, TRPCClientError } from '@trpc/client'
 import { createTRPCReact } from '@trpc/react-query'
+import { transformResult } from '@trpc/server/unstable-core-do-not-import'
 import SuperJSON from 'superjson'
 import { clientProfileIdStore } from '~c/stores'
 import { toast, type Toast } from '@/ui/use-toast'
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore import TRPCRouter cuma sebagai type untuk TRPC
-import type { TRPCRouter } from '~s/router'
 import type {
   CreateTRPCReactBase,
   DecoratedQuery,
   DecoratedMutation,
   DecoratedSubscription,
 } from '~c/utils/trpc'
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore import TRPCRouter cuma sebagai type untuk TRPC
+import type { TRPCRouter } from '~s/router'
 
 let currentToast: ReturnType<typeof toast> | null | undefined
 let firstTime = true

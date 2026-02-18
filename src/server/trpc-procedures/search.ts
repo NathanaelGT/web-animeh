@@ -1,6 +1,6 @@
 import * as v from 'valibot'
-import { procedure } from '~s/trpc'
 import { animeSynonyms, animeToCharacters, animeToGenres, characters, genres } from '~s/db/schema'
+import { procedure } from '~s/trpc'
 import { omit } from '~/shared/utils/object'
 
 export const SearchProcedure = procedure

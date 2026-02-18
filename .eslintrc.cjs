@@ -9,11 +9,7 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react/jsx-runtime',
   ],
-  ignorePatterns: [
-    'dist',
-    '.eslintrc.cjs',
-    'drizzle.config.ts',
-  ],
+  ignorePatterns: ['dist', '.eslintrc.cjs', 'drizzle.config.ts'],
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],
   rules: {

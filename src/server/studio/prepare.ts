@@ -1,5 +1,5 @@
-import type { Producer } from '~s/external/api/jikan'
 import type { studios, studioSynonyms } from '~s/db/schema'
+import type { Producer } from '~s/external/api/jikan'
 
 export const prepareStudioData = (data: Producer) => {
   const synonyms = data.titles.slice(1)

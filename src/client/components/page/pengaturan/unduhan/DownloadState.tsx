@@ -1,10 +1,10 @@
-import { memo } from 'react'
 import { useRouter } from '@tanstack/react-router'
+import { memo } from 'react'
 import { rpc } from '~c/trpc'
 import { DownloadProgress } from '@/ui/custom/download-progress'
 import { EpisodeStateIcon } from '@/ui/custom/episode-state-icon'
-import { DownloadDropdown } from './DownloadDropdown'
 import * as downloadText from '~/shared/anime/episode/downloadText'
+import { DownloadDropdown } from './DownloadDropdown'
 import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
 import type { DownloadMeta } from '~s/external/download/meta'
 

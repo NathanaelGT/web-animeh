@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { formatKeybind } from '~c/utils/keybind'
-import { EditKeybind } from './EditKeybind'
 import { Dialog, DialogTrigger } from '@/ui/dialog'
 import { SimpleTooltip } from '@/ui/tooltip'
+import { EditKeybind } from './EditKeybind'
 
 type Props = Omit<Parameters<typeof EditKeybind>[0], 'close'> & {
   note: string | undefined
@@ -32,7 +32,7 @@ export function KeybindSetting(props: Props) {
       >
         <div className="my-auto">
           <p className="text-pretty">{name}</p>
-          {note && <p className="text-pretty text-sm text-primary/40">{note}.</p>}
+          {note && <p className="text-sm text-pretty text-primary/40">{note}.</p>}
         </div>
 
         <Dialog
@@ -63,7 +63,7 @@ export function KeybindSetting(props: Props) {
               })}
             >
               <DialogTrigger asChild>
-                <div className="flex w-fit cursor-pointer select-none items-center gap-2 rounded-md bg-primary/5 p-2">
+                <div className="flex w-fit cursor-pointer items-center gap-2 rounded-md bg-primary/5 p-2 select-none">
                   {combination.length ? (
                     combination.map((key, index) => (
                       <React.Fragment key={index}>

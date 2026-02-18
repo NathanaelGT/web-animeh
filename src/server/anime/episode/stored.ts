@@ -1,4 +1,4 @@
-import { glob, videosDirPath } from "~/server/utils/path"
+import { glob, videosDirPath } from '~s/utils/path'
 
 export const getFreshStoredAnimeIds = async () => {
   return (await glob(videosDirPath, '*', { onlyFiles: false }))

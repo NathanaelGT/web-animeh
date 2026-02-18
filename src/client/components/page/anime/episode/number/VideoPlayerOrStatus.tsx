@@ -1,10 +1,10 @@
-import { useState } from 'react'
 import { DownloadIcon } from 'lucide-react'
+import { useState } from 'react'
 import { Status } from '@/page/anime/episode/number/Status'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
+import { Button } from '@/ui/button'
 import { DownloadProgress } from '@/ui/custom/download-progress'
 import type { DownloadProgress as Progress } from '~s/external/download/progress'
-import { Button } from '@/ui/button'
 
 type Props = {
   params: {
@@ -30,7 +30,7 @@ export function VideoPlayerOrStatus({ params, progress }: Props) {
               <Button
                 variant="secondary"
                 onClick={() => setShowVideoPlayer(true)}
-                className="animate-fade-in"
+                className="animate-in fade-in"
               >
                 Nonton Sekarang
               </Button>

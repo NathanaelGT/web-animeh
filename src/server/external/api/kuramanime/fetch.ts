@@ -1,7 +1,7 @@
 import * as v from 'valibot'
+import { limitRequest } from '~s/external/limit'
 import * as kyInstances from '~s/ky'
 import { metadata } from '~s/metadata'
-import { limitRequest } from '~s/external/limit'
 
 const postSchema = v.object({
   // id: v.number(),

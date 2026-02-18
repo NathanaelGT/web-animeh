@@ -1,11 +1,11 @@
 import { memo, useState, useEffect } from 'react'
 import { animeListPages } from '~c/stores'
-import { AnimeTitle } from '@/Anime/Title'
-import { AnimePoster } from '@/Anime/Poster'
-import { AnimeType } from '@/Anime/Type'
-import { AnimeRating } from '@/Anime/Rating'
 import { AnimeDuration } from '@/Anime/Duration'
 import { AnimeEpisode } from '@/Anime/Episode'
+import { AnimePoster } from '@/Anime/Poster'
+import { AnimeRating } from '@/Anime/Rating'
+import { AnimeTitle } from '@/Anime/Title'
+import { AnimeType } from '@/Anime/Type'
 
 type Props = {
   index: number

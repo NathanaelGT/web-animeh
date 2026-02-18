@@ -1,11 +1,11 @@
 import { Database } from 'bun:sqlite'
-import path from 'path'
 import fs from 'fs'
+import path from 'path'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
-import * as schema from './schema'
-import { basePath } from '~s/utils/path'
 import { logger } from '~s/utils/logger'
+import { basePath } from '~s/utils/path'
+import * as schema from './schema'
 import type { DrizzleConfig } from 'drizzle-orm'
 
 const createDatabase = () => {

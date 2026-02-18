@@ -1,15 +1,15 @@
-import { useRef, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Settings } from 'lucide-react'
 import { useStore } from '@tanstack/react-store'
+import { Settings } from 'lucide-react'
+import { useRef, useEffect } from 'react'
 import {
   clientProfileSettingsStore,
   headerChildStore,
   headerSubscribersStore,
   headerLatestYStore,
 } from '~c/stores'
-import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
+import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { Button } from '@/ui/button'
 
 export const HYBRID_HEADER_CLASS_ON_HIDDEN = 'translate-y-[calc(-100%+1px)]'

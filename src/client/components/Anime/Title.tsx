@@ -1,12 +1,11 @@
-import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { SquarePlus, Copy } from 'lucide-react'
+import { useState } from 'react'
 import { api } from '~c/trpc'
-import { toast } from '@/ui/use-toast'
-import { MapObject } from '@/logic/MapObject'
 import { Image } from '@/Image'
-import { MyAnimeList } from '@/svg/MyAnimeList'
+import { MapObject } from '@/logic/MapObject'
 import { Kuramanime } from '@/svg/Kuramanime'
+import { MyAnimeList } from '@/svg/MyAnimeList'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -24,6 +23,7 @@ import {
   TooltipContent,
   TooltipArrow,
 } from '@/ui/tooltip'
+import { toast } from '@/ui/use-toast'
 import type { ComponentProps, ReactNode } from 'react'
 import type { AnimeData as BaseAnimeData } from '~c/stores'
 
@@ -171,12 +171,12 @@ function TitleTooltip({ animeData, children }: TitleTooltipProps) {
               <Link to="/anime/$id" params={{ id: animeData.id.toString() }} tabIndex={-1}>
                 <Image
                   src={animeData.id}
-                  className="h-[220px] w-[156px] rounded-md bg-muted object-cover shadow-sm outline-solid outline-1 outline-slate-600/20"
+                  className="h-[220px] w-[156px] rounded-md bg-muted object-cover shadow-sm outline-1 outline-slate-600/20 outline-solid"
                 />
               </Link>
               {data.synopsis ? (
                 <p
-                  className="line-clamp-1 whitespace-pre text-pretty text-justify"
+                  className="line-clamp-1 text-justify text-pretty whitespace-pre"
                   // line-height dari text-sm = 1.25rem = 20px, height gambar = 220px
                   // arbitrary value dari tailwind ngebug, gabisa pake line-clamp-11
                   style={{ WebkitLineClamp: 11 }}

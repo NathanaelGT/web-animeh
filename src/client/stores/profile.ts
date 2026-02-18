@@ -1,7 +1,7 @@
 import { Store } from '@tanstack/store'
 import { rpc } from '~c/trpc'
-import type { ProfileRouter } from '~s/trpc-procedures/profile'
 import type { TRPCResponse } from '~/shared/utils/types'
+import type { ProfileRouter } from '~s/trpc-procedures/profile'
 
 type Profile = TRPCResponse<(typeof ProfileRouter)['subs']>
 

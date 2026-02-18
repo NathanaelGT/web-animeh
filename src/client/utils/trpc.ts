@@ -17,15 +17,6 @@ import type {
 } from '@tanstack/react-query'
 import type { TRPCClientErrorLike } from '@trpc/client'
 import type {
-  AnyProcedure,
-  AnyRootTypes,
-  inferProcedureInput,
-  inferTransformedProcedureOutput,
-  ProcedureType,
-  RouterRecord,
-  Simplify,
-} from '@trpc/server/unstable-core-do-not-import'
-import type {
   TRPCFetchInfiniteQueryOptions,
   TRPCFetchQueryOptions,
   DefinedUseTRPCQueryOptions,
@@ -39,6 +30,15 @@ import type {
   UseTRPCSubscriptionOptions,
   UseTRPCSuspenseQueryOptions,
 } from '@trpc/react-query/shared'
+import type {
+  AnyProcedure,
+  AnyRootTypes,
+  inferProcedureInput,
+  inferTransformedProcedureOutput,
+  ProcedureType,
+  RouterRecord,
+  Simplify,
+} from '@trpc/server/unstable-core-do-not-import'
 
 type ResolverDef = {
   input: any

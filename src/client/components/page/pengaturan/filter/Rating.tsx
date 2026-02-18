@@ -1,8 +1,8 @@
-import { Card } from '@/ui/card'
 import { AnimeRating } from '@/Anime/Rating'
-import { Section } from './Section'
-import { Icon } from './Icon'
+import { Card } from '@/ui/card'
 import { ratings } from '~/shared/anime/rating'
+import { Icon } from './Icon'
+import { Section } from './Section'
 
 export function RatingSection() {
   return (
@@ -17,8 +17,8 @@ export function RatingSection() {
         <AnimeRating
           rating={rating}
           className={
-            'rounded-lg p-0 transition-colors' +
-            (isSelected ? ' bg-opacity-25 dark:bg-opacity-50' : '')
+            'rounded-lg p-0 transition-colors ' +
+            (isSelected ? 'bg-opacity-25 dark:bg-opacity-50' : '')
           }
         >
           <Card

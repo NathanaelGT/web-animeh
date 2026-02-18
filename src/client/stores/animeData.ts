@@ -2,7 +2,9 @@ import { Store } from '@tanstack/store'
 import { fetchRouteData } from '~c/route'
 import type { TRPCResponse } from '~/shared/utils/types'
 
-export type AnimeData = TRPCResponse<(typeof import('~s/trpc-procedures/route'))['RouteRouter']['/anime/_$id']>
+export type AnimeData = TRPCResponse<
+  (typeof import('~s/trpc-procedures/route'))['RouteRouter']['/anime/_$id']
+>
 
 export const animeDataStore = new Store<AnimeData>(null as never)
 

@@ -1,6 +1,6 @@
-import { type ReactNode, useState } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { wsLink } from '@trpc/client'
+import { type ReactNode, useState } from 'react'
 import SuperJSON from 'superjson'
 import { api, getQueryClient, wsClient } from './trpc'
 

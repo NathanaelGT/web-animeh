@@ -1,22 +1,22 @@
-import { useEffect, useMemo, memo, type ReactNode, type ReactElement } from 'react'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
+import { useEffect, useMemo, memo, type ReactNode, type ReactElement } from 'react'
 import BaseTextTransition, { presets } from 'react-text-transition'
 import { animeDataStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
-import { randomBetween } from '~/shared/utils/number'
-import { AnimeTitle } from '@/Anime/Title'
-import { SimpleBreadcrumb } from '@/ui/breadcrumb'
-import { AnimePoster } from '@/Anime/Poster'
-import { AnimeType } from '@/Anime/Type'
-import { AnimeRating } from '@/Anime/Rating'
 import { AnimeDuration } from '@/Anime/Duration'
 import { AnimeEpisode } from '@/Anime/Episode'
+import { AnimePoster } from '@/Anime/Poster'
+import { AnimeRating } from '@/Anime/Rating'
+import { AnimeTitle } from '@/Anime/Title'
+import { AnimeType } from '@/Anime/Type'
+import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { Button } from '@/ui/button'
 import { Separator } from '@/ui/separator'
 import { Skeleton } from '@/ui/skeleton'
+import { randomBetween } from '~/shared/utils/number'
 
 export const Route = createFileRoute('/anime/_$id/$id/')({
   component: AnimeId,
@@ -157,7 +157,7 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
         {animeData.synopsis ? (
           <p
             dangerouslySetInnerHTML={{ __html: animeData.synopsis }}
-            className="whitespace-pre text-wrap text-justify"
+            className="text-justify text-wrap whitespace-pre-wrap"
           />
         ) : animeData.synopsis === '' ? (
           <p className="text-muted-foreground">Tidak ada sinopsis</p>
@@ -166,7 +166,7 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 [grid-area:info] lg:-mb-10 lg:-mr-12 lg:-mt-26 lg:bg-primary/10 lg:pb-10 lg:pl-4 lg:pr-12 lg:pt-26">
+      <div className="flex flex-col gap-3 [grid-area:info] lg:-mt-26 lg:-mr-12 lg:-mb-10 lg:bg-primary/10 lg:pt-26 lg:pr-12 lg:pb-10 lg:pl-4">
         <Stat title="Sinonim" stat={animeData.synonyms.join(', ')} />
 
         {animeData.airedFrom &&
@@ -273,7 +273,7 @@ function Transition({ text }: TransitionProps) {
   return (
     <div className="relative inline-block">
       <span className="invisible">{text}</span>
-      <div className="absolute left-0 top-0 flex">
+      <div className="absolute top-0 left-0 flex">
         {text.split('').map((char, i) => (
           <BaseTextTransition key={i} springConfig={presets.wobbly}>
             {char}
@@ -303,16 +303,16 @@ const PendingAnimeId = memo(function PendingAnimeId() {
       <SimpleBreadcrumb
         links={[
           <div className="flex flex-wrap gap-x-[1ch]">
-            <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={{ width: '29px' }}>
+            <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={{ width: '29px' }}>
               &nbsp;
             </Skeleton>
-            <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={{ width: '47px' }}>
+            <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={{ width: '47px' }}>
               &nbsp;
             </Skeleton>
           </div>,
           <div className="flex flex-wrap gap-x-[1ch]">
             {titleWidth.map(width => (
-              <Skeleton className="mb-1 mt-0.5 h-3.5 select-none" style={width}>
+              <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={width}>
                 &nbsp;
               </Skeleton>
             ))}
@@ -323,7 +323,7 @@ const PendingAnimeId = memo(function PendingAnimeId() {
       />
 
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
-        <Skeleton className="h-[318px] w-[225px] rounded-md shadow-sm shadow-foreground/50 outline-solid outline-1 outline-slate-600/20" />
+        <Skeleton className="h-[318px] w-[225px] rounded-md shadow-sm shadow-foreground/50 outline-1 outline-slate-600/20 outline-solid" />
 
         <div className="grid w-[225px] gap-3">
           <Skeleton className="h-11 rounded-md shadow-sm shadow-foreground/25" />
@@ -334,14 +334,14 @@ const PendingAnimeId = memo(function PendingAnimeId() {
         <div className="mt-4 sm:mt-0">
           <div className="flex flex-wrap gap-x-[1ch]">
             {titleWidth.map(width => (
-              <Skeleton className="mb-1 mt-0.5 h-7.5 select-none" style={width}>
+              <Skeleton className="mt-0.5 mb-1 h-7.5 select-none" style={width}>
                 &nbsp;
               </Skeleton>
             ))}
           </div>
           <div className={`flex flex-wrap gap-x-[1ch] ${SHADOW}`}>
             {generateTextWidth(4, 15).map(width => (
-              <Skeleton className="mb-1 mt-0.5 h-2.5 select-none" style={width}>
+              <Skeleton className="mt-0.5 mb-1 h-2.5 select-none" style={width}>
                 &nbsp;
               </Skeleton>
             ))}
@@ -361,20 +361,20 @@ const PendingAnimeId = memo(function PendingAnimeId() {
           {generateTextWidthList([1, 3], [20, 140]).map(synopsisWidth => (
             <div className="flex flex-wrap gap-x-[1ch]">
               {synopsisWidth.map(width => (
-                <Skeleton className="mb-1 mt-0.5 h-4.5" style={width} />
+                <Skeleton className="mt-0.5 mb-1 h-4.5" style={width} />
               ))}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 [grid-area:info] lg:-mb-10 lg:-mr-12 lg:-mt-26 lg:bg-primary/10 lg:pb-10 lg:pl-4 lg:pr-12 lg:pt-26">
+      <div className="flex flex-col gap-3 [grid-area:info] lg:-mt-26 lg:-mr-12 lg:-mb-10 lg:bg-primary/10 lg:pt-26 lg:pr-12 lg:pb-10 lg:pl-4">
         <Stat
-          title={<Skeleton className="mb-1 mt-0.5 h-4.5 w-15" />}
+          title={<Skeleton className="mt-0.5 mb-1 h-4.5 w-15" />}
           stat={
             <div className="flex flex-wrap gap-x-[1ch]">
               {generateTextWidth(3, 30).map(width => (
-                <Skeleton className="mb-1 mt-0.5 h-4.5" style={width} />
+                <Skeleton className="mt-0.5 mb-1 h-4.5" style={width} />
               ))}
             </div>
           }
@@ -385,19 +385,19 @@ const PendingAnimeId = memo(function PendingAnimeId() {
             <Stat
               title={
                 <div className="flex flex-wrap gap-x-[1ch]">
-                  <Skeleton className="mb-1 mt-0.5 h-4.5 w-[3.7rem]" />
-                  <Skeleton className="mb-1 mt-0.5 h-4.5 w-[3.1rem]" />
+                  <Skeleton className="mt-0.5 mb-1 h-4.5 w-[3.7rem]" />
+                  <Skeleton className="mt-0.5 mb-1 h-4.5 w-[3.1rem]" />
                 </div>
               }
               stat={
                 <div className="flex flex-wrap gap-x-[1ch]">
-                  <Skeleton className="mb-1 mt-0.5 h-4.5 w-14" />
-                  <Skeleton className="mb-1 mt-0.5 h-4.5 w-[1.1rem]" />
+                  <Skeleton className="mt-0.5 mb-1 h-4.5 w-14" />
+                  <Skeleton className="mt-0.5 mb-1 h-4.5 w-[1.1rem]" />
                   <Skeleton
-                    className="mb-1 mt-0.5 h-4.5"
+                    className="mt-0.5 mb-1 h-4.5"
                     style={{ width: randomBetween(25, 80) + 'px' }}
                   />
-                  <Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.3rem]" />
+                  <Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.3rem]" />
                 </div>
               }
             />
@@ -406,38 +406,38 @@ const PendingAnimeId = memo(function PendingAnimeId() {
               <Stat
                 title={
                   <div className="flex flex-wrap gap-x-[1ch]">
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[3.2rem]" />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-10" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[3.2rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-10" />
                   </div>
                 }
                 stat={
                   <div className="flex flex-wrap gap-x-[1ch]">
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-14" />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[1.1rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-14" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[1.1rem]" />
                     <Skeleton
-                      className="mb-1 mt-0.5 h-4.5"
+                      className="mt-0.5 mb-1 h-4.5"
                       style={{ width: randomBetween(25, 80) + 'px' }}
                     />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.3rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.3rem]" />
                   </div>
                 }
               />
               <Stat
                 title={
                   <div className="flex flex-wrap gap-x-[1ch]">
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[3.2rem]" />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[3.2rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[3.2rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[3.2rem]" />
                   </div>
                 }
                 stat={
                   <div className="flex flex-wrap gap-x-[1ch]">
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-14" />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[1.1rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-14" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[1.1rem]" />
                     <Skeleton
-                      className="mb-1 mt-0.5 h-4.5"
+                      className="mt-0.5 mb-1 h-4.5"
                       style={{ width: randomBetween(25, 80) + 'px' }}
                     />
-                    <Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.3rem]" />
+                    <Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.3rem]" />
                   </div>
                 }
               />
@@ -445,43 +445,43 @@ const PendingAnimeId = memo(function PendingAnimeId() {
           ))}
 
         <Stat
-          title={<Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.1rem]" />}
-          stat={<Skeleton className="mb-1 mt-0.5 h-4.5 w-[1.9rem]" />}
+          title={<Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.1rem]" />}
+          stat={<Skeleton className="mt-0.5 mb-1 h-4.5 w-[1.9rem]" />}
           suffix={
             <div className="inline-flex flex-wrap gap-x-[1ch]">
               <span />
-              <Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.1rem]" />
+              <Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.1rem]" />
               <Skeleton
-                className="mb-1 mt-0.5 h-4.5"
+                className="mt-0.5 mb-1 h-4.5"
                 style={{ width: randomBetween(40, 52) + 'px' }}
               />
-              <Skeleton className="mb-1 mt-0.5 h-4.5 w-[4.8rem]" />
+              <Skeleton className="mt-0.5 mb-1 h-4.5 w-[4.8rem]" />
             </div>
           }
         />
         <Stat
-          title={<Skeleton className="mb-1 mt-0.5 h-4.5 w-[4.4rem]" />}
+          title={<Skeleton className="mt-0.5 mb-1 h-4.5 w-[4.4rem]" />}
           stat={
             <Skeleton
-              className="mb-1 mt-0.5 h-4.5"
+              className="mt-0.5 mb-1 h-4.5"
               style={{ width: randomBetween(30, 40) + 'px' }}
             />
           }
         />
         <Stat
-          title={<Skeleton className="mb-1 mt-0.5 h-4.5 w-[2.6rem]" />}
+          title={<Skeleton className="mt-0.5 mb-1 h-4.5 w-[2.6rem]" />}
           stat={
             <Skeleton
-              className="mb-1 mt-0.5 h-4.5"
+              className="mt-0.5 mb-1 h-4.5"
               style={{ width: randomBetween(30, 40) + 'px' }}
             />
           }
         />
         <Stat
-          title={<Skeleton className="mb-1 mt-0.5 h-4.5 w-[4.4rem]" />}
+          title={<Skeleton className="mt-0.5 mb-1 h-4.5 w-[4.4rem]" />}
           stat={
             <Skeleton
-              className="mb-1 mt-0.5 h-4.5"
+              className="mt-0.5 mb-1 h-4.5"
               style={{ width: randomBetween(48, 56) + 'px' }}
             />
           }

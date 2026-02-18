@@ -1,8 +1,7 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
 import { createFileRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Filter } from 'lucide-react'
-import { api } from '~c/trpc'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { fetchRouteData } from '~c/route'
 import {
   animeDataStore,
@@ -11,19 +10,20 @@ import {
   episodeListStore,
   type EpisodeList,
 } from '~c/stores'
+import { api } from '~c/trpc'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth } from '~c/utils/skeleton'
-import { searchEpisode } from '~/shared/utils/episode'
-import { sleep } from '~/shared/utils/time'
-import { combineFunction } from '~/shared/utils/function'
+import { AnimeTitle } from '@/Anime/Title'
+import { EpisodeSelector } from '@/page/anime/episodeLayout/EpisodeSelector'
 import { SearchFilter } from '@/page/anime/episodeLayout/SearchFilter'
 import { SearchInput } from '@/page/anime/episodeLayout/SearchInput'
-import { EpisodeSelector } from '@/page/anime/episodeLayout/EpisodeSelector'
-import { AnimeTitle } from '@/Anime/Title'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
-import { Skeleton } from '@/ui/skeleton'
 import { Button } from '@/ui/button'
 import { InputKeybind } from '@/ui/custom/input-keybind'
+import { Skeleton } from '@/ui/skeleton'
+import { searchEpisode } from '~/shared/utils/episode'
+import { combineFunction } from '~/shared/utils/function'
+import { sleep } from '~/shared/utils/time'
 
 let latestAnimeId = ''
 
@@ -254,8 +254,8 @@ function EpisodeLayout() {
 
       <div
         className={
-          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-solid outline-1 outline-primary/5' +
-          (animeData.totalEpisodes === 1 ? '' : ' md:grid md:grid-cols-[16rem_1fr]')
+          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-1 outline-primary/5 outline-solid ' +
+          (animeData.totalEpisodes === 1 ? '' : 'md:grid md:grid-cols-[16rem_1fr]')
         }
       >
         {animeData.totalEpisodes !== 1 && (
@@ -283,7 +283,7 @@ function EpisodeLayout() {
             <div
               ref={episodeListRef}
               className={
-                'h-fit scrollbar-thin scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
+                'scrollbar-thin h-fit scrollbar-thumb-primary/20 md:absolute md:inset-0 md:top-10 md:max-h-[calc(100%-2.5rem)] ' +
                 (compactMode
                   ? 'grid grid-cols-[repeat(auto-fit,minmax(2.5rem,1fr))] gap-2 overflow-y-scroll p-2 text-xs md:grid-cols-5'
                   : 'overflow-y-auto text-sm')
@@ -318,7 +318,7 @@ function PendingEpisodeLayout() {
       <div className="flex flex-wrap gap-x-[1ch]">
         {widths.map(width => (
           <Skeleton
-            className="mb-1 mt-0.5 h-3.5 select-none"
+            className="mt-0.5 mb-1 h-3.5 select-none"
             style={typeof width === 'number' ? { width: width + 'px' } : width}
           >
             &nbsp;
@@ -340,7 +340,7 @@ function PendingEpisodeLayout() {
         className="hidden md:block"
       />
 
-      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-solid outline-1 outline-primary/5 md:grid md:grid-cols-[16rem_1fr]">
+      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-1 outline-primary/5 outline-solid md:grid md:grid-cols-[16rem_1fr]">
         <aside className="relative mx-auto w-full flex-1 bg-primary/3 md:h-full md:border-r md:border-primary/20">
           <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
             <Button

@@ -1,10 +1,10 @@
 import { and, eq, sql } from 'drizzle-orm'
 import { db } from '~s/db'
 import { providerEpisodes, episodes, type anime } from '~s/db/schema'
+import { downloadProgressSnapshot, type DownloadProgressData } from '~s/external/download/progress'
 import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { searchEpisode } from '~/shared/utils/episode'
 import { omit } from '~/shared/utils/object'
-import { downloadProgressSnapshot, type DownloadProgressData } from '~s/external/download/progress'
 
 export type DownloadProgressDataWithoutDone = DownloadProgressData extends infer U
   ? U extends any

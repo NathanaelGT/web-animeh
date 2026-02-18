@@ -1,5 +1,5 @@
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
 import { cn } from '~c/utils'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
 import { ratingColor, ratings } from '~/shared/anime/rating'
 import type { PropsWithChildren } from 'react'
 

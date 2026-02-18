@@ -1,13 +1,13 @@
-import { useState, useLayoutEffect } from 'react'
-import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
+import { useStore } from '@tanstack/react-store'
+import { useState, useLayoutEffect } from 'react'
 import { episodeListStore } from '~c/stores'
-import { searchEpisode } from '~/shared/utils/episode'
-import { Status } from '@/page/anime/episode/number/Status'
 import { Download } from '@/page/anime/episode/number/Download'
+import { Status } from '@/page/anime/episode/number/Status'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
 import { VideoPlayerOrStatus } from '@/page/anime/episode/number/VideoPlayerOrStatus'
 import { EpisodeStateIcon } from '@/ui/custom/episode-state-icon'
+import { searchEpisode } from '~/shared/utils/episode'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,

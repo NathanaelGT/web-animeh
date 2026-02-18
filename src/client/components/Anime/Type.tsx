@@ -1,5 +1,5 @@
-import type { AnimeType } from '~s/db/schema'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
+import type { AnimeType } from '~s/db/schema'
 
 type Props = {
   type: AnimeType | null

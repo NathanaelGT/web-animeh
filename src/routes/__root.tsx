@@ -1,6 +1,6 @@
+import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 import React, { useLayoutEffect } from 'react'
 import { clientProfileSettingsStore, showKeybindTipsStore } from '~c/stores'
-import { createRootRoute, Outlet, useRouter } from '@tanstack/react-router'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { Header } from '@/Header'
 import { Toaster } from '@/ui/toaster'

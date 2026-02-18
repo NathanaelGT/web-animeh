@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react'
 import { useRouter } from '@tanstack/react-router'
+import { useRef, useEffect } from 'react'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { InputKeybind } from '@/ui/custom/input-keybind'
 

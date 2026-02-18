@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useState, useEffect } from 'react'
 import { oneRemInPx } from '~c/utils/css'
 import { SimpleTooltip } from '@/ui/tooltip'
 import type { EpisodeList } from '~c/stores'
@@ -38,14 +38,14 @@ export function EpisodeTooltip({ episode }: EpisodeTooltipProps) {
                 <>
                   <br />
                   <span className="text-transparent">: </span>
-                  <span className="text-xs italic text-slate-500">{episode.romanjiTitle}</span>
+                  <span className="text-xs text-slate-500 italic">{episode.romanjiTitle}</span>
                 </>
               )}
               {episode.japaneseTitle && (
                 <>
                   <br />
                   <span className="text-transparent">: </span>
-                  <span className="text-xs italic text-slate-500">{episode.japaneseTitle}</span>
+                  <span className="text-xs text-slate-500 italic">{episode.japaneseTitle}</span>
                 </>
               )}
             </td>
@@ -98,7 +98,7 @@ function DetailEpisodeSelector(initial: boolean, { animeId, currentEpisode, epis
         id={`episode_${episode.number}`}
         className={
           'relative h-11 ring-3 ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out' +
-          (episode.isFiller ? ' bg-yellow-100' : episode.isRecap ? ' bg-red-100' : '')
+          (episode.isFiller ? 'bg-yellow-100' : episode.isRecap ? 'bg-red-100' : '')
         }
       >
         <SimpleTooltip title={<EpisodeTooltip episode={episode} />}>
@@ -109,7 +109,7 @@ function DetailEpisodeSelector(initial: boolean, { animeId, currentEpisode, epis
               'flex gap-3 py-3 pr-2 outline-indigo-400/75 transition-[outline] ' +
               (currentEpisode === episode.number
                 ? 'bg-primary/15'
-                : 'pl-4' + (index % 2 === 0 ? ' bg-primary/5' : ''))
+                : 'pl-4 ' + (index % 2 === 0 ? 'bg-primary/5' : ''))
             }
           >
             {currentEpisode === episode.number && <div className="-my-3 w-1 bg-indigo-400" />}
@@ -156,7 +156,7 @@ function CompactEpisodeSelector(initial: boolean, { animeId, currentEpisode, epi
             params={{ id: animeId, number: episode.number.toString() }}
             className={
               'flex h-10 w-10 items-center justify-center rounded-md outline-indigo-400/75 transition-[outline]' +
-              (currentEpisode === episode.number ? ' ring-indigo-400' : '')
+              (currentEpisode === episode.number ? 'ring-indigo-400' : '')
             }
           >
             {episode.number}

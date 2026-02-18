@@ -1,8 +1,8 @@
 import fs from 'fs'
-import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
-import { parseNumber } from '~/shared/utils/number'
 import { downloadSizeMap } from '~s/external/download/progress'
+import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
 import { withoutExtension } from '~/shared/utils/file'
+import { parseNumber } from '~/shared/utils/number'
 
 export const handleVideoRequest = async (request: Request, path: string): Promise<Response> => {
   const pathArr = path.slice('videos/'.length).split('/') as [string, string]
