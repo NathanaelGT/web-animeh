@@ -37,6 +37,6 @@
       "@/*": ["./src/client/components/*"]
     }
   },
-  "include": ["./tailwind.config.js", "src/**/*.ts", "src/**/*.tsx", "src/shared/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/shared/**/*.ts"],
   "exclude": ["src/server/**/*.ts", "src/server/**/*.tsx"]
 }

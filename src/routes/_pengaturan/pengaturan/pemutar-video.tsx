@@ -166,7 +166,7 @@ function InputNumber({
         'w-fit transition-transform' +
         (value === clientProfileSettingsStore.state.videoPlayer[name] * multiplier
           ? ''
-          : ' translate-x-[.1rem] -skew-x-[18deg]')
+          : ' translate-x-[.1rem] -skew-x-18')
       }
     >
       {label}
@@ -174,7 +174,7 @@ function InputNumber({
   )
 
   const inputWrapperClassName =
-    'border border-primary/15 bg-primary/10 !ring-0 ring-ring ring-offset-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
+    'border border-primary/15 bg-primary/10 ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
 
   return (
     <div className="flex max-w-80 flex-col gap-y-2">
@@ -192,7 +192,7 @@ function InputNumber({
             value={value ?? ''}
             onKeyDown={onKeyDown}
             onInput={onInput}
-            className="w-full bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none"
+            className="w-full bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-hidden"
           />
           <label
             htmlFor={name}
@@ -212,7 +212,7 @@ function InputNumber({
       <TextTransition
         springConfig={presets.gentle}
         direction="up"
-        className={`mb-auto text-red-600 transition-[height] ${inputError ? '!h-6' : '!h-0'}`}
+        className={`mb-auto text-red-600 transition-[height] ${inputError ? 'h-6!' : 'h-0!'}`}
       >
         {inputError}
       </TextTransition>

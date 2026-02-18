@@ -109,7 +109,7 @@ export function Search({ headerRef, className }: Props) {
     onInputFocusTimeoutId.current = setTimeout(() => {
       onInputFocusTimeoutId.current = null
 
-      elRef.current.suggestionWrapper?.classList.add('!opacity-100', '!visible')
+      elRef.current.suggestionWrapper?.classList.add('opacity-100!', 'visible!')
       headerRef.current?.classList.add(HEADER_CLASS_ON_SEARCH_INPUT_FOCUS)
     }, 200)
   }
@@ -132,7 +132,7 @@ export function Search({ headerRef, className }: Props) {
 
         onInputFocusTimeoutId.current = null
       } else {
-        suggestionWrapper.classList.remove('!opacity-100', '!visible')
+        suggestionWrapper.classList.remove('opacity-100!', 'visible!')
       }
     })
   }
@@ -303,7 +303,7 @@ export function Search({ headerRef, className }: Props) {
                     <Image
                       src={result.id}
                       tabIndex={-1}
-                      className="h-[89px] w-[63px] rounded-md shadow outline outline-1 outline-slate-600/20"
+                      className="h-[89px] w-[63px] rounded-md shadow-sm outline-solid outline-1 outline-slate-600/20"
                     />
                   </Link>
 
@@ -339,7 +339,7 @@ export function Search({ headerRef, className }: Props) {
                       </div>
                     )}
 
-                    <div className="flex gap-3 text-xs text-slate-500 [&>*]:bg-transparent [&>*]:p-0">
+                    <div className="flex gap-3 text-xs text-slate-500 *:bg-transparent *:p-0">
                       <AnimeType type={result.type} />
                       <AnimeRating rating={result.rating} />
                       <AnimeDuration duration={result.duration} />

@@ -46,7 +46,7 @@ function SimpleTooltip({ title, children }: SimpleTooltipProps) {
         <TooltipTrigger asChild>{elementToRender}</TooltipTrigger>
         <TooltipContent>
           {title}
-          <TooltipArrow className="-mt-[1px] fill-popover" />
+          <TooltipArrow className="-mt-px fill-popover" />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -13,8 +13,6 @@ module.exports = {
     'dist',
     '.eslintrc.cjs',
     'drizzle.config.ts',
-    'tailwind.config.js',
-    'postcss.config.js',
   ],
   parser: '@typescript-eslint/parser',
   plugins: ['react-refresh'],

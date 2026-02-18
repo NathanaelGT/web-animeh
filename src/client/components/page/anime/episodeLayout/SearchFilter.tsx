@@ -170,7 +170,7 @@ export function SearchFilter({
             />
           )}
         </div>
-        <PopoverArrow className="-mt-[1px] fill-popover" />
+        <PopoverArrow className="-mt-px fill-popover" />
       </PopoverContent>
     </Popover>
   )

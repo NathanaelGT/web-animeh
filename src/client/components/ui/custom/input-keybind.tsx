@@ -46,7 +46,7 @@ export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function Inp
         }
       }}
       className={cn(
-        'flex h-10 rounded-md border border-input !ring-0 ring-ring ring-offset-transparent focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2',
+        'flex h-10 rounded-md border border-input ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2',
         wrapperClassName,
       )}
     >
@@ -54,7 +54,7 @@ export const InputKeybind = React.forwardRef<HTMLInputElement, any>(function Inp
         ref={ref}
         {...props}
         className={cn(
-          'w-full bg-transparent py-2 pl-3 text-sm placeholder:text-muted-foreground focus:outline-none',
+          'w-full bg-transparent py-2 pl-3 text-sm placeholder:text-muted-foreground focus:outline-hidden',
           className,
         )}
       />

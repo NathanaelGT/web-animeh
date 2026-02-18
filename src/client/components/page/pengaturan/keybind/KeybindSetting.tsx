@@ -23,7 +23,7 @@ export function KeybindSetting(props: Props) {
   }
 
   return (
-    <div className="px-6 py-3 first:pt-5 last:pb-5 hover:bg-primary/[0.04] dark:hover:bg-primary/[0.02]">
+    <div className="px-6 py-3 first:pt-5 last:pb-5 hover:bg-primary/4 dark:hover:bg-primary/2">
       <div
         tabIndex={0}
         onKeyDown={handleFocusElementKeydown}

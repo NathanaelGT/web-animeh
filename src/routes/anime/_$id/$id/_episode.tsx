@@ -151,8 +151,8 @@ function EpisodeLayout() {
 
         const { classList } = el
         const zIndex = 'z-10'
-        const ringColor = '!ring-indigo-400/75'
-        const ringOffset = '!ring-offset-2'
+        const ringColor = 'ring-indigo-400/75!'
+        const ringOffset = 'ring-offset-2!'
 
         classList.add(zIndex, ringColor)
         await sleep(100)
@@ -254,12 +254,12 @@ function EpisodeLayout() {
 
       <div
         className={
-          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline outline-1 outline-primary/5' +
+          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-solid outline-1 outline-primary/5' +
           (animeData.totalEpisodes === 1 ? '' : ' md:grid md:grid-cols-[16rem_1fr]')
         }
       >
         {animeData.totalEpisodes !== 1 && (
-          <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
+          <aside className="relative mx-auto w-full flex-1 bg-primary/3 md:h-full md:border-r md:border-primary/20">
             <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
               <SearchFilter
                 episodeListRef={episodeListRef}
@@ -340,8 +340,8 @@ function PendingEpisodeLayout() {
         className="hidden md:block"
       />
 
-      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline outline-1 outline-primary/5 md:grid md:grid-cols-[16rem_1fr]">
-        <aside className="relative mx-auto w-full flex-1 bg-primary/[.03] md:h-full md:border-r md:border-primary/20">
+      <div className="flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-solid outline-1 outline-primary/5 md:grid md:grid-cols-[16rem_1fr]">
+        <aside className="relative mx-auto w-full flex-1 bg-primary/3 md:h-full md:border-r md:border-primary/20">
           <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
             <Button
               variant="outline2"

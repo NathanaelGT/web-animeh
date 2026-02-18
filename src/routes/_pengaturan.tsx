@@ -35,7 +35,7 @@ function PengaturanLayout() {
       <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
         <aside className="relative -mx-4 lg:w-1/5">
           <nav
-            data-subs-header="!top-20"
+            data-subs-header="top-20!"
             className="sticky top-4 flex space-x-2 overflow-x-auto transition-[top] lg:flex-col lg:space-x-0 lg:space-y-1"
           >
             {settingPages.map(page => (

@@ -171,14 +171,14 @@ function TitleTooltip({ animeData, children }: TitleTooltipProps) {
               <Link to="/anime/$id" params={{ id: animeData.id.toString() }} tabIndex={-1}>
                 <Image
                   src={animeData.id}
-                  className="h-[220px] w-[156px] rounded-md bg-muted object-cover shadow outline outline-1 outline-slate-600/20"
+                  className="h-[220px] w-[156px] rounded-md bg-muted object-cover shadow-sm outline-solid outline-1 outline-slate-600/20"
                 />
               </Link>
               {data.synopsis ? (
                 <p
                   className="line-clamp-1 whitespace-pre text-pretty text-justify"
                   // line-height dari text-sm = 1.25rem = 20px, height gambar = 220px
-                  // arbitrary value dari tailwind ngebug, gabisa pake line-clamp-[11]
+                  // arbitrary value dari tailwind ngebug, gabisa pake line-clamp-11
                   style={{ WebkitLineClamp: 11 }}
                 >
                   {data.synopsis.replaceAll('\n\n', '\n')}
@@ -205,7 +205,7 @@ function TitleTooltip({ animeData, children }: TitleTooltipProps) {
                 </div>
               </div>
             </div>
-            <TooltipArrow className="-mt-[1px] fill-popover" />
+            <TooltipArrow className="-mt-px fill-popover" />
           </TooltipContent>
         )}
       </Tooltip>

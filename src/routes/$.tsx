@@ -129,23 +129,23 @@ function PendingIndex() {
 
     const delays = [
       '',
-      '[&_*]:delay-100',
-      '[&_*]:delay-200',
-      '[&_*]:delay-300',
-      '[&_*]:delay-500',
-      '[&_*]:delay-700',
-      '[&_*]:delay-1000',
-      '[&_*]:delay-700',
-      '[&_*]:delay-500',
-      '[&_*]:delay-300',
-      '[&_*]:delay-200',
-      '[&_*]:delay-100',
+      '**:delay-100',
+      '**:delay-200',
+      '**:delay-300',
+      '**:delay-500',
+      '**:delay-700',
+      '**:delay-1000',
+      '**:delay-700',
+      '**:delay-500',
+      '**:delay-300',
+      '**:delay-200',
+      '**:delay-100',
     ]
 
     for (let i = 0; i < perPage; i++) {
       children[i] = (
         <div key={i} className={`mx-auto w-[162px] ${delays[i % delays.length]}`}>
-          <Skeleton className="h-[229px] w-[162px] rounded-md shadow outline outline-1 outline-slate-600/20" />
+          <Skeleton className="h-[229px] w-[162px] rounded-md shadow-sm outline-solid outline-1 outline-slate-600/20" />
 
           <Skeleton
             style={{

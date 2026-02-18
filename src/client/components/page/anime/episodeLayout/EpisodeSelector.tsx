@@ -97,7 +97,7 @@ function DetailEpisodeSelector(initial: boolean, { animeId, currentEpisode, epis
         key={episode.number}
         id={`episode_${episode.number}`}
         className={
-          'relative h-11 ring ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out' +
+          'relative h-11 ring-3 ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out' +
           (episode.isFiller ? ' bg-yellow-100' : episode.isRecap ? ' bg-red-100' : '')
         }
       >
@@ -146,7 +146,7 @@ function CompactEpisodeSelector(initial: boolean, { animeId, currentEpisode, epi
         key={episode.number}
         id={`episode_${episode.number}`}
         className={
-          'w-10 rounded-md ring ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out ' +
+          'w-10 rounded-md ring-3 ring-transparent ring-offset-0 transition-shadow duration-500 ease-in-out ' +
           (episode.isFiller ? 'bg-yellow-100' : episode.isRecap ? 'bg-red-100' : 'bg-primary/20')
         }
       >

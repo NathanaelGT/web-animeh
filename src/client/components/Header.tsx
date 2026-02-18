@@ -141,7 +141,7 @@ export function Header() {
   }, [])
 
   let className = headerChild
-    ? 'border-slate-400 bg-[#fff] dark:border-slate-900 dark:bg-[#000]'
+    ? 'border-slate-400 bg-white dark:border-slate-900 dark:bg-black'
     : 'bg-background'
   if (headerPosition !== 'static') {
     className += ' sticky top-0'
@@ -150,9 +150,9 @@ export function Header() {
     className += ' transition-transform'
   }
 
-  const parentClassName = headerChild ? '[&_*]:border-slate-400 dark:[&_*]:border-slate-900' : ''
+  const parentClassName = headerChild ? '**:border-slate-400 dark:**:border-slate-900' : ''
   const childClassName = headerChild
-    ? 'bg-[#fff]/25 hover:bg-[#fff]/50 dark:bg-[#000]/25 dark:hover:bg-[#000]/50'
+    ? 'bg-white/25 hover:bg-white/50 dark:bg-black/25 dark:hover:bg-black/50'
     : ''
 
   return (

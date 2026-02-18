@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { Link } from '@tanstack/react-router'
 import { Slot } from '@radix-ui/react-slot'
 import { ChevronRight, MoreHorizontal } from 'lucide-react'
 
@@ -18,7 +17,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
     <ol
       ref={ref}
       className={cn(
-        'flex flex-wrap items-center gap-1.5 break-words text-sm text-secondary-foreground sm:gap-2.5',
+        'flex flex-wrap items-center gap-1.5 wrap-break-word text-sm text-secondary-foreground sm:gap-2.5',
         className,
       )}
       {...props}

@@ -57,7 +57,7 @@ export const PosterDisplayGroup = memo(function PosterDisplayGroup({ index }: Pr
         className="mt-1 block truncate text-sm font-bold"
       />
 
-      <div className="flex justify-between text-xs text-slate-500 [&>*]:bg-transparent [&>*]:p-0">
+      <div className="flex justify-between text-xs text-slate-500 *:bg-transparent *:p-0">
         <AnimeType type={animeData.type} />
         <AnimeRating rating={animeData.rating} />
         <AnimeDuration duration={animeData.duration} />
