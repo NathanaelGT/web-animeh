@@ -18,6 +18,8 @@ type Props = {
     id: string
     number: string
   }
+  onLoad?: () => void | boolean
+  className?: string
 }
 
 const getSrc = (animeId: string, episodeString: string) => {
@@ -26,7 +28,9 @@ const getSrc = (animeId: string, episodeString: string) => {
   return `${basePath}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
 }
 
-export function VideoPlayer({ streamingUrl, params }: Props) {
+const video = document.querySelector<HTMLVideoElement>('video#player')!
+
+export function VideoPlayer({ streamingUrl, params, onLoad, className = 'h-full w-full' }: Props) {
   const router = useRouter()
   const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -38,15 +42,12 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       return
     }
 
-    const video = document.querySelector<HTMLVideoElement>('video#player')
-    if (!video) {
-      return
-    }
-
     const autoplay = () => {
       video.addEventListener(
         'loadeddata',
         () => {
+          onLoad?.()
+
           const play = () => {
             video.muted = true
             video.play().then(() => {
@@ -218,8 +219,27 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       })
     }
 
+    let errorRetryCount = 0
+    let errorTimeoutId: NodeJS.Timeout
+    const errorHandler = () => {
+      // 16 percobaan pertama tiap 0.5 detik
+      // diatas itu tiap percobaan nambah 0.5 detik, maks 30 detik
+      const ms = Math.min(Math.max(errorRetryCount++ - 15, 1) * 500, 30000)
+
+      errorTimeoutId = setTimeout(() => {
+        const time = video.currentTime
+
+        video.onloadeddata = () => {
+          video.currentTime = time
+        }
+
+        video.load()
+      }, ms)
+    }
+
     video.addEventListener('ended', videoEndedHandler)
     video.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
+    video.addEventListener('error', errorHandler)
 
     return () => {
       const voidEl = document.getElementById('void')
@@ -228,6 +248,10 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
       video.removeEventListener('ended', videoEndedHandler)
       video.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
+      video.removeEventListener('error', errorHandler)
+      video.onloadeddata = null
+
+      clearTimeout(errorTimeoutId)
 
       removeKeybindHandler()
 
@@ -243,5 +267,5 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
     }
   }, [streamingUrl])
 
-  return <div ref={containerRef} className="h-full w-full" />
+  return <div ref={containerRef} className={className} />
 }

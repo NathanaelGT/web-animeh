@@ -1,13 +1,14 @@
-import { useState, useLayoutEffect, type PropsWithChildren, type ReactElement } from 'react'
+import { useState, useLayoutEffect } from 'react'
 import { useStore } from '@tanstack/react-store'
 import { createFileRoute } from '@tanstack/react-router'
-import { DownloadIcon, Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
+import { Wand, Hourglass, CircleCheckBig, LoaderCircle } from 'lucide-react'
 import { episodeListStore } from '~c/stores'
 import { searchEpisode } from '~/shared/utils/episode'
-import { DownloadProgress } from '@/ui/custom/download-progress'
 import { OptimalizationProgress } from '@/ui/custom/optimalization-progress'
+import { Status } from '@/page/anime/episode/number/Status'
 import { Download } from '@/page/anime/episode/number/Download'
 import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
+import { VideoPlayerOrStatus } from '@/page/anime/episode/number/VideoPlayerOrStatus'
 
 export const Route = createFileRoute('/anime/_$id/$id/_episode/episode/$number')({
   component: EpisodeNumber,
@@ -35,12 +36,11 @@ function EpisodeNumber() {
     <main className="mb-auto">
       <div className="flex aspect-video bg-primary-foreground/85">
         {status === 'DOWNLOADING' ? (
-          <Status
-            icon={<DownloadIcon />}
-            progress={<DownloadProgress progress={download.progress} />}
-          >
-            Mengunduh
-          </Status>
+          <VideoPlayerOrStatus
+            key={`${params.id}|${params.number}`}
+            params={params}
+            progress={download.progress}
+          />
         ) : status === 'OPTIMIZING' ? (
           <Status
             icon={<Wand />}
@@ -77,24 +77,5 @@ function EpisodeNumber() {
         )}
       </div>
     </main>
-  )
-}
-
-type StatusProps = PropsWithChildren<{
-  icon: ReactElement
-  progress?: ReactElement
-}>
-
-function Status({ icon, progress, children }: StatusProps) {
-  return (
-    <div className="m-auto grid w-11/12 gap-2 lg:max-w-xl">
-      <div className="mx-auto flex gap-2">
-        <div className="my-auto w-6">{icon}</div>
-
-        <p className="flex-1 whitespace-pre-wrap">{children}</p>
-      </div>
-
-      {progress}
-    </div>
   )
 }

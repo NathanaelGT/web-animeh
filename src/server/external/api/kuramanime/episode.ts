@@ -18,6 +18,7 @@ import { metadataQueue, downloadQueue } from '~s/external/queue'
 import {
   downloadProgress,
   downloadProgressController,
+  downloadSizeMap,
   type DownloadProgress,
   type OptimizingProgress,
 } from '~s/external/download/progress'
@@ -25,6 +26,7 @@ import { downloadMeta } from '~s/external/download/meta'
 import { executeLeviathan } from '~s/external/api/kuramanime/executeLeviathan'
 import { fetchText } from '~s/utils/fetch'
 import { isOffline } from '~s/utils/error'
+import { isSubstringPresent } from '~s/utils/file'
 import { purgeStoredCache } from '~s/anime/episode/stored'
 import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
 import { formatBytes } from '~/shared/utils/byte'
@@ -369,7 +371,22 @@ export const downloadEpisode = async (
       }
     }
 
+    const isMoovAtomInFront = () => {
+      return isSubstringPresent(tempFilePath, 'moov', 4 * 1024 * 1024)
+    }
+
+    let isVideoAlreadyOptimizedPromise: Promise<boolean> | undefined
     const optimizeVideo = async () => {
+      if (await (isVideoAlreadyOptimizedPromise ?? isMoovAtomInFront())) {
+        await fs.rename(tempFilePath, filePath)
+
+        onFinish?.()
+
+        done('Video selesai diunduh')
+
+        return
+      }
+
       emit({ percent: 0 })
 
       const ffmpeg = Bun.spawn(
@@ -523,6 +540,10 @@ export const downloadEpisode = async (
 
             formattedTotalLengthCb?.(formattedTotalLength)
 
+            if (totalLength) {
+              downloadSizeMap.set(`${animeData.id}:${episodeNumber}`, totalLength)
+            }
+
             await fs.mkdir(animeDirPath, { recursive: true })
 
             if (!shouldCheck) {
@@ -567,6 +588,8 @@ export const downloadEpisode = async (
                   isResolved = true
 
                   releaseMetadataLock()
+
+                  isVideoAlreadyOptimizedPromise = isMoovAtomInFront()
                 }
               }
 
@@ -674,6 +697,8 @@ export const downloadEpisode = async (
             gdriveAccessTokenCache.delete(url)
 
             emitProgress()
+
+            downloadSizeMap.delete(`${animeData.id}:${episodeNumber}`)
 
             tempFileStream.end(optimizeVideo)
           },

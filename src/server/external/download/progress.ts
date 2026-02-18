@@ -1,4 +1,4 @@
-import mitt from 'mitt'
+import mitt, { type Emitter } from 'mitt'
 import { downloadMeta } from './meta'
 
 export type DownloadProgress = {
@@ -37,11 +37,28 @@ export type DownloadProgressData =
       done: true
     }
 
-export const downloadProgress = mitt<Record<string, DownloadProgressData>>()
+const download = globalThis as unknown as {
+  progress: Emitter<Record<string, DownloadProgressData>>
+  progressSnapshot: Map<string, DownloadProgressData>
+  sizeMap: Map<string, number>
+  progressController: Map<string, AbortController>
+}
 
-export const downloadProgressSnapshot = new Map<string, DownloadProgressData>()
+export const downloadProgress: typeof download.progress = Bun.env.PROD
+  ? mitt()
+  : (download.progress ??= mitt())
 
-export const downloadProgressController = new Map<string, AbortController>()
+export const downloadProgressSnapshot: typeof download.progressSnapshot = Bun.env.PROD
+  ? new Map()
+  : (download.progressSnapshot ??= new Map())
+
+export const downloadSizeMap: typeof download.sizeMap = Bun.env.PROD
+  ? new Map()
+  : (download.sizeMap ??= new Map())
+
+export const downloadProgressController: typeof download.progressController = Bun.env.PROD
+  ? new Map()
+  : (download.progressController ??= new Map())
 
 downloadProgress.on('*', (key, data) => {
   if (data.done) {
