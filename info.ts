@@ -104,18 +104,15 @@ const values = Object.entries(sources).map(([key, data]) => {
 
 if (shouldPersist) {
   process.stdout.write('\n\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Updating metadata\x1b[0m\n')
-}
 
-const start = Bun.nanoseconds()
-await Promise.all(values.map(([_key, value]) => value))
-const end = Bun.nanoseconds()
+  const start = Bun.nanoseconds()
+  await Promise.all(values.map(([_key, value]) => value))
+  const end = Bun.nanoseconds()
 
-if (shouldPersist) {
-  process.stdout.moveCursor(0, -1)
-  process.stdout.clearLine(0)
-  process.stdout.write(
-    `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Metadata updated \x1b[90m(${formatNs(end - start)} elapsed)\x1b[0m\n`,
-  )
+  process.stdout.moveCursor(25, -1)
+  process.stdout.write(`\x1b[90m(${formatNs(end - start)} elapsed)\x1b[0m\n`)
+} else {
+  await Promise.all(values.map(([_key, value]) => value))
 }
 
 const generatedInfo: [string, string][] = []
@@ -180,4 +177,4 @@ Bun.file(fileDTsPath)
     }
   })
 
-export { updatedInfo as info, shouldPersist as infoIsHot }
+export { updatedInfo as info }
