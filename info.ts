@@ -165,14 +165,15 @@ Bun.file(fileDTsPath)
 
     const prefix = content.slice(0, startMarkIndex + startMark.length)
     const suffix = content.slice(endMarkIndex)
+    const indentation = '\n' + prefix.split('\n').at(-1)!.match(/^ */)![0]!
 
     const generated = generatedInfo
       .map(([key, type]) => {
-        return `\n    ${key}: ${type}`
+        return indentation + key + ': ' + type
       })
       .join('')
 
-    const newContent = prefix + generated + '\n    ' + suffix
+    const newContent = prefix + generated + indentation + suffix
 
     if (newContent !== content) {
       return Bun.write(fileDTsPath, newContent)
