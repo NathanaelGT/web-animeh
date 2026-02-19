@@ -7,6 +7,7 @@ import * as kyInstances from '~s/ky'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { fetchText } from '~s/utils/fetch'
 import { isMoreThanOneDay, isMoreThanOneMinute } from '~s/utils/time'
+import { between, after } from '~/shared/utils/string'
 import { episodeMitt } from './event'
 
 type Config = { priority?: number }
@@ -117,17 +118,15 @@ export const updateEpisode = async (
         kyInstances.kuramanime,
       )
 
-      const episodeListHtml = html
-        .slice(html.lastIndexOf(' id="episodeLists"'))
-        .slice(0, html.indexOf(' id="episodeListsLoading"'))
+      const episodeListHtml = between(html, 'id="episodeLists"', 'id="episodeListsLoading"')
 
       if (episodeListHtml.includes('Pilihan Cepat')) {
-        const oldest = episodeListHtml.match(/Ep [0-9]+ \(Terlama\)/)
-        const latest = episodeListHtml.match(/Ep [0-9]+ \(Terbaru\)/)
+        const oldest = episodeListHtml.match(/Ep ([0-9]+) \(Terlama\)/)?.[1]
+        const latest = episodeListHtml.match(/Ep ([0-9]+) \(Terbaru\)/)?.[1]
 
-        if (oldest?.length && latest?.length) {
-          const start = Number(oldest[0].slice(3))
-          const end = Number(latest[0].slice(3))
+        if (oldest && latest) {
+          const start = Number(oldest)
+          const end = Number(latest)
 
           for (let i = start; i <= end; i++) {
             addEpisodeData(i)
@@ -136,9 +135,11 @@ export const updateEpisode = async (
       }
 
       if (!episodeNumbers.length) {
-        episodeListHtml.match(/Ep [0-9]+/g)?.forEach(episode => {
-          addEpisodeData(Number(episode.slice(3)))
-        })
+        after(episodeListHtml, 'Semua Episode')
+          .matchAll(/Ep ([0-9]+)/g)
+          ?.forEach(([_match, episode]) => {
+            addEpisodeData(Number(episode))
+          })
       }
 
       if (episodeNumbers.length) {
