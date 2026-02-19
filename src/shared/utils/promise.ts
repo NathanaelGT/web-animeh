@@ -1,10 +1,11 @@
 import { TimeoutError } from '~/shared/error'
+import { sleep } from './time'
 
 export const timeout = <TReturn>(
   promise: Promise<TReturn>,
   ms: number,
 ): Promise<TReturn | void> => {
-  return Promise.race([promise, Bun.sleep(ms)])
+  return Promise.race([promise, sleep(ms)])
 }
 
 export const timeoutThrow = <TReturn>(promise: Promise<TReturn>, ms: number): Promise<TReturn> => {
