@@ -1,4 +1,4 @@
-import { getTableColumns, sql, type SQL } from 'drizzle-orm'
+import { sql, type SQL } from 'drizzle-orm'
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core'
 
 export const buildConflictUpdateColumns = <
@@ -8,10 +8,9 @@ export const buildConflictUpdateColumns = <
   table: TTable,
   columns: TColumn[],
 ) => {
-  const cls = getTableColumns(table)
   return columns.reduce(
     (acc, column) => {
-      const colName = cls[column]!.name
+      const colName = (table as unknown as TTable['_']['columns'])[column]!.name
       acc[column] = sql.raw(`excluded.${colName}`)
       return acc
     },
