@@ -15,12 +15,12 @@ const buildNumberPromise = (async () => {
     const head = await Bun.file('.git/HEAD').text()
 
     if (head.indexOf(':') === -1) {
-      return head.substring(0, 7)
+      return head.slice(0, 7)
     }
 
-    const rev = await Bun.file('.git/' + head.substring(5).trim()).text()
+    const rev = await Bun.file('.git/' + head.slice(5).trim()).text()
 
-    return rev.substring(0, 7)
+    return rev.slice(0, 7)
   } catch {
     return 'unknown'
   }
@@ -163,8 +163,8 @@ Bun.file(fileDTsPath)
       throw new Error('Could not find info markers in vite-env.d.ts')
     }
 
-    const prefix = content.substring(0, startMarkIndex + startMark.length)
-    const suffix = content.substring(endMarkIndex)
+    const prefix = content.slice(0, startMarkIndex + startMark.length)
+    const suffix = content.slice(endMarkIndex)
 
     const generated = generatedInfo
       .map(([key, type]) => {

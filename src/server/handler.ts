@@ -28,7 +28,7 @@ export const httpHandler = async (
   request: Request,
   server: Bun.Server<WebSocketData>,
 ): Promise<undefined | Response> => {
-  const path = new URL(request.url).pathname.substring(1)
+  const path = new URL(request.url).pathname.slice(1)
 
   if (request.headers.get('upgrade') === 'websocket') {
     if (await handleWebsocketRequest(request, server, path)) {
