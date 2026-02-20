@@ -302,7 +302,7 @@ if (firstTime) {
 
           optimizeDatabase()
 
-          await stopPromise
+          await timeout(stopPromise, 500)
 
           logElapsed('Stopped')
         } else {
