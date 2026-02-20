@@ -1,4 +1,4 @@
-import { Database } from 'bun:sqlite'
+import { Database, SQLiteError } from 'bun:sqlite'
 import fs from 'fs'
 import path from 'path'
 import { drizzle } from 'drizzle-orm/bun-sqlite'
@@ -36,10 +36,18 @@ export const optimizeDatabase = () => {
     return
   }
 
-  isOptimized = true
+  try {
+    sqlite.run('PRAGMA journal_mode=DELETE')
+    sqlite.run('PRAGMA optimize')
 
-  sqlite.run('PRAGMA journal_mode=DELETE')
-  sqlite.run('PRAGMA optimize')
+    isOptimized = true
+  } catch (error) {
+    if (error instanceof SQLiteError && error.errno === 5) {
+      return
+    }
+
+    throw error
+  }
 }
 
 const config: DrizzleConfig<typeof schema> = {
