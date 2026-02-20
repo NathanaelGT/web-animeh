@@ -4,9 +4,11 @@ import { logger, type Context } from '~s/utils/logger'
 
 export class EpisodeNotFoundError extends Error {}
 
-export class LeviathanSrcNotFoundError extends Error {}
+export class LeviathanError extends Error {}
 
-export class LeviathanExecutionError extends Error {}
+export class LeviathanSrcNotFoundError extends LeviathanError {}
+
+export class LeviathanExecutionError extends LeviathanError {}
 
 export class SilentError extends Error {
   protected shouldLog = true

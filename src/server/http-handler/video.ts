@@ -94,6 +94,8 @@ const getRealVideoDirPath = async (animeId: string) => {
   const result = await realAnimeVideoDirPath(animeId)
   if (result) {
     realVideoDirPathCache.set(animeId, result)
+
+    setTimeout(() => realVideoDirPathCache.delete(animeId), 30 * 60 * 1000) // 30 menit
   }
 
   return [result, false] as const

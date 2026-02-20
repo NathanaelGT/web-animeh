@@ -7,7 +7,7 @@ import { purgeStoredCache } from '~s/anime/episode/stored'
 import { anime, animeMetadata } from '~s/db/schema'
 import {
   EpisodeNotFoundError,
-  LeviathanExecutionError,
+  LeviathanError,
   LeviathanSrcNotFoundError,
   SilentError,
 } from '~s/error'
@@ -111,19 +111,12 @@ const getDownloadUrl = async (
         try {
           ;[kMIX_PAGE_TOKEN_VALUE, kProcess] = await getKuramanimeProcess(kInitProcess!, episodeUrl)
         } catch (error) {
-          if (
-            error instanceof LeviathanExecutionError ||
-            error instanceof LeviathanSrcNotFoundError
-          ) {
+          if (error instanceof LeviathanError) {
             emit(
               'Gagal mendapatkan token auth Kuramanime\nHarap update Web Animeh ke versi terbaru',
             )
 
-            logger.error('Failed to get Kuramanime auth token', {
-              message: error.message,
-            })
-
-            await new Promise(() => {}) // block selamanya
+            throw SilentError.from(error).log('Failed to get Kuramanime auth token')
           }
 
           throw error
@@ -328,6 +321,13 @@ export const downloadEpisode = async (
 
   const start = (formattedTotalLengthCb?: (formattedTotalLength: string | null) => void) => {
     const handleError = (error: any) => {
+      downloadProgressController.delete(emitKey)
+      downloadSizeMap.delete(`${animeData.id}:${episodeNumber}`)
+
+      if (error instanceof SilentError && error.cause instanceof LeviathanError) {
+        return
+      }
+
       if (error instanceof TimeoutError) {
         if (isOffline(error)) {
           done('Tidak dapat terhubung dengan internet')
