@@ -21,6 +21,7 @@ import {
 } from '~s/external/download/progress'
 import { metadataQueue, downloadQueue } from '~s/external/queue'
 import * as kyInstances from '~s/ky'
+import { metadata } from '~s/metadata'
 import { isOffline } from '~s/utils/error'
 import { fetchText } from '~s/utils/fetch'
 import { isSubstringPresent } from '~s/utils/file'
@@ -57,8 +58,14 @@ let kMIX_PAGE_TOKEN_VALUE: string | null
 let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
 let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
 
-let authorizationToken: string | null
-const authorizationTokenMap = new Map<string, string>()
+let leviathanAuthorizationId: string | null = null
+let leviathanAuthorizationToken: string | null = null
+
+metadata.get('kuramanimeLeviathan').then(cache => {
+  if (cache) {
+    ;[leviathanAuthorizationId, leviathanAuthorizationToken] = cache
+  }
+})
 
 export const generateEmitKey = (
   animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
@@ -96,16 +103,13 @@ const getDownloadUrl = async (
     {
       const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
-      if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !authorizationToken) {
+      if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !leviathanAuthorizationToken) {
         emit('Mengambil token dari Kuramanime')
 
         kInitProcess = await getKuramanimeInitProcess()
 
         try {
-          ;[kMIX_PAGE_TOKEN_VALUE, kProcess, authorizationToken] = await getKuramanimeProcess(
-            kInitProcess!,
-            episodeUrl,
-          )
+          ;[kMIX_PAGE_TOKEN_VALUE, kProcess] = await getKuramanimeProcess(kInitProcess!, episodeUrl)
         } catch (error) {
           if (
             error instanceof LeviathanExecutionError ||
@@ -142,7 +146,7 @@ const getDownloadUrl = async (
             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest',
           },
-          body: 'authorization=' + authorizationToken,
+          body: 'authorization=' + leviathanAuthorizationToken,
         },
         kyInstances.kuramanime.post,
       )
@@ -150,7 +154,7 @@ const getDownloadUrl = async (
       const handleDownloadUrlNotFound = () => {
         // authorization tokennya expired
         if (responseHtml.includes('Terjadi kesalahan saat mengambil video')) {
-          authorizationToken = null
+          leviathanAuthorizationToken = null
 
           return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
         }
@@ -770,11 +774,11 @@ async function getKuramanimeProcess(
   ])
 
   const leviathanId = getLeviathanIdentifier(leviathanSrc)
-  let authorizationToken = authorizationTokenMap.get(leviathanId)
-  if (!authorizationToken) {
-    authorizationToken = await executeLeviathan(leviathanSource)
+  if (!leviathanAuthorizationToken || leviathanAuthorizationId !== leviathanId) {
+    leviathanAuthorizationToken = await executeLeviathan(leviathanSource)
+    leviathanAuthorizationId = leviathanId
 
-    authorizationTokenMap.set(leviathanId, authorizationToken)
+    void metadata.set('kuramanimeLeviathan', [leviathanId, leviathanAuthorizationToken])
   }
 
   const kProcess = v.parse(
@@ -795,7 +799,7 @@ async function getKuramanimeProcess(
     kyInstances.kuramanime,
   )
 
-  return [pageToken, kProcess, authorizationToken] as const
+  return [pageToken, kProcess] as const
 }
 
 function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>) {

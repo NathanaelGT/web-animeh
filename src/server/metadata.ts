@@ -2,16 +2,16 @@ import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { metadata as metadataTable } from '~s/db/schema'
 import { db } from './db'
 import { buildConflictUpdateColumns } from './utils/db'
-import type { SQLiteTransaction } from 'drizzle-orm/sqlite-core'
 
-const defaultMetadata = {
+const defaultMetadata = () => ({
   lastStudioPage: 1,
   kuramanimeCrawl: { perPage: 1, lastPage: 1 },
   kuramanimeOngoingLastFetchAt: null as null | Date,
   kuramanimeOngoingLastResetAt: null as null | Date,
-}
+  kuramanimeLeviathan: null as null | [id: string, token: string],
+})
 
-type Metadata = typeof defaultMetadata
+type Metadata = ReturnType<typeof defaultMetadata>
 
 export const metadata = {
   async get<TKey extends keyof Metadata>(key: TKey): Promise<Metadata[TKey]> {
@@ -27,7 +27,7 @@ export const metadata = {
       return SuperJSON.deserialize(result as SuperJSONResult) as Metadata[TKey]
     }
 
-    return defaultMetadata[key]
+    return defaultMetadata()[key]
   },
 
   async set<TKey extends keyof Metadata>(
