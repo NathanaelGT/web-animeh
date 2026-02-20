@@ -1,4 +1,4 @@
-import { DownloadIcon, Wand, CircleCheckBig, Hourglass, LoaderCircle } from 'lucide-react'
+import { DownloadIcon, Wand, CircleCheckBig, Hourglass, CircleX, LoaderCircle } from 'lucide-react'
 import * as downloadText from '~/shared/anime/episode/downloadText'
 import type { DownloadProgressDataWithoutDone } from '~s/db/repository/episode'
 
@@ -21,6 +21,10 @@ export function EpisodeStateIcon({ data }: Props) {
 
   if (data.text.startsWith('Menunggu')) {
     return <Hourglass />
+  }
+
+  if (data.text.startsWith('Gagal')) {
+    return <CircleX />
   }
 
   return <LoaderCircle className="animate-spin" />
