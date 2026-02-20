@@ -10,6 +10,7 @@ const defaultMetadata = () => ({
   kuramanimeOngoingLastFetchAt: null as null | Date,
   kuramanimeOngoingLastResetAt: null as null | Date,
   kuramanimeLeviathan: [null, null] as [id: null, token: null] | [id: string, token: string],
+  kuramanimeCookie: [] as [key: string, [value: string, expires: number]][],
 })
 
 type Metadata = ReturnType<typeof defaultMetadata>
