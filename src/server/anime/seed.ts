@@ -21,7 +21,7 @@ export const seed = async () => {
   seedGenres()
 
   if (Bun.env.PROD) {
-    metadata.get('lastStudioPage').then(fetchStudio)
+    fetchStudio(metadata.get('lastStudioPage'))
   }
 
   const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
@@ -134,7 +134,7 @@ const populate = async () => {
 
 const sync = async () => {
   const imageListPromise = glob(imagesDirPath, '*')
-  const { perPage, lastPage } = await metadata.get('kuramanimeCrawl')
+  const { perPage, lastPage } = metadata.get('kuramanimeCrawl')
 
   let [parsedData, imageListArr] = await Promise.all([fetchPage(lastPage), imageListPromise])
   const newPerPage = parsedData.animes.per_page
@@ -202,12 +202,9 @@ export const updateOngoingProviderData = async () => {
   const firstAnimePagePromise = fetchAnimeList(1)
   const animePagePromises = [firstAnimePagePromise]
 
-  const [firstAnimePage, kuramanimeOngoingLastFetchAt, kuramanimeOngoingLastResetAt] =
-    await Promise.all([
-      firstAnimePagePromise,
-      metadata.get('kuramanimeOngoingLastFetchAt'),
-      metadata.get('kuramanimeOngoingLastResetAt'),
-    ])
+  const firstAnimePage = await firstAnimePagePromise
+  const kuramanimeOngoingLastFetchAt = metadata.get('kuramanimeOngoingLastFetchAt')
+  const kuramanimeOngoingLastResetAt = metadata.get('kuramanimeOngoingLastResetAt')
 
   const shouldReset =
     kuramanimeOngoingLastResetAt && daysPassedSince(kuramanimeOngoingLastResetAt) > 30

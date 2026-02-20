@@ -1,3 +1,4 @@
+import { eq, sql } from 'drizzle-orm'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { metadata as metadataTable } from '~s/db/schema'
 import { db } from './db'
@@ -8,20 +9,23 @@ const defaultMetadata = () => ({
   kuramanimeCrawl: { perPage: 1, lastPage: 1 },
   kuramanimeOngoingLastFetchAt: null as null | Date,
   kuramanimeOngoingLastResetAt: null as null | Date,
-  kuramanimeLeviathan: null as null | [id: string, token: string],
+  kuramanimeLeviathan: [null, null] as [id: null, token: null] | [id: string, token: string],
 })
 
 type Metadata = ReturnType<typeof defaultMetadata>
 
+const queryMetadata = db
+  .select({
+    json: metadataTable.json,
+    meta: metadataTable.meta,
+  })
+  .from(metadataTable)
+  .where(eq(metadataTable.key, sql.placeholder('key')))
+  .prepare()
+
 export const metadata = {
-  async get<TKey extends keyof Metadata>(key: TKey): Promise<Metadata[TKey]> {
-    const result = await db.query.metadata.findFirst({
-      where: (metadata, { eq }) => eq(metadata.key, key),
-      columns: {
-        json: true,
-        meta: true,
-      },
-    })
+  get<TKey extends keyof Metadata>(key: TKey): Metadata[TKey] {
+    const result = queryMetadata.execute({ key }).sync()[0]
 
     if (result) {
       return SuperJSON.deserialize(result as SuperJSONResult) as Metadata[TKey]

@@ -58,14 +58,7 @@ let kMIX_PAGE_TOKEN_VALUE: string | null
 let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
 let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
 
-let leviathanAuthorizationId: string | null = null
-let leviathanAuthorizationToken: string | null = null
-
-metadata.get('kuramanimeLeviathan').then(cache => {
-  if (cache) {
-    ;[leviathanAuthorizationId, leviathanAuthorizationToken] = cache
-  }
-})
+let [leviathanAuthorizationId, leviathanAuthorizationToken] = metadata.get('kuramanimeLeviathan')
 
 export const generateEmitKey = (
   animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
