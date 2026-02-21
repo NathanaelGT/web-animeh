@@ -56,14 +56,17 @@ const sources = {
   COMPILED: {
     async getter() {
       const compiledAt = format(new Date())
-      const compiledBy = (await gitUsername()) || os.userInfo().username
+      const compiledBy =
+        (await exec('jj config get user.name')) ||
+        (await exec('git config --global user.name')) ||
+        os.userInfo().username
 
       return `Compiled at ${compiledAt} by ${compiledBy}`
 
-      async function gitUsername() {
+      async function exec(cmd: string) {
         try {
           const { stdout } = Bun.spawn({
-            cmd: ['git', 'config', '--global', 'user.name'],
+            cmd: cmd.split(' '),
             stdout: 'pipe',
           })
 
