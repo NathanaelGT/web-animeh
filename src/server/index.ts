@@ -295,11 +295,11 @@ if (firstTime) {
 
           const stopPromise = server.stop(true)
 
-          await timeout(stopPromise, 1000)
+          await timeout(stopPromise, 100)
 
           optimizeDatabase()
 
-          await timeout(stopPromise, 500)
+          await timeout(stopPromise, 90)
 
           logElapsed('Stopped')
         } else {
