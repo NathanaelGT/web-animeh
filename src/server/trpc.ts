@@ -4,7 +4,9 @@ import { isValiError } from 'valibot'
 import { fetchAndUpdate } from '~s/anime/update'
 import { db } from '~s/db'
 import { imageEmitterMap, pendingImageEmitterMap, type ImageEmitterParam } from '~s/emits/loadImage'
+import { getStackTraces } from '~s/utils/error'
 import { handleReadImageError, readImage, type Image } from '~s/utils/image'
+import { logger } from '~s/utils/logger'
 import { getMimeType } from '~s/utils/mime'
 import { imagesDirPath } from '~s/utils/path'
 import { extension } from '~/shared/utils/file'
@@ -120,12 +122,22 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
  * that can be used throughout the router
  */
 export const router = t.router
+
 export const procedure = t.procedure.use(async opts => {
   try {
     // @ts-ignore
     opts.ctx[WARM_IMAGE_KEY] = true
 
-    return await opts.next({ ctx: opts.ctx })
+    const result = await opts.next({ ctx: opts.ctx })
+
+    if (!result.ok) {
+      logger.error(`RPC: ${result.error.message}`, {
+        error: result.error,
+        stacktraces: getStackTraces(result.error),
+      })
+    }
+
+    return result
   } finally {
     queueMicrotask(() => {
       // @ts-ignore
