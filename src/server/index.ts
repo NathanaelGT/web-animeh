@@ -151,11 +151,8 @@ const server = await (async (): Promise<BunServer> => {
                 const level = isRoute ? 'route' : 'ws'
                 const maxLength = maxWidth - 53 - msg.length
 
-                let param = JSON.stringify(params)
-                param = (param.length > maxLength ? param.slice(0, maxLength - 2) + '..' : param)
-                  // ngehilangin double quotes dari property
-                  .replace(/"([^"]+)":/g, '$1:')
-                  .replace(/\uFFFF/g, '\\"')
+                let param = Bun.JSON5.stringify(params)!
+                param = param.length > maxLength ? param.slice(0, maxLength - 2) + '..' : param
 
                 const context = param ? `${ws.data.id} ${param}` : ws.data.id
 
