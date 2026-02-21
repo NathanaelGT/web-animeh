@@ -160,7 +160,7 @@ Bun.file(fileDTsPath)
     const endMarkIndex = content.indexOf(endMark)
 
     if (startMarkIndex === -1 || endMarkIndex === -1) {
-      throw new Error('Could not find info markers in vite-env.d.ts')
+      throw new Error(`Could not find info markers in "${fileDTsPath}"`)
     }
 
     const prefix = content.slice(0, startMarkIndex + startMark.length)
