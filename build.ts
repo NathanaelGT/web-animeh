@@ -3,9 +3,10 @@ import path from 'path'
 import { promisify } from 'util'
 import zlib from 'zlib'
 import Bun, { $ } from 'bun'
-import * as esbuild from 'esbuild'
+import packageJson from 'package.json'
 import { formatNs } from 'src/server/utils/time'
 import { formatBytes } from 'src/shared/utils/byte'
+import { ucFirst } from 'src/shared/utils/string.ts'
 
 process.on('uncaughtException', handleError)
 process.on('unhandledRejection', handleError)
@@ -19,7 +20,13 @@ if (process.stdout.clearLine !== undefined) {
 
 const { info } = await import('info.ts')
 
-log('', '\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating an optimized production build\x1b[0m')
+const skipUglify = process.env.npm_lifecycle_script === packageJson.scripts.preview
+const buildType = skipUglify ? 'preview' : 'optimized production'
+
+log(
+  '',
+  `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating ${skipUglify ? 'a' : 'an'} ${buildType} build\x1b[0m`,
+)
 
 await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
@@ -51,6 +58,34 @@ const clientBuildHashPromise = new Promise<string>(resolve => {
 
   return result
 })
+
+const uglify = async (js: string, hashDefineName: string, post = (result: string) => result) => {
+  if (skipUglify) {
+    return js.replace(hashDefineName, '"preview-' + (await buildHashPromise) + '"')
+  }
+
+  const process = Bun.spawn(
+    [
+      'node_modules/uglify-js/bin/uglifyjs',
+      '--toplevel',
+      '-c',
+      'passes=2',
+      '-d',
+      hashDefineName + '="' + (await buildHashPromise) + '"',
+    ],
+    {
+      stdin: 'pipe',
+      stdout: 'pipe',
+    },
+  )
+
+  await process.stdin.write(js)
+  await process.stdin.end()
+
+  const result = await process.stdout.text()
+
+  return post(result)
+}
 
 const buildStartNs = Bun.nanoseconds()
 
@@ -97,9 +132,28 @@ await Promise.all([
 
                 const js = (await Bun.file(jsPath).text()).trim()
 
-                indexHtml = indexHtml.split(identifier).join(`<script type="module">${js}</script>`)
-
                 void fs.rm(jsPath)
+
+                // html ga signifikan
+                // css, tailwind generate berdasarkan jsx
+                // jadi yang pentingnya cuma js
+                resolveClientBuildHash(hash(js))
+
+                const result = await uglify(js, 'import.meta.env.HASH', result => {
+                  const searchTerm = '</script>'
+                  const replacement = '<\\/script>'
+                  const lastIndex = result.lastIndexOf(searchTerm)
+
+                  return (
+                    result.slice(0, lastIndex) +
+                    replacement +
+                    result.slice(lastIndex + searchTerm.length)
+                  )
+                })
+
+                indexHtml = indexHtml
+                  .split(identifier)
+                  .join(`<script type="module">${result}</script>`)
               })(),
             )
 
@@ -132,10 +186,6 @@ await Promise.all([
           await fs.rmdir('./dist/public/assets')
         }
       })
-
-      resolveClientBuildHash(hash(indexHtml))
-
-      indexHtml = indexHtml.replace('$INJECT_VERSION$', await buildHashPromise)
 
       const compressed = await promisify(zlib.brotliCompress)(indexHtml, {
         params: {
@@ -216,74 +266,43 @@ await Promise.all([
     minify: true,
   })
     .then(async ({ outputs }) => {
-      const promises = [outputs[0]!.text()]
+      const outputTextPromises = outputs.map(output => output.text())
 
-      for (let i = 1; i < outputs.length; i++) {
-        promises.push(outputs[i]!.text())
+      type Script = {
+        path: string
+        content: string
       }
 
-      const out: [
-        string,
-        ...{
-          path: string
-          content: string
-        }[],
-      ] = [await promises[0]!]
+      const scripts = [] as unknown as [Script, ...Script[]]
 
-      for (let i = 1; i < outputs.length; i++) {
-        out.push({
+      for (let i = 0; i < outputs.length; i++) {
+        scripts.push({
           path: path.join('dist', outputs[i]!.path),
-          content: await promises[i]!,
+          content: await outputTextPromises[i]!,
         })
       }
 
-      return out
-    })
-    .then(async ([mainCode, ...scripts]) => {
-      const result = await esbuild.build({
-        bundle: true,
-        minify: true,
-        format: 'esm',
-        platform: 'node',
-        external: ['bun:sqlite'],
-        allowOverwrite: true,
-        legalComments: 'none',
-        entryPoints: ['virtual-entry'],
-        write: false,
-        plugins: [
-          {
-            name: 'in-memory',
-            setup(build) {
-              // Resolve the virtual entry path
-              build.onResolve({ filter: /^virtual-entry$/ }, () => ({
-                path: 'virtual-entry',
-                namespace: 'mem',
-              }))
+      resolveServerBuildHash(hash(scripts[0].content))
 
-              // Provide the code from memory
-              build.onLoad({ filter: /.*/, namespace: 'mem' }, () => ({
-                contents: mainCode,
-                loader: 'js',
-              }))
-            },
-          },
-        ],
-      })
+      const result = await uglify(scripts[0].content, 'Bun.env.HASH')
 
-      return [
-        result.outputFiles[0]!.text.trim().replace(/\r?\n/g, '\\n').slice(0, -1),
-        scripts,
-      ] as const
-    })
-    .then(async ([minified, scripts]) => {
-      const serverFiles: File[] = [{ path: 'dist/index.js', size: formatBytes(minified.length) }]
+      scripts[0].content = result
+        // source:  sql`foo ${sql.raw("bar")} baz`
+        // build:   P`foo ${P.raw("bar")} baz`
+        // replace: P`foo bar baz`
+        .replace(/(\w)`([^`]+)\${\1\.raw\((['"])((?:\\.|(?!\3).)*)\3\)}([^`]+)`/g, '$1`$2$4$5`')
+        .replace('`\n			CREATE TABLE IF NOT EXISTS', '`CREATE TABLE IF NOT EXISTS')
+        .replace(
+          '\n				id SERIAL PRIMARY KEY,\n				hash text NOT NULL,\n				created_at numeric\n			)\n		`',
+          'id SERIAL PRIMARY KEY,hash text NOT NULL,created_at numeric)`',
+        )
 
-      for (const script of scripts) {
-        serverFiles.push({
-          path: script.path,
-          size: formatBytes(script.content.length),
-        })
-      }
+      const writePromises = scripts.map(script => Bun.write(script.path, script.content))
+
+      const serverFiles = scripts.map(script => ({
+        path: script.path,
+        size: formatBytes(script.content.length),
+      }))
 
       for (const file of await copyDbFilesPromise) {
         serverFiles.push({
@@ -294,28 +313,8 @@ await Promise.all([
 
       logBuildInfo('server', serverFiles)
 
-      resolveServerBuildHash(hash(minified))
-
-      return [minified, await buildHashPromise, scripts] as const
+      return [await $`bun ./dist -v`.text(), writePromises] as const
     })
-    .then(async ([minified, buildHash, scripts]) => {
-      const promises = scripts.map(script => Bun.write(script.path, script.content))
-
-      await Bun.build({
-        entrypoints: ['/index.ts'],
-        files: {
-          '/index.ts': minified.replace('$INJECT_VERSION$', buildHash),
-        },
-        outdir: './dist',
-        minify: {
-          whitespace: true,
-        },
-        target: 'bun',
-      })
-
-      return promises
-    })
-    .then(async promises => [await $`bun ./dist -v`.text(), promises] as const)
     .then(([version, promises]) => {
       appVersion = version.trim()
 
@@ -391,21 +390,18 @@ function getFiles(fromDirectory: string) {
 }
 
 function hash(content: string) {
-  return (
-    new Bun.CryptoHasher('sha256')
-      .update(content)
-      .digest('base64')
-      // URL-safe
-      .replaceAll('+', '_')
-      .replaceAll('=', '.')
-      .replaceAll('/', '*')
-  )
+  return Bun.hash.xxHash3(content).toString(36)
 }
 
 log(
   `\n${appVersion}\n`,
-  '\x1b[32m\x1b[7mSUCCESS\x1b[0m\x1b[32m\x1b[0m ' +
-    `Optimized production build created in [\x1b[1m${formatNs(Bun.nanoseconds())}\x1b[0m]\n`,
+  [
+    '\x1b[32m\x1b[7mSUCCESS\x1b[0m\x1b[32m\x1b[0m ',
+    ucFirst(buildType),
+    ' build created in [\x1b[1m',
+    formatNs(Bun.nanoseconds()),
+    '\x1b[0m]\n',
+  ].join(''),
 )
 
 if (Bun.file('./build.after.ts').size) {

@@ -37,6 +37,7 @@ const client = serverOnly
       env: {
         ...process.env,
         NO_COLOR: '1',
+        HASH: '"dev"',
       },
     })
 const clientStartNs = Bun.nanoseconds()
@@ -54,6 +55,8 @@ const server = Bun.spawn(
     'Bun.env.PROD=false',
     '--define',
     'import.meta.env.PROD=false',
+    '--define',
+    'Bun.env.HASH="dev"',
     ...Object.entries(info).flatMap(([key, value]) => [
       '--define',
       `Bun.env.${key}=` +

@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     extensions: ['.ts', '.tsx', '.mts', '.mjs', '.js', '.jsx', '.json'],
   },
+  define: {
+    'import.meta.env.HASH': Bun.env.HASH || 'import.meta.env.HASH',
+  },
   build: {
     target: 'esnext',
     minify: 'oxc',

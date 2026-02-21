@@ -56,7 +56,7 @@ export const handleWebsocketRequest = async (
     data: {
       req: request,
       id:
-        Bun.env.PROD && version !== '$INJECT_VERSION$'
+        Bun.env.PROD && version !== Bun.env.HASH
           ? ''
           : (Bun.env.PROD ? id : globalForId.id).toString(36),
       profile,

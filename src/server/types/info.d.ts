@@ -6,6 +6,7 @@ type Info = {
 declare module 'bun' {
   interface Env extends Info {
     PROD: boolean
+    HASH: string
     // Auto generated info start
     VERSION: string
     BUILD_NUMBER: string

@@ -30,7 +30,7 @@ export const wsClient = createWSClient({
     const protocol = location.protocol.replace('http', 'ws')
     const host = import.meta.env.PROD ? location.host : 'localhost:8887'
 
-    return `${protocol}//${host}/$INJECT_VERSION$&${clientProfileIdStore.state ?? ''}`
+    return `${protocol}//${host}/${import.meta.env.HASH}&${clientProfileIdStore.state ?? ''}`
   },
 
   onClose(cause) {
