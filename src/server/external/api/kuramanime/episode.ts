@@ -24,8 +24,8 @@ import * as kyInstances from '~s/ky'
 import { metadata } from '~s/metadata'
 import { isOffline } from '~s/utils/error'
 import { fetchText } from '~s/utils/fetch'
-import { isSubstringPresent } from '~s/utils/file'
 import { logger } from '~s/utils/logger'
+import { isFastStart } from '~s/utils/mp4'
 import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
 import { env } from '~/env'
 import * as downloadText from '~/shared/anime/episode/downloadText'
@@ -363,13 +363,8 @@ export const downloadEpisode = async (
       }
     }
 
-    const isMoovAtomInFront = () => {
-      return isSubstringPresent(tempFilePath, 'moov', 4 * 1024 * 1024)
-    }
-
-    let isVideoAlreadyOptimizedPromise: Promise<boolean> | undefined
     const optimizeVideo = async () => {
-      if (await (isVideoAlreadyOptimizedPromise ?? isMoovAtomInFront())) {
+      if (await isFastStart(tempFilePath)) {
         await fs.rename(tempFilePath, filePath)
       } else {
         emit(downloadText.OPTIMIZING)
@@ -504,8 +499,6 @@ export const downloadEpisode = async (
                   isResolved = true
 
                   releaseMetadataLock()
-
-                  isVideoAlreadyOptimizedPromise = isMoovAtomInFront()
                 }
               }
 
