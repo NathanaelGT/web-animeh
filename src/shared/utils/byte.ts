@@ -1,3 +1,5 @@
+import { formatFloat } from './number'
+
 export const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB'] as const
 
 export const formatBytes = (bytes: number) => {
@@ -7,5 +9,5 @@ export const formatBytes = (bytes: number) => {
     i++
   }
 
-  return bytes.toFixed(2) + ' ' + units[i]
+  return formatFloat(bytes) + ' ' + units[i]
 }

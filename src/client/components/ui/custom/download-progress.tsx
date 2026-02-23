@@ -1,6 +1,7 @@
 import { clsx } from 'clsx'
 import { Progress } from '@/ui/progress'
 import { formatBytes } from '~/shared/utils/byte'
+import { formatFloat } from '~/shared/utils/number'
 import type { ReactNode } from 'react'
 import type { DownloadProgress } from '~s/external/download/progress'
 
@@ -34,7 +35,7 @@ export function DownloadProgress({
         )}
 
         {progressPercentage && (
-          <ConsistentWidthText text={progressPercentage.toFixed(2)} suffix="%" />
+          <ConsistentWidthText text={formatFloat(progressPercentage, Math.floor)} suffix="%" />
         )}
 
         <ConsistentWidthText
