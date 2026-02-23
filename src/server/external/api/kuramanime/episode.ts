@@ -375,6 +375,8 @@ export const downloadEpisode = async (
           tempFilePath,
           filePath,
         ]).exited
+
+        await fs.rm(tempFilePath)
       }
 
       onFinish?.()
