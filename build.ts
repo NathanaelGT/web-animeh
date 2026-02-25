@@ -1,7 +1,5 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { promisify } from 'util'
-import zlib from 'zlib'
 import Bun, { $ } from 'bun'
 import packageJson from 'package.json'
 import { formatNs } from 'src/server/utils/time'
@@ -187,13 +185,9 @@ await Promise.all([
         }
       })
 
-      const compressed = await promisify(zlib.brotliCompress)(indexHtml, {
-        params: {
-          [zlib.constants.BROTLI_PARAM_QUALITY]: 11,
-          [zlib.constants.BROTLI_PARAM_LGWIN]: 24,
-          [zlib.constants.BROTLI_PARAM_MODE]: zlib.constants.BROTLI_MODE_TEXT,
-          [zlib.constants.BROTLI_PARAM_SIZE_HINT]: indexHtml.length,
-        },
+      const compressed = Bun.gzipSync(indexHtml, {
+        library: 'libdeflate',
+        level: 12,
       })
 
       await Promise.all([
@@ -225,7 +219,7 @@ await Promise.all([
               return {
                 path: filePath,
                 size: formatBytes(indexHtml.length),
-                br: formatBytes(compressed.length),
+                comp: formatBytes(compressed.length),
               }
             } else if (
               ['dist/public' + jsOriginalPath, 'dist/public' + cssOriginalPath].includes(filePath)
@@ -325,7 +319,7 @@ await Promise.all([
 type File = {
   path: string
   size: string
-  br?: string
+  comp?: string
 }
 
 function log(...messages: string[]) {
@@ -338,7 +332,7 @@ function logBuildInfo(level: 'client' | 'server', files: File[]) {
   const messages = ['']
 
   for (const file of files) {
-    const sizeText = file.br ? ` raw: ${file.size} ... ${file.br}` : ' ' + file.size
+    const sizeText = file.comp ? ` raw: ${file.size} ... ${file.comp}` : ' ' + file.size
     const dots = fill(1, file.path, sizeText)
 
     const fileName = path.basename(file.path)

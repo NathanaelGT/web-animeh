@@ -52,7 +52,7 @@ export const httpHandler = async (
   return new Response(indexHtml, {
     headers: {
       'Content-Type': 'text/html;charset=utf-8',
-      'Content-Encoding': 'br',
+      'Content-Encoding': 'gzip',
     },
   })
 }
