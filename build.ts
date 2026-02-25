@@ -267,7 +267,7 @@ await Promise.all([
         content: string
       }
 
-      const scripts = [] as unknown as [Script, ...Script[]]
+      let scripts = [] as unknown as [Script, ...Script[]]
 
       for (let i = 0; i < outputs.length; i++) {
         scripts.push({
@@ -278,9 +278,18 @@ await Promise.all([
 
       resolveServerBuildHash(hash(scripts[0].content))
 
-      const result = await uglify(scripts[0].content, 'Bun.env.HASH')
+      scripts = (await Promise.all(
+        scripts.map(script => {
+          return new Promise<Script>(async resolve => {
+            resolve({
+              path: script.path,
+              content: await uglify(script.content, 'Bun.env.HASH'),
+            })
+          })
+        }),
+      )) as typeof scripts
 
-      scripts[0].content = result
+      scripts[0].content = scripts[0].content
         // source:  sql`foo ${sql.raw("bar")} baz`
         // build:   P`foo ${P.raw("bar")} baz`
         // replace: P`foo bar baz`
