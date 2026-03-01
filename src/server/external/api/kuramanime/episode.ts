@@ -54,8 +54,7 @@ const kuramanimeProcessSchema = v.object({
 })
 
 let kMIX_PAGE_TOKEN_VALUE: string | null
-let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
-let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
+let kProcessEnv: v.InferInput<typeof kuramanimeProcessSchema>['env'] | null
 
 let [leviathanAuthorizationId, leviathanAuthorizationToken] = kv.get('kuramanimeLeviathan')
 
@@ -95,13 +94,11 @@ const getDownloadUrl = async (
     {
       const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
-      if (!kMIX_PAGE_TOKEN_VALUE || !kProcess || !kInitProcess || !leviathanAuthorizationToken) {
+      if (!kMIX_PAGE_TOKEN_VALUE || !kProcessEnv) {
         emit('Mengambil token dari Kuramanime')
 
-        kInitProcess = await getKuramanimeInitProcess()
-
         try {
-          ;[kMIX_PAGE_TOKEN_VALUE, kProcess] = await getKuramanimeProcess(kInitProcess!, episodeUrl)
+          ;[kMIX_PAGE_TOKEN_VALUE, kProcessEnv] = await getKuramanimeProcess(episodeUrl)
         } catch (error) {
           if (error instanceof LeviathanError) {
             emit(
@@ -116,8 +113,8 @@ const getDownloadUrl = async (
       }
 
       const searchParams = toSearchParamString({
-        [kProcess!.env.MIX_PAGE_TOKEN_KEY]: kMIX_PAGE_TOKEN_VALUE!,
-        [kProcess!.env.MIX_STREAM_SERVER_KEY]: 'kuramadrive',
+        [kProcessEnv.MIX_PAGE_TOKEN_KEY]: kMIX_PAGE_TOKEN_VALUE,
+        [kProcessEnv.MIX_STREAM_SERVER_KEY]: 'kuramadrive',
         page: 1,
       })
 
@@ -147,8 +144,7 @@ const getDownloadUrl = async (
         // tokennya expired
         if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
           kMIX_PAGE_TOKEN_VALUE = null
-          kProcess = null
-          kInitProcess = null
+          kProcessEnv = null
 
           return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
         }
@@ -729,29 +725,20 @@ async function getGdriveCredentials(downloadUrl: string): Promise<GDriveCredenti
   return result
 }
 
-async function getKuramanimeInitProcess() {
-  const js = await fetchText('assets/js/sizzlyb.js', {}, kyInstances.kuramanime)
-
-  return v.parse(
-    kuramanimeInitProcessSchema,
-    Bun.JSON5.parse(js.replace('window.init_process =', '').replace(';', '')),
-  )
-}
-
-async function getKuramanimeProcess(
-  kuramanimeInitProcess: v.InferOutput<typeof kuramanimeInitProcessSchema>,
-  anyKuramanimeEpisodeUrl: string,
-) {
-  const source = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
+async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
+  const [source, kInitProcessJs] = await Promise.all([
+    fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime),
+    fetchText('assets/js/sizzlyb.js', {}, kyInstances.kuramanime),
+  ])
 
   const leviathanSrc = source.match(/id="tokenAuthJs"[\s\S]*?value="(.*?)"/)?.[1]
   if (!leviathanSrc) {
     throw new LeviathanSrcNotFoundError('Leviathan source not found')
   }
 
-  let mixEnvUrl = source.slice(
-    source.indexOf(`${kuramanimeInitProcess.env.MIX_JS_ROUTE_PARAM_ATTR}="`),
-  )
+  const initEnv = parseEnvScript(kuramanimeInitProcessSchema, kInitProcessJs)
+
+  let mixEnvUrl = source.slice(source.indexOf(`${initEnv.MIX_JS_ROUTE_PARAM_ATTR}="`))
   mixEnvUrl = mixEnvUrl.slice(mixEnvUrl.indexOf('"') + 1, mixEnvUrl.indexOf('">'))
 
   if (!mixEnvUrl) {
@@ -773,16 +760,12 @@ async function getKuramanimeProcess(
     void kv.set('kuramanimeLeviathan', [leviathanId, leviathanAuthorizationToken])
   }
 
-  const kProcess = v.parse(
-    kuramanimeProcessSchema,
-    Bun.JSON5.parse(kProcessJs.replace('window.process =', '').replace(';', '')),
-  )
-  const e = kProcess.env
+  const env = parseEnvScript(kuramanimeProcessSchema, kProcessJs)
   const pageToken = await fetchText(
-    e.MIX_PREFIX_AUTH_ROUTE_PARAM + e.MIX_AUTH_ROUTE_PARAM,
+    env.MIX_PREFIX_AUTH_ROUTE_PARAM + env.MIX_AUTH_ROUTE_PARAM,
     {
       headers: {
-        'X-Fuck-ID': `${e.MIX_AUTH_KEY}:${e.MIX_AUTH_TOKEN}`,
+        'X-Fuck-ID': `${env.MIX_AUTH_KEY}:${env.MIX_AUTH_TOKEN}`,
         'X-Request-ID': generateRandomString(6),
         'X-Request-Index': '0',
         'X-Request-With': 'XMLHttpRequest',
@@ -791,7 +774,34 @@ async function getKuramanimeProcess(
     kyInstances.kuramanime,
   )
 
-  return [pageToken, kProcess] as const
+  return [pageToken, env] as const
+
+  function parseEnvScript<TSchema extends v.ObjectSchema<{ env: any }, undefined>>(
+    schema: TSchema,
+    script: string,
+  ): v.InferOutput<TSchema>['env'] {
+    return v.parse(
+      schema,
+      Bun.JSON5.parse(script.slice(script.indexOf('=') + 1, script.lastIndexOf(';'))),
+    ).env
+  }
+
+  function getLeviathanIdentifier(leviathanSrc: string) {
+    return leviathanSrc.slice(leviathanSrc.indexOf('?') + 1)
+  }
+
+  function generateRandomString(length: number) {
+    let result = ''
+
+    for (let i = 0; i < length; i++)
+      result += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(
+        Math.floor(
+          Math.random() * 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.length,
+        ),
+      )
+
+    return result
+  }
 }
 
 function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>) {
@@ -809,20 +819,4 @@ function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'titl
   // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
 
   return result.replace(/\s+/g, ' ') + '.' + animeData.id
-}
-
-function generateRandomString(length: number) {
-  let result = ''
-  const len = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.length
-
-  for (let i = 0; i < length; i++)
-    result += 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.charAt(
-      Math.floor(Math.random() * len),
-    )
-
-  return result
-}
-
-function getLeviathanIdentifier(leviathanSrc: string) {
-  return leviathanSrc.slice(leviathanSrc.indexOf('?') + 1)
 }
