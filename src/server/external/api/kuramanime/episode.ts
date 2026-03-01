@@ -742,7 +742,7 @@ async function getKuramanimeProcess(
 ) {
   const source = await fetchText(anyKuramanimeEpisodeUrl, {}, kyInstances.kuramanime)
 
-  const leviathanSrc = source.match(/<input type="hidden" id="tokenAuthJs" value="\/(.*?)"/)?.[1]
+  const leviathanSrc = source.match(/id="tokenAuthJs"[\s\S]*?value="(.*?)"/)?.[1]
   if (!leviathanSrc) {
     throw new LeviathanSrcNotFoundError('Leviathan source not found')
   }
@@ -757,7 +757,9 @@ async function getKuramanimeProcess(
   }
 
   const [leviathanSource, kProcessJs] = await Promise.all([
-    fetchText(leviathanSrc, {}, kyInstances.kuramanime),
+    leviathanSrc.startsWith('/')
+      ? fetchText(leviathanSrc.slice(1), {}, kyInstances.kuramanime)
+      : fetchText(leviathanSrc),
     fetchText(`assets/js/${mixEnvUrl}.js`, {}, kyInstances.kuramanime),
   ])
 
