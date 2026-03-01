@@ -32,7 +32,6 @@ import * as downloadText from '~/shared/anime/episode/downloadText'
 import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
 import { formatBytes } from '~/shared/utils/byte'
 import { dir } from '~/shared/utils/file'
-import { parseFromJsObjectString } from '~/shared/utils/json'
 import { timeoutThrow } from '~/shared/utils/promise'
 import { toSearchParamString } from '~/shared/utils/url'
 
@@ -735,7 +734,7 @@ async function getKuramanimeInitProcess() {
 
   return v.parse(
     kuramanimeInitProcessSchema,
-    parseFromJsObjectString(js.replace('window.init_process =', '').replace(';', '')),
+    Bun.JSON5.parse(js.replace('window.init_process =', '').replace(';', '')),
   )
 }
 
@@ -776,7 +775,7 @@ async function getKuramanimeProcess(
 
   const kProcess = v.parse(
     kuramanimeProcessSchema,
-    parseFromJsObjectString(kProcessJs.replace('window.process =', '').replace(';', '')),
+    Bun.JSON5.parse(kProcessJs.replace('window.process =', '').replace(';', '')),
   )
   const e = kProcess.env
   const pageToken = await fetchText(
