@@ -7,9 +7,8 @@ import { buildConflictUpdateColumns } from './utils/db'
 const defaultKv = () => ({
   lastStudioPage: 1,
   kuramanimeHost: 'kuramalink.me',
-  kuramanimeCrawl: { perPage: 1, lastPage: 1 },
-  kuramanimeOngoingLastFetchAt: null as null | Date,
-  kuramanimeOngoingLastResetAt: null as null | Date,
+  kuramanimeCrawl: [1, 1] as [perPage: number, lastPage: number],
+  kuramanimeOngoing: [0, 0] as [lastFetchAt: number, lastResetAt: number],
   kuramanimeLeviathan: [null, null] as [id: null, token: null] | [id: string, token: string],
   kuramanimeCookie: [] as [key: string, [value: string, expires: number]][],
 })

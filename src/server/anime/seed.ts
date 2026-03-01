@@ -11,7 +11,7 @@ import { prepareStudioData } from '~s/studio/prepare'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { parseMalId } from '~s/utils/mal'
 import { glob, imagesDirPath } from '~s/utils/path'
-import { daysPassedSince, getPastDate } from '~/shared/utils/date'
+import { getPastDate } from '~/shared/utils/date'
 import { extension } from '~/shared/utils/file'
 import { updateCharacter } from './character/update'
 import { updateEpisode } from './episode/update'
@@ -134,7 +134,7 @@ const populate = async () => {
 
 const sync = async () => {
   const imageListPromise = glob(imagesDirPath, '*')
-  const { perPage, lastPage } = kv.get('kuramanimeCrawl')
+  const [perPage, lastPage] = kv.get('kuramanimeCrawl')
 
   let [parsedData, imageListArr] = await Promise.all([fetchPage(lastPage), imageListPromise])
   const newPerPage = parsedData.animes.per_page
@@ -144,10 +144,7 @@ const sync = async () => {
     await Promise.all([
       insertKuramanimeAnimeListToDb(parsedData.animes.data, imageList, { withCreatedAt: true }),
 
-      kv.set('kuramanimeCrawl', {
-        perPage: newPerPage,
-        lastPage: parsedData.animes.last_page,
-      }),
+      kv.set('kuramanimeCrawl', [newPerPage, parsedData.animes.last_page]),
     ])
   }
 
@@ -203,22 +200,18 @@ export const updateOngoingProviderData = async () => {
   const animePagePromises = [firstAnimePagePromise]
 
   const firstAnimePage = await firstAnimePagePromise
-  const kuramanimeOngoingLastFetchAt = kv.get('kuramanimeOngoingLastFetchAt')
-  const kuramanimeOngoingLastResetAt = kv.get('kuramanimeOngoingLastResetAt')
 
-  const shouldReset =
-    kuramanimeOngoingLastResetAt && daysPassedSince(kuramanimeOngoingLastResetAt) > 30
+  const now = Math.floor(Date.now() / 1000 / 3600)
+  const [kuramanimeOngoingLastFetchAt, kuramanimeOngoingLastResetAt] = kv.get('kuramanimeOngoing')
 
-  const newKuramanimeOngoingLastFetchAt = new Date()
+  const shouldReset = now - kuramanimeOngoingLastResetAt > 30 * 24
 
   let page = 2
   const lastPage = firstAnimePage.animes.last_page
   const maxPage = shouldReset
     ? lastPage
     : Math.min(
-        kuramanimeOngoingLastFetchAt
-          ? Math.ceil(daysPassedSince(kuramanimeOngoingLastFetchAt))
-          : Infinity,
+        kuramanimeOngoingLastFetchAt ? Math.ceil(kuramanimeOngoingLastFetchAt / 24) : Infinity,
         lastPage,
       )
   for (; page <= maxPage; page++) {
@@ -260,8 +253,8 @@ export const updateOngoingProviderData = async () => {
 
   if (kuramanimeOngoingLastFetchAt) {
     while (
-      ongoingAnimeUpdateList.at(-1)!.lastEpisodeAiredAt!.getTime() >
-        kuramanimeOngoingLastFetchAt.getTime() &&
+      ongoingAnimeUpdateList.at(-1)!.lastEpisodeAiredAt!.getTime() - now >
+        kuramanimeOngoingLastFetchAt &&
       page <= lastPage
     ) {
       const animePage = await fetchAnimeList(page++)
@@ -270,24 +263,19 @@ export const updateOngoingProviderData = async () => {
     }
   }
 
-  await db.transaction(async tx => {
-    if (shouldReset) {
-      await tx.delete(ongoingAnimeUpdates)
-    }
+  await db.transaction(tx => {
+    return Promise.all([
+      shouldReset ? tx.delete(ongoingAnimeUpdates) : null,
 
-    await tx
-      .insert(ongoingAnimeUpdates)
-      .values(ongoingAnimeUpdateList)
-      .onConflictDoUpdate({
-        target: [ongoingAnimeUpdates.animeId, ongoingAnimeUpdates.provider],
-        set: buildConflictUpdateColumns(ongoingAnimeUpdates, ['lastEpisodeAiredAt']),
-      })
+      tx
+        .insert(ongoingAnimeUpdates)
+        .values(ongoingAnimeUpdateList)
+        .onConflictDoUpdate({
+          target: [ongoingAnimeUpdates.animeId, ongoingAnimeUpdates.provider],
+          set: buildConflictUpdateColumns(ongoingAnimeUpdates, ['lastEpisodeAiredAt']),
+        }),
 
-    await Promise.all([
-      kv.set('kuramanimeOngoingLastFetchAt', newKuramanimeOngoingLastFetchAt, tx),
-      shouldReset !== false
-        ? kv.set('kuramanimeOngoingLastResetAt', newKuramanimeOngoingLastFetchAt, tx)
-        : null,
+      kv.set('kuramanimeOngoing', [now, shouldReset ? now : kuramanimeOngoingLastResetAt], tx),
     ])
   })
 

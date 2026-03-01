@@ -124,10 +124,7 @@ export const fetchAll = async (callback: (animeList: Anime[]) => Promise<void> |
     if (lastPage === Infinity) {
       lastPage = parsedData.animes.last_page
 
-      void kv.set('kuramanimeCrawl', {
-        perPage: parsedData.animes.per_page,
-        lastPage,
-      })
+      void kv.set('kuramanimeCrawl', [parsedData.animes.per_page, lastPage])
     }
 
     const cbResult = callback(parsedData.animes.data)
