@@ -269,8 +269,25 @@ export const downloadEpisode = async (
   let animeDirPath = await animeVideoRealDirPath(animeData.id)
   let shouldCheck = true
   if (!animeDirPath) {
-    animeDirPath = videosDirPath + generateDirSlug(animeData) + path.sep
+    animeDirPath = videosDirPath + generateDirSlug() + path.sep
     shouldCheck = false
+
+    function generateDirSlug() {
+      // list lengkap dan penjelasannya: https://stackoverflow.com/a/31976060
+
+      let result = ''
+
+      const forbiddenChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']) // 1
+      for (const char of animeData.title) {
+        if (!forbiddenChars.has(char) && char.charCodeAt(0) > 31 /* 2 */) {
+          result += char
+        }
+      }
+
+      // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
+
+      return result.replace(/\s+/g, ' ') + '.' + animeData.id
+    }
   }
 
   const fileName = episodeNumber.toString().padStart(2, '0')
@@ -802,21 +819,4 @@ async function getKuramanimeProcess(anyKuramanimeEpisodeUrl: string) {
 
     return result
   }
-}
-
-function generateDirSlug(animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>) {
-  // list lengkap dan penjelasannya: https://stackoverflow.com/a/31976060
-
-  let result = ''
-
-  const forbiddenChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']) // 1
-  for (const char of animeData.title) {
-    if (!forbiddenChars.has(char) && char.charCodeAt(0) > 31 /* 2 */) {
-      result += char
-    }
-  }
-
-  // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
-
-  return result.replace(/\s+/g, ' ') + '.' + animeData.id
 }
