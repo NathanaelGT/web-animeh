@@ -15,7 +15,7 @@ void fs.mkdir(logDir, { recursive: true })
 
 const logPath = path.join(
   logDir,
-  `web-animeh.${Bun.env.BUILD_NUMBER}${Bun.env.PROD ? '' : '.dev'}.log`,
+  `web-animeh.${Bun.env.TIME_HOUR}.${Bun.env.BUILD_NUMBER}${Bun.env.PROD ? '' : '.dev'}.log`,
 )
 
 const now = () => format(new Date())

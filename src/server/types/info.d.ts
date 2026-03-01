@@ -13,6 +13,7 @@ declare module 'bun' {
     BUILD: string
     COMPILED: string
     SERVER_TYPE: string
+    TIME_HOUR: number
     // Auto generated info end
   }
 }

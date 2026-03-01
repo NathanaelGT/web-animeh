@@ -26,6 +26,9 @@ const buildNumberPromise = (async () => {
   }
 })()
 
+const webAnimehFirstCommitSeconds = 1722155173
+const now = Math.floor(Date.now() / 1000)
+
 const sources = {
   LATEST_CHROME_VERSION: {
     ttl: 60 * 60 * 12,
@@ -55,7 +58,7 @@ const sources = {
   },
   COMPILED: {
     async getter() {
-      const compiledAt = format(new Date())
+      const compiledAt = format(new Date(now * 1000))
       const compiledBy =
         (await exec('jj config get user.name')) ||
         (await exec('git config --global user.name')) ||
@@ -84,9 +87,12 @@ const sources = {
       return isProd ? 'Server' : 'Dev Server'
     },
   },
+  TIME_HOUR: {
+    getter() {
+      return Math.floor((now - webAnimehFirstCommitSeconds) / 3600)
+    },
+  },
 } satisfies Record<string, { ttl?: number; getter(): Bun.MaybePromise<unknown> }>
-
-const now = Math.floor(Date.now() / 1000)
 
 let shouldPersist = false
 const values = Object.entries(sources).map(([key, data]) => {
