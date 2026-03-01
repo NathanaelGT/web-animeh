@@ -341,25 +341,28 @@ export const downloadEpisode = async (
     const downloadVideo = async (url: string, start: number) => {
       const gdriveCredentials = await getGdriveCredentials(url)
 
-      const requestedAt = performance.now()
-      const request = gdriveCredentials
-        ? ky.get(`https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`, {
-            signal,
-            headers: {
-              Range: `bytes=${start}-`,
-              Authorization: `Bearer ${gdriveCredentials.data.access_token}`,
-            },
-          })
-        : ky.get(url, {
-            signal,
-            headers: {
-              Range: `bytes=${start}-`,
-            },
-          })
+      const headers: Record<string, string> = {
+        Range: `bytes=${start}-`,
+      }
+      if (gdriveCredentials) {
+        headers['Authorization'] = `Bearer ${gdriveCredentials.data.access_token}`
+      }
 
       return {
-        response: await timeoutThrow(request, 5_000),
-        requestedAt,
+        requestedAt: performance.now(),
+        response: await ky.get(
+          gdriveCredentials
+            ? `https://www.googleapis.com/drive/v3/files/${gdriveCredentials.id}?alt=media`
+            : url,
+          {
+            signal,
+            headers,
+            timeout: 5_000,
+            retry: {
+              retryOnTimeout: true,
+            },
+          },
+        ),
       }
     }
 
