@@ -1,31 +1,5 @@
 import ky, { type KyResponse } from 'ky'
-import { isOffline } from '~s/utils/error'
-import { SilentError } from './error'
 import { metadata } from './metadata'
-
-type KuramanimeOrigin = `https://${string}/`
-
-const kuramalink = 'https://kuramalink.me/' satisfies KuramanimeOrigin
-
-let cachedKuramanimeOrigin: KuramanimeOrigin | undefined
-
-const getFreshKuramanimeOrigin = async () => {
-  try {
-    const response = await fetch(kuramalink, { method: 'HEAD', redirect: 'follow' })
-
-    return response.url as KuramanimeOrigin
-  } catch (error) {
-    if (isOffline(error)) {
-      throw error
-    }
-
-    throw SilentError.from(error).log(`fetch ${kuramalink} failed`)
-  }
-}
-
-export const getKuramanimeOrigin = async () => {
-  return (cachedKuramanimeOrigin ??= await getFreshKuramanimeOrigin())
-}
 
 const kuramanimeCookieStore = new Map(metadata.get('kuramanimeCookie'))
 
@@ -119,48 +93,40 @@ function getKuramanimeCookieHeader() {
   return cookie.slice(0, -2)
 }
 
-const chromeVersion = Bun.env.LATEST_CHROME_VERSION
+const createKuramanimeInstance = (host: string) => {
+  return ky.extend({
+    prefixUrl: `https://${host}/`,
 
-const kuramanimeHeaders = {
-  'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chromeVersion}.0.0.0 Safari/537.36`,
-  'Sec-Ch-Ua': `"Not\\A;Brand";v="99", "Chromium";v="${chromeVersion}", "Google Chrome";v="${chromeVersion}"`,
-  'Sec-Ch-Ua-Platform': '"Windows"',
-  'Sec-Ch-Ua-Platform-Version': '"14.0.0"',
-  'Sec-Ch-Ua-Mobile': '?0',
+    headers: {
+      'User-Agent': `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${Bun.env.LATEST_CHROME_VERSION}.0.0.0 Safari/537.36`,
+      'Sec-Ch-Ua': `"Not\\A;Brand";v="99", "Chromium";v="${Bun.env.LATEST_CHROME_VERSION}", "Google Chrome";v="${Bun.env.LATEST_CHROME_VERSION}"`,
+      'Sec-Ch-Ua-Platform': '"Windows"',
+      'Sec-Ch-Ua-Platform-Version': '"14.0.0"',
+      'Sec-Ch-Ua-Mobile': '?0',
+    },
+
+    hooks: {
+      beforeRequest: [
+        request => {
+          request.headers.set('Cookie', getKuramanimeCookieHeader())
+        },
+      ],
+
+      afterResponse: [
+        (request, _options, response) => {
+          storeKuramanimeCookies(response)
+
+          if (request.url !== response.url) {
+            const newHost = new URL(response.url).host
+
+            kuramanime = createKuramanimeInstance(newHost)
+
+            void metadata.set('kuramanimeHost', newHost)
+          }
+        },
+      ],
+    },
+  })
 }
 
-export let kuramanime = ky.extend({
-  prefixUrl: kuramalink,
-
-  headers: kuramanimeHeaders,
-
-  hooks: {
-    afterResponse: [
-      (_request, _options, response) => {
-        storeKuramanimeCookies(response)
-
-        cachedKuramanimeOrigin = new URL(response.url).origin + '/'
-
-        kuramanime = ky.extend({
-          prefixUrl: cachedKuramanimeOrigin,
-
-          headers: kuramanimeHeaders,
-
-          hooks: {
-            beforeRequest: [
-              request => {
-                request.headers.set('Cookie', getKuramanimeCookieHeader())
-              },
-            ],
-
-            afterResponse: [
-              (_request, _options, response) => {
-                storeKuramanimeCookies(response)
-              },
-            ],
-          },
-        })
-      },
-    ],
-  },
-})
+export let kuramanime = createKuramanimeInstance(metadata.get('kuramanimeHost'))

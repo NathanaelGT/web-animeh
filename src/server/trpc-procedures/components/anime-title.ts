@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import { getKuramanimeOrigin } from '~s/ky'
+import { metadata as kv } from '~s/metadata'
 import { procedure, router } from '~s/trpc'
 import { omit } from '~/shared/utils/object'
 
@@ -44,25 +44,22 @@ export const AnimeTitleRouter = router({
   }),
 
   context: procedure.input(v.parser(v.number())).query(async ({ ctx, input }) => {
-    const [kuramanimeOrigin, metadata] = await Promise.all([
-      getKuramanimeOrigin(),
-      ctx.db.query.animeMetadata.findFirst({
-        where(animeMetadata, { and, eq }) {
-          return and(eq(animeMetadata.animeId, input), eq(animeMetadata.provider, 'kuramanime'))
-        },
-        columns: {
-          providerId: true,
-          providerSlug: true,
-        },
-      }),
-    ])
+    const metadata = await ctx.db.query.animeMetadata.findFirst({
+      where(animeMetadata, { and, eq }) {
+        return and(eq(animeMetadata.animeId, input), eq(animeMetadata.provider, 'kuramanime'))
+      },
+      columns: {
+        providerId: true,
+        providerSlug: true,
+      },
+    })
 
     type Providers = 'Kuramanime'
 
     const url: { [Key in Providers]?: `https://${string}` } = {}
 
     if (metadata?.providerSlug) {
-      url.Kuramanime = `${kuramanimeOrigin}anime/${metadata.providerId}/${metadata.providerSlug}`
+      url.Kuramanime = `https://${kv.get('kuramanimeHost')}/anime/${metadata.providerId}/${metadata.providerSlug}`
     }
 
     return { url }

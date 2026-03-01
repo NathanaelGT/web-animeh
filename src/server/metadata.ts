@@ -6,6 +6,7 @@ import { buildConflictUpdateColumns } from './utils/db'
 
 const defaultMetadata = () => ({
   lastStudioPage: 1,
+  kuramanimeHost: 'kuramalink.me',
   kuramanimeCrawl: { perPage: 1, lastPage: 1 },
   kuramanimeOngoingLastFetchAt: null as null | Date,
   kuramanimeOngoingLastResetAt: null as null | Date,
