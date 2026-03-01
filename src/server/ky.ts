@@ -1,7 +1,7 @@
 import ky, { type KyResponse } from 'ky'
-import { metadata } from './metadata'
+import { kv } from './kv'
 
-const kuramanimeCookieStore = new Map(metadata.get('kuramanimeCookie'))
+const kuramanimeCookieStore = new Map(kv.get('kuramanimeCookie'))
 
 ;(() => {
   const intlDateTime = new Intl.DateTimeFormat('id-ID', {
@@ -74,7 +74,7 @@ function storeKuramanimeCookies(response: KyResponse) {
       return expiredAt > now && isFinite(expiredAt)
     })
 
-    void metadata.set('kuramanimeCookie', cookie)
+    void kv.set('kuramanimeCookie', cookie)
   }, 3000)
 }
 
@@ -121,7 +121,7 @@ const createKuramanimeInstance = (host: string) => {
 
             kuramanime = createKuramanimeInstance(newHost)
 
-            void metadata.set('kuramanimeHost', newHost)
+            void kv.set('kuramanimeHost', newHost)
           }
         },
       ],
@@ -129,4 +129,4 @@ const createKuramanimeInstance = (host: string) => {
   })
 }
 
-export let kuramanime = createKuramanimeInstance(metadata.get('kuramanimeHost'))
+export let kuramanime = createKuramanimeInstance(kv.get('kuramanimeHost'))

@@ -110,10 +110,18 @@ CREATE TABLE `genres` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `genres_name_unique` ON `genres` (`name`);--> statement-breakpoint
-CREATE TABLE `metadata` (
+CREATE TABLE `kv` (
 	`key` text PRIMARY KEY NOT NULL,
 	`json` text NOT NULL,
 	`meta` text
+);
+--> statement-breakpoint
+CREATE TABLE `ongoing_anime_updates` (
+	`anime_id` integer NOT NULL,
+	`provider` integer NOT NULL,
+	`last_episode_aired_at` integer,
+	PRIMARY KEY(`anime_id`, `provider`),
+	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE TABLE `persons` (

@@ -752,8 +752,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "metadata": {
-      "name": "metadata",
+    "kv": {
+      "name": "kv",
       "columns": {
         "key": {
           "name": "key",
@@ -780,6 +780,59 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "ongoing_anime_updates": {
+      "name": "ongoing_anime_updates",
+      "columns": {
+        "anime_id": {
+          "name": "anime_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider": {
+          "name": "provider",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_episode_aired_at": {
+          "name": "last_episode_aired_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "ongoing_anime_updates_anime_id_anime_id_fk": {
+          "name": "ongoing_anime_updates_anime_id_anime_id_fk",
+          "tableFrom": "ongoing_anime_updates",
+          "tableTo": "anime",
+          "columnsFrom": [
+            "anime_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "ongoing_anime_updates_anime_id_provider_pk": {
+          "columns": [
+            "anime_id",
+            "provider"
+          ],
+          "name": "ongoing_anime_updates_anime_id_provider_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },

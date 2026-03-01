@@ -1,7 +1,7 @@
 import * as v from 'valibot'
 import { limitRequest } from '~s/external/limit'
+import { kv } from '~s/kv'
 import * as kyInstances from '~s/ky'
-import { metadata } from '~s/metadata'
 
 const postSchema = v.object({
   // id: v.number(),
@@ -124,7 +124,7 @@ export const fetchAll = async (callback: (animeList: Anime[]) => Promise<void> |
     if (lastPage === Infinity) {
       lastPage = parsedData.animes.last_page
 
-      metadata.set('kuramanimeCrawl', {
+      void kv.set('kuramanimeCrawl', {
         perPage: parsedData.animes.per_page,
         lastPage,
       })

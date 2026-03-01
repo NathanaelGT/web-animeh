@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import { metadata as kv } from '~s/metadata'
+import { kv } from '~s/kv'
 import { procedure, router } from '~s/trpc'
 import { omit } from '~/shared/utils/object'
 

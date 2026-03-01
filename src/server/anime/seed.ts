@@ -5,8 +5,8 @@ import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { fetchAll, fetchPage } from '~s/external/api/kuramanime/fetch'
 import { insertKuramanimeAnimeListToDb } from '~s/external/api/kuramanime/insert'
 import { limitRequest } from '~s/external/limit'
+import { kv } from '~s/kv'
 import * as kyInstances from '~s/ky'
-import { metadata } from '~s/metadata'
 import { prepareStudioData } from '~s/studio/prepare'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { parseMalId } from '~s/utils/mal'
@@ -21,7 +21,7 @@ export const seed = async () => {
   seedGenres()
 
   if (Bun.env.PROD) {
-    fetchStudio(metadata.get('lastStudioPage'))
+    fetchStudio(kv.get('lastStudioPage'))
   }
 
   const firstAnime = await db.query.anime.findFirst({ columns: { id: true } })
@@ -109,7 +109,7 @@ async function fetchStudio(startPage: number) {
 
   await Promise.all(promises)
 
-  await metadata.set('lastStudioPage', startPage)
+  await kv.set('lastStudioPage', startPage)
 
   if (producers.pagination.has_next_page) {
     const end = performance.now()
@@ -134,7 +134,7 @@ const populate = async () => {
 
 const sync = async () => {
   const imageListPromise = glob(imagesDirPath, '*')
-  const { perPage, lastPage } = metadata.get('kuramanimeCrawl')
+  const { perPage, lastPage } = kv.get('kuramanimeCrawl')
 
   let [parsedData, imageListArr] = await Promise.all([fetchPage(lastPage), imageListPromise])
   const newPerPage = parsedData.animes.per_page
@@ -144,7 +144,7 @@ const sync = async () => {
     await Promise.all([
       insertKuramanimeAnimeListToDb(parsedData.animes.data, imageList, { withCreatedAt: true }),
 
-      metadata.set('kuramanimeCrawl', {
+      kv.set('kuramanimeCrawl', {
         perPage: newPerPage,
         lastPage: parsedData.animes.last_page,
       }),
@@ -203,8 +203,8 @@ export const updateOngoingProviderData = async () => {
   const animePagePromises = [firstAnimePagePromise]
 
   const firstAnimePage = await firstAnimePagePromise
-  const kuramanimeOngoingLastFetchAt = metadata.get('kuramanimeOngoingLastFetchAt')
-  const kuramanimeOngoingLastResetAt = metadata.get('kuramanimeOngoingLastResetAt')
+  const kuramanimeOngoingLastFetchAt = kv.get('kuramanimeOngoingLastFetchAt')
+  const kuramanimeOngoingLastResetAt = kv.get('kuramanimeOngoingLastResetAt')
 
   const shouldReset =
     kuramanimeOngoingLastResetAt && daysPassedSince(kuramanimeOngoingLastResetAt) > 30
@@ -284,9 +284,9 @@ export const updateOngoingProviderData = async () => {
       })
 
     await Promise.all([
-      metadata.set('kuramanimeOngoingLastFetchAt', newKuramanimeOngoingLastFetchAt, tx),
+      kv.set('kuramanimeOngoingLastFetchAt', newKuramanimeOngoingLastFetchAt, tx),
       shouldReset !== false
-        ? metadata.set('kuramanimeOngoingLastResetAt', newKuramanimeOngoingLastFetchAt, tx)
+        ? kv.set('kuramanimeOngoingLastResetAt', newKuramanimeOngoingLastFetchAt, tx)
         : null,
     ])
   })

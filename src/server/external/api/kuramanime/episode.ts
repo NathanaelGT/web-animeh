@@ -20,8 +20,8 @@ import {
   type DownloadProgress,
 } from '~s/external/download/progress'
 import { metadataQueue, downloadQueue } from '~s/external/queue'
+import { kv } from '~s/kv'
 import * as kyInstances from '~s/ky'
-import { metadata } from '~s/metadata'
 import { isOffline } from '~s/utils/error'
 import { fetchText } from '~s/utils/fetch'
 import { logger } from '~s/utils/logger'
@@ -58,7 +58,7 @@ let kMIX_PAGE_TOKEN_VALUE: string | null
 let kProcess: v.InferInput<typeof kuramanimeProcessSchema> | null
 let kInitProcess: v.InferInput<typeof kuramanimeInitProcessSchema> | null
 
-let [leviathanAuthorizationId, leviathanAuthorizationToken] = metadata.get('kuramanimeLeviathan')
+let [leviathanAuthorizationId, leviathanAuthorizationToken] = kv.get('kuramanimeLeviathan')
 
 export const generateEmitKey = (
   animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
@@ -768,7 +768,7 @@ async function getKuramanimeProcess(
     leviathanAuthorizationToken = await executeLeviathan(leviathanSource)
     leviathanAuthorizationId = leviathanId
 
-    void metadata.set('kuramanimeLeviathan', [leviathanId, leviathanAuthorizationToken])
+    void kv.set('kuramanimeLeviathan', [leviathanId, leviathanAuthorizationToken])
   }
 
   const kProcess = v.parse(

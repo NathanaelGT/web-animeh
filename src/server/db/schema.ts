@@ -352,7 +352,7 @@ export const characterToPersons = sqliteTable(
   t => [primaryKey({ columns: [t.characterId, t.personId] })],
 )
 
-export const metadata = sqliteTable('metadata', {
+export const kv = sqliteTable('kv', {
   key: text('key').primaryKey(),
   json: text('json', { mode: 'json' }).$type<SuperJSONResult['json']>().notNull(),
   meta: text('meta', { mode: 'json' }).$type<NonNullable<SuperJSONResult['meta']>>(),
