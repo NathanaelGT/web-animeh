@@ -105,6 +105,7 @@ export function AnimeTitle<TTag extends Tag = 'p', TAsLink extends boolean = fal
             icon={MyAnimeList}
             href={`https://myanimelist.net/anime/${animeData.id}`}
             text="MyAnimeList"
+            extra={[['Edit di ', `https://myanimelist.net/ownlist/anime/${animeData.id}/edit`]]}
           />
 
           <MapObject
@@ -215,13 +216,16 @@ function TitleTooltip({ animeData, children }: TitleTooltipProps) {
 
 type Icon = (props: Omit<ComponentProps<'svg'>, 'children'>) => ReactNode
 
+type Href = `https://${string}` | `/${string}`
+
 type ContextLinkProps = {
   icon: Icon
-  href: `https://${string}` | `/${string}`
+  href: Href
   text: string
+  extra?: [prefix: string, href: Href, suffix?: string][]
 }
 
-function ContextLink({ icon: Icon, href, text }: ContextLinkProps) {
+function ContextLink({ icon: Icon, href, text, extra }: ContextLinkProps) {
   const handleCopy = () => {
     copy(href.startsWith('/') ? origin + href : href)
   }
@@ -241,6 +245,16 @@ function ContextLink({ icon: Icon, href, text }: ContextLinkProps) {
             Buka di {text}
           </a>
         </ContextMenuItem>
+
+        {extra?.map(([prefix, href, suffix], index) => (
+          <ContextMenuItem asChild key={index}>
+            <a href={href} target="_blank" className="cursor-pointer">
+              {prefix}
+              {text}
+              {suffix}
+            </a>
+          </ContextMenuItem>
+        ))}
 
         <ContextMenuItem onClick={handleCopy} role="button" className="cursor-pointer">
           Salin
