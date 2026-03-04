@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
-import { useEffect, useMemo, memo, type ReactNode, type ReactElement } from 'react'
-import BaseTextTransition, { presets } from 'react-text-transition'
+import { useEffect, useMemo, memo, type ReactNode } from 'react'
 import { animeDataStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
@@ -14,6 +13,7 @@ import { AnimeTitle } from '@/Anime/Title'
 import { AnimeType } from '@/Anime/Type'
 import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { Button } from '@/ui/button'
+import { AnimatedNumber } from '@/ui/custom/animated-number'
 import { Separator } from '@/ui/separator'
 import { Skeleton } from '@/ui/skeleton'
 import { randomBetween } from '~/shared/utils/number'
@@ -184,30 +184,19 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
 
         <Stat
           title="Skor"
-          stat={<Transition text={animeData.score?.toLocaleString('id-ID')} />}
+          stat={animeData.score}
           suffix={
             animeData.scoredBy && (
               <span>
                 {' '}
-                (dari <Transition text={animeData.scoredBy.toLocaleString('id-ID')} /> pengguna)
+                (dari <AnimatedNumber value={animeData.scoredBy} /> pengguna)
               </span>
             )
           }
         />
-        <Stat
-          title="Peringkat"
-          stat={<Transition text={animeData.rank?.toString()} />}
-          prefix="#"
-        />
-        <Stat
-          title="Popularitas"
-          stat={<Transition text={animeData.popularity?.toString()} />}
-          prefix="#"
-        />
-        <Stat
-          title="Penonton"
-          stat={<Transition text={animeData.members?.toLocaleString('id-ID')} />}
-        />
+        <Stat title="Peringkat" stat={animeData.rank} prefix="#" />
+        <Stat title="Popularitas" stat={animeData.popularity} prefix="#" />
+        <Stat title="Penonton" stat={animeData.members} />
 
         {animeData.genres.length > 0 && (
           <>
@@ -246,40 +235,13 @@ function Stat({ title, stat, prefix, suffix }: StatProps) {
     return null
   } else if ((stat as { length: number }).length < 1) {
     return null
-  } else if ((stat as ReactElement).props) {
-    if (!((stat as ReactElement).props as TransitionProps).text) {
-      return null
-    }
   }
 
   return (
     <div>
       <span className="font-bold">{title}</span>: {prefix}
-      {stat}
+      {typeof stat === 'number' ? <AnimatedNumber value={stat} /> : stat}
       {suffix}
-    </div>
-  )
-}
-
-type TransitionProps = {
-  text: string | undefined | null
-}
-
-function Transition({ text }: TransitionProps) {
-  if (!text) {
-    return null
-  }
-
-  return (
-    <div className="relative inline-block">
-      <span className="invisible">{text}</span>
-      <div className="absolute top-0 left-0 flex">
-        {text.split('').map((char, i) => (
-          <BaseTextTransition key={i} springConfig={presets.wobbly}>
-            {char}
-          </BaseTextTransition>
-        ))}
-      </div>
     </div>
   )
 }

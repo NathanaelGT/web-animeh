@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import React, { useState, type PropsWithChildren, type ReactNode } from 'react'
-import TextTransition, { presets } from 'react-text-transition'
 import { useStoreState } from '~c/hooks/useStoreState'
 import { keybindTranslation } from '~c/keybind'
 import { clientProfileSettingsStore, profileStore } from '~c/stores'
@@ -152,9 +151,7 @@ function InputNumber({
         setInputError('')
       },
       onError(error) {
-        if (error instanceof Error) {
-          setInputError(error.message)
-        }
+        setInputError(error.message)
       },
     })
   }
@@ -209,13 +206,9 @@ function InputNumber({
         )}
       </div>
 
-      <TextTransition
-        springConfig={presets.gentle}
-        direction="up"
-        className={`mb-auto text-red-600 transition-[height] ${inputError ? 'h-6!' : 'h-0!'}`}
-      >
+      <div className={`mb-auto text-red-600 transition-[height] ${inputError ? 'h-6!' : 'h-0!'}`}>
         {inputError}
-      </TextTransition>
+      </div>
     </div>
   )
 }
