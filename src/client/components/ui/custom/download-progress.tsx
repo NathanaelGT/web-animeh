@@ -1,8 +1,6 @@
-import { clsx } from 'clsx'
 import { Progress } from '@/ui/progress'
 import { formatBytes } from '~/shared/utils/byte'
 import { formatFloat } from '~/shared/utils/number'
-import type { ReactNode } from 'react'
 import type { DownloadProgress } from '~s/external/download/progress'
 
 type Props = {
@@ -14,63 +12,37 @@ export function DownloadProgress({
   progress: { speed, receivedLength, totalLength },
   text,
 }: Props) {
-  const progressPercentage = totalLength && (receivedLength / totalLength) * 100
+  if (!totalLength) {
+    return (
+      <div className="grid text-center lining-nums">
+        <p className="md:text-start">{text || formatBytes(speed) + '/s'}</p>
+
+        <p className="md:text-end">{formatBytes(receivedLength)}</p>
+      </div>
+    )
+  }
+
+  const progressPercentage = (receivedLength / totalLength) * 100
 
   return (
     <>
-      {progressPercentage && (
-        <Progress
-          value={progressPercentage}
-          className={text ? 'animate-pulse' : undefined}
-          // progressnya bakal keupdate setiap 50ms
-          indicatorClassName="duration-50"
-        />
-      )}
+      <Progress
+        value={progressPercentage}
+        className={text ? 'animate-pulse' : undefined}
+        indicatorClassName="duration-50" // progressnya bakal keupdate setiap 50ms
+      />
 
-      <div className="grid gap-x-4 md:grid-cols-3">
-        {text ? (
-          <ConsistentWidthText text={text} className="md:mx-0" />
-        ) : (
-          <ConsistentWidthText text={formatBytes(speed)} suffix="/s" className="md:mx-0" />
-        )}
+      <div className="grid text-center lining-nums md:grid-cols-5">
+        <p className="md:col-span-2 md:text-start">{text || formatBytes(speed) + '/s'}</p>
 
-        {progressPercentage && (
-          <ConsistentWidthText text={formatFloat(progressPercentage, Math.floor)} suffix="%" />
-        )}
+        <p>{formatFloat(progressPercentage, Math.floor)}%</p>
 
-        <ConsistentWidthText
-          text={formatBytes(receivedLength) + (totalLength ? ' / ' + formatBytes(totalLength) : '')}
-          className="md:mr-0"
-        />
+        <p className="md:col-span-2 md:text-end">
+          {formatBytes(receivedLength)}
+          {' / '}
+          {formatBytes(totalLength)}
+        </p>
       </div>
     </>
-  )
-}
-
-type ConsistentWidthTextProps = {
-  text: string
-  suffix?: ReactNode
-  className?: string
-}
-
-function ConsistentWidthText({ text, suffix, className }: ConsistentWidthTextProps) {
-  return (
-    <p className={clsx('mx-auto flex whitespace-pre', className)}>
-      {text.match(/\d+|\D+/g)?.map((chars, index) => {
-        const asciiCode = chars.codePointAt(0)!
-
-        if (asciiCode >= 48 && asciiCode <= 57) {
-          return (
-            <span key={index} style={{ width: chars.length + 'ch' }} className="inline-block">
-              {chars}
-            </span>
-          )
-        }
-
-        return <span key={index}>{chars}</span>
-      })}
-
-      {suffix}
-    </p>
   )
 }
