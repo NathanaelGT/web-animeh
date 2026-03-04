@@ -1,10 +1,8 @@
 import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import TRPCReactProvider from '~c/TRPCReactProvider'
-import { createRouter } from '~/router'
+import { router } from '~/router'
 import '~c/index.css'
-
-const router = createRouter()
 
 export const App = () => {
   return (
