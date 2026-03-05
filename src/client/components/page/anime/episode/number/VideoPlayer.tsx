@@ -18,11 +18,9 @@ type Props = {
     id: string
     number: string
   }
-  onLoad?: () => void | boolean
-  className?: string
 }
 
-const getSrc = (animeId: string, episodeString: string) => {
+export const getSrc = (animeId: string, episodeString: string) => {
   const basePath = import.meta.env.PROD ? origin : 'http://localhost:8887'
 
   return `${basePath}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
@@ -30,7 +28,7 @@ const getSrc = (animeId: string, episodeString: string) => {
 
 const video = document.querySelector<HTMLVideoElement>('video#player')!
 
-export function VideoPlayer({ streamingUrl, params, onLoad, className = 'h-full w-full' }: Props) {
+export function VideoPlayer({ streamingUrl, params }: Props) {
   const router = useRouter()
   const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -46,8 +44,6 @@ export function VideoPlayer({ streamingUrl, params, onLoad, className = 'h-full 
       video.addEventListener(
         'loadeddata',
         () => {
-          onLoad?.()
-
           const play = () => {
             video.muted = true
             video.play().then(() => {
@@ -222,9 +218,9 @@ export function VideoPlayer({ streamingUrl, params, onLoad, className = 'h-full 
     let errorRetryCount = 0
     let errorTimeoutId: NodeJS.Timeout
     const errorHandler = () => {
-      // 16 percobaan pertama tiap 0.5 detik
+      // 3 percobaan pertama tiap 0.5 detik
       // diatas itu tiap percobaan nambah 0.5 detik, maks 30 detik
-      const ms = Math.min(Math.max(errorRetryCount++ - 15, 1) * 500, 30000)
+      const ms = Math.min(Math.max(errorRetryCount++ - 2, 1) * 500, 30000)
 
       errorTimeoutId = setTimeout(() => {
         const time = video.currentTime
@@ -267,5 +263,5 @@ export function VideoPlayer({ streamingUrl, params, onLoad, className = 'h-full 
     }
   }, [streamingUrl])
 
-  return <div ref={containerRef} className={className} />
+  return <div ref={containerRef} className="h-full w-full" />
 }

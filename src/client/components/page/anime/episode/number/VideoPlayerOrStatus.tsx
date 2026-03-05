@@ -1,7 +1,7 @@
 import { DownloadIcon } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Status } from '@/page/anime/episode/number/Status'
-import { VideoPlayer } from '@/page/anime/episode/number/VideoPlayer'
+import { VideoPlayer, getSrc } from '@/page/anime/episode/number/VideoPlayer'
 import { Button } from '@/ui/button'
 import { DownloadProgress } from '@/ui/custom/download-progress'
 import type { DownloadProgress as Progress } from '~s/external/download/progress'
@@ -18,6 +18,10 @@ export function VideoPlayerOrStatus({ params, progress }: Props) {
   const [canStream, setCanStream] = useState<boolean | undefined>()
   const [showVideoPlayer, setShowVideoPlayer] = useState(false)
   const isInit = canStream === undefined
+
+  const meta = useRef<{ errorRetryCount: number; errorTimeoutId?: NodeJS.Timeout }>({
+    errorRetryCount: 0,
+  })
 
   return (
     <>
@@ -41,16 +45,28 @@ export function VideoPlayerOrStatus({ params, progress }: Props) {
         </Status>
       )}
 
-      {(showVideoPlayer || isInit) && (
-        <VideoPlayer
-          streamingUrl={undefined}
-          params={params}
-          onLoad={() => {
+      {isInit && (
+        <video
+          src={getSrc(params.id, params.number)}
+          onLoadedData={() => {
             setCanStream(true)
+            clearTimeout(meta.current.errorTimeoutId)
           }}
-          className={isInit ? 'hidden' : undefined}
+          onError={error => {
+            // 5 percobaan pertama tiap 0.5 detik
+            // diatas itu tiap percobaan nambah 0.5 detik, maks 30 detik
+            const ms = Math.min(Math.max(meta.current.errorRetryCount++ - 4, 1) * 500, 30000)
+
+            meta.current.errorTimeoutId = setTimeout(() => {
+              // gatau kenapa error.currentTarget null
+              ;(error.target as HTMLVideoElement).load()
+            }, ms)
+          }}
+          className="hidden"
         />
       )}
+
+      {showVideoPlayer && <VideoPlayer streamingUrl={undefined} params={params} />}
     </>
   )
 }
