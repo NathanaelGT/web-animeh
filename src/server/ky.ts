@@ -1,4 +1,5 @@
 import ky, { type KyResponse } from 'ky'
+import { kuramanimeFallbackHost } from '~s/external/api/kuramanime/const'
 import { kv } from './kv'
 
 const kuramanimeCookieStore = new Map(kv.get('kuramanimeCookie'))
@@ -103,6 +104,33 @@ const createKuramanimeInstance = (host: string) => {
       'Sec-Ch-Ua-Platform': '"Windows"',
       'Sec-Ch-Ua-Platform-Version': '"14.0.0"',
       'Sec-Ch-Ua-Mobile': '?0',
+    },
+
+    // beforeError hook engga works, jadinya ngakalin buat retry TLS disini
+    async fetch(input, init) {
+      try {
+        const response = await fetch(input, init)
+
+        return response
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('ERR_TLS_CERT_ALTNAME_INVALID')) {
+          const getNewUrl = (oldUrl: string) => {
+            return oldUrl.replace(host, kuramanimeFallbackHost)
+          }
+
+          if (input instanceof Request) {
+            input = new Request(getNewUrl(input.url), input)
+          } else if (input instanceof URL) {
+            input.host = kuramanimeFallbackHost
+          } else {
+            input = getNewUrl(input)
+          }
+
+          return fetch(input, init)
+        }
+
+        throw error
+      }
     },
 
     hooks: {

@@ -1,12 +1,13 @@
 import { eq, sql } from 'drizzle-orm'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { kv as kvTable } from '~s/db/schema'
+import { kuramanimeFallbackHost } from '~s/external/api/kuramanime/const'
+import { buildConflictUpdateColumns } from '~s/utils/db'
 import { db } from './db'
-import { buildConflictUpdateColumns } from './utils/db'
 
 const defaultKv = () => ({
   lastStudioPage: 1,
-  kuramanimeHost: 'kuramalink.me',
+  kuramanimeHost: kuramanimeFallbackHost,
   kuramanimeCrawl: [1, 1] as [perPage: number, lastPage: number],
   kuramanimeOngoing: [0, 0] as [lastFetchAt: number, lastResetAt: number],
   kuramanimeLeviathan: [null, null] as [id: null, token: null] | [id: string, token: string],
