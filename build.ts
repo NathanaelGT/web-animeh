@@ -18,12 +18,12 @@ if (process.stdout.clearLine !== undefined) {
 
 const { info } = await import('info.ts')
 
-const skipUglify = process.env.npm_lifecycle_script === packageJson.scripts.preview
-const buildType = skipUglify ? 'preview' : 'optimized production'
+const isPreview = process.env.npm_lifecycle_script === packageJson.scripts.preview
+const buildType = isPreview ? 'preview' : 'optimized production'
 
 log(
   '',
-  `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating ${skipUglify ? 'a' : 'an'} ${buildType} build\x1b[0m`,
+  `\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Creating ${isPreview ? 'a' : 'an'} ${buildType} build\x1b[0m`,
 )
 
 await $`rm -rf ./dist && mkdir ./dist`.quiet()
@@ -58,7 +58,7 @@ const clientBuildHashPromise = new Promise<string>(resolve => {
 })
 
 const uglify = async (js: string, hashDefineName: string, post = (result: string) => result) => {
-  if (skipUglify) {
+  if (isPreview) {
     return js.replace(hashDefineName, '"preview-' + (await buildHashPromise) + '"')
   }
 
@@ -105,136 +105,140 @@ const copyDbFilesPromise = getFiles('./drizzle').then(async filePaths => {
   return Promise.all(promises)
 })
 
+const viteBuildCommand = ['NO_COLOR=1 bunx --bun vite build --outDir ./dist/public']
+if (isPreview) {
+  viteBuildCommand.push('--sourcemap inline --minify false')
+}
+viteBuildCommand.push('| grep kB')
+
 await Promise.all([
-  $`NO_COLOR=1 bunx --bun vite build --outDir ./dist/public | grep kB`
-    .text()
-    .then(async message => {
-      const promises: Promise<void>[] = []
-      let jsOriginalPath: string
-      let cssOriginalPath: string
+  $`${{ raw: viteBuildCommand.join(' ') }}`.text().then(async message => {
+    const promises: Promise<void>[] = []
+    let jsOriginalPath: string
+    let cssOriginalPath: string
 
-      let indexHtml = (await Bun.file('./dist/public/index.html').text())
-        .replaceAll(' />', '>')
-        .split('\n')
-        .map(line => line.trim())
-        .join('')
-        .replace(
-          /<script type="module" crossorigin src="(.*?)"><\/script>/,
-          (_, jsRelPath: string) => {
-            jsOriginalPath = jsRelPath
-            const identifier = '<: JS :>'
-
-            promises.push(
-              (async () => {
-                const jsPath = path.join('./dist/public', jsRelPath)
-
-                const js = (await Bun.file(jsPath).text()).trim()
-
-                void fs.rm(jsPath)
-
-                // html ga signifikan
-                // css, tailwind generate berdasarkan jsx
-                // jadi yang pentingnya cuma js
-                resolveClientBuildHash(hash(js))
-
-                const result = await uglify(js, 'import.meta.env.HASH', result => {
-                  const searchTerm = '</script>'
-                  const replacement = '<\\/script>'
-                  const lastIndex = result.lastIndexOf(searchTerm)
-
-                  return (
-                    result.slice(0, lastIndex) +
-                    replacement +
-                    result.slice(lastIndex + searchTerm.length)
-                  )
-                })
-
-                indexHtml = indexHtml
-                  .split(identifier)
-                  .join(`<script type="module">${result}</script>`)
-              })(),
-            )
-
-            return identifier
-          },
-        )
-        .replace(/<link rel="stylesheet" crossorigin href="(.*?)">/, (_, cssRelPath: string) => {
-          cssOriginalPath = cssRelPath
-          const identifier = '<: CSS :>'
+    let indexHtml = (await Bun.file('./dist/public/index.html').text())
+      .replaceAll(' />', '>')
+      .split('\n')
+      .map(line => line.trim())
+      .join('')
+      .replace(
+        /<script type="module" crossorigin src="(.*?)"><\/script>/,
+        (_, jsRelPath: string) => {
+          jsOriginalPath = jsRelPath
+          const identifier = '<: JS :>'
 
           promises.push(
             (async () => {
-              const cssPath = path.join('./dist/public', cssRelPath)
+              const jsPath = path.join('./dist/public', jsRelPath)
 
-              const css = (await Bun.file(cssPath).text()).trim()
+              const js = (await Bun.file(jsPath).text()).trim()
 
-              indexHtml = indexHtml.split(identifier).join(`<style>${css}</style>`)
+              void fs.rm(jsPath)
 
-              void fs.rm(cssPath)
+              // html ga signifikan
+              // css, tailwind generate berdasarkan jsx
+              // jadi yang pentingnya cuma js
+              resolveClientBuildHash(hash(js))
+
+              const result = await uglify(js, 'import.meta.env.HASH', result => {
+                const searchTerm = '</script>'
+                const replacement = '<\\/script>'
+                const lastIndex = result.lastIndexOf(searchTerm)
+
+                return (
+                  result.slice(0, lastIndex) +
+                  replacement +
+                  result.slice(lastIndex + searchTerm.length)
+                )
+              })
+
+              indexHtml = indexHtml
+                .split(identifier)
+                .join(`<script type="module">${result}</script>`)
             })(),
           )
 
           return identifier
-        })
+        },
+      )
+      .replace(/<link rel="stylesheet" crossorigin href="(.*?)">/, (_, cssRelPath: string) => {
+        cssOriginalPath = cssRelPath
+        const identifier = '<: CSS :>'
 
-      await Promise.all(promises)
+        promises.push(
+          (async () => {
+            const cssPath = path.join('./dist/public', cssRelPath)
 
-      const removeAssetDirPromise = getFiles('./dist/public/assets').then(async files => {
-        if (files.length === 0) {
-          await fs.rmdir('./dist/public/assets')
-        }
+            const css = (await Bun.file(cssPath).text()).trim()
+
+            indexHtml = indexHtml.split(identifier).join(`<style>${css}</style>`)
+
+            void fs.rm(cssPath)
+          })(),
+        )
+
+        return identifier
       })
 
-      const compressed = Bun.gzipSync(indexHtml, {
-        library: 'libdeflate',
-        level: 12,
-      })
+    await Promise.all(promises)
 
-      await Promise.all([
-        Bun.write('./dist/public/index.html', compressed.buffer),
-        removeAssetDirPromise,
-      ])
+    const removeAssetDirPromise = getFiles('./dist/public/assets').then(async files => {
+      if (files.length === 0) {
+        await fs.rmdir('./dist/public/assets')
+      }
+    })
 
-      logBuildInfo(
-        'client',
-        message
-          .split('\n')
-          .map((line): File | null => {
-            line = line.trim()
+    const compressed = Bun.gzipSync(indexHtml, {
+      library: 'libdeflate',
+      level: 12,
+    })
 
-            if (line === '') {
-              return null
-            }
+    await Promise.all([
+      Bun.write('./dist/public/index.html', compressed.buffer),
+      removeAssetDirPromise,
+    ])
 
-            const match = line.match(
-              /([a-zA-Z0-9\-_./]+) {2,}([a-zA-Z0-9. ]+) │ gzip: ([a-zA-Z0-9. ]+)/,
-            )
-            if (match === null) {
-              return null
-            }
+    logBuildInfo(
+      'client',
+      message
+        .split('\n')
+        .map((line): File | null => {
+          line = line.trim()
 
-            const [, filePath, size] = match as [string, string, string, gzip: string]
+          if (line === '') {
+            return null
+          }
 
-            if (filePath === 'dist/public/index.html') {
-              return {
-                path: filePath,
-                size: formatBytes(indexHtml.length),
-                comp: formatBytes(compressed.length),
-              }
-            } else if (
-              ['dist/public' + jsOriginalPath, 'dist/public' + cssOriginalPath].includes(filePath)
-            ) {
-              return null
-            }
+          const match = line.match(
+            /([a-zA-Z0-9\-_./]+) {2,}([a-zA-Z0-9. ]+) │ gzip: ([a-zA-Z0-9. ]+)/,
+          )
+          if (match === null) {
+            return null
+          }
 
+          const [, filePath, size] = match as [string, string, string, gzip: string]
+
+          if (filePath === 'dist/public/index.html') {
             return {
               path: filePath,
-              size: size.toUpperCase(),
+              size: formatBytes(indexHtml.length),
+              comp: formatBytes(compressed.length),
             }
-          })
-          .filter(file => file !== null),
-      )
-    }),
+          } else if (
+            ['dist/public' + jsOriginalPath, 'dist/public' + cssOriginalPath].includes(filePath)
+          ) {
+            return null
+          }
+
+          return {
+            path: filePath,
+            size: size.toUpperCase(),
+          }
+        })
+        .filter(file => file !== null),
+    )
+  }),
 
   Bun.build({
     entrypoints: ['./src/server/index.ts', './src/server/faststart.ts'],
@@ -257,7 +261,8 @@ await Promise.all([
       ),
     },
     target: 'bun',
-    minify: true,
+    minify: !isPreview,
+    sourcemap: isPreview ? 'inline' : false,
   })
     .then(async ({ outputs }) => {
       const outputTextPromises = outputs.map(output => output.text())
@@ -289,16 +294,18 @@ await Promise.all([
         }),
       )) as typeof scripts
 
-      scripts[0].content = scripts[0].content
-        // source:  sql`foo ${sql.raw("bar")} baz`
-        // build:   P`foo ${P.raw("bar")} baz`
-        // replace: P`foo bar baz`
-        .replace(/(\w)`([^`]+)\${\1\.raw\((['"])((?:\\.|(?!\3).)*)\3\)}([^`]+)`/g, '$1`$2$4$5`')
-        .replace('`\n			CREATE TABLE IF NOT EXISTS', '`CREATE TABLE IF NOT EXISTS')
-        .replace(
-          '\n				id SERIAL PRIMARY KEY,\n				hash text NOT NULL,\n				created_at numeric\n			)\n		`',
-          'id SERIAL PRIMARY KEY,hash text NOT NULL,created_at numeric)`',
-        )
+      if (!isPreview) {
+        scripts[0].content = scripts[0].content
+          // source:  sql`foo ${sql.raw("bar")} baz`
+          // build:   P`foo ${P.raw("bar")} baz`
+          // replace: P`foo bar baz`
+          .replace(/(\w)`([^`]+)\${\1\.raw\((['"])((?:\\.|(?!\3).)*)\3\)}([^`]+)`/g, '$1`$2$4$5`')
+          .replace('`\n			CREATE TABLE IF NOT EXISTS', '`CREATE TABLE IF NOT EXISTS')
+          .replace(
+            '\n				id SERIAL PRIMARY KEY,\n				hash text NOT NULL,\n				created_at numeric\n			)\n		`',
+            'id SERIAL PRIMARY KEY,hash text NOT NULL,created_at numeric)`',
+          )
+      }
 
       const writePromises = scripts.map(script => Bun.write(script.path, script.content))
 
