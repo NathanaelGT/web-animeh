@@ -5,6 +5,7 @@ import { animeWatchSessionStore, episodeListStore } from '~c/stores'
 import { clientProfileSettingsStore } from '~c/stores'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
+import { useToast } from '@/ui/use-toast'
 import { searchEpisode } from '~/shared/utils/episode'
 import { ucFirst } from '~/shared/utils/string'
 import type { InferOutput } from 'valibot'
@@ -30,6 +31,7 @@ const video = document.querySelector<HTMLVideoElement>('video#player')!
 
 export function VideoPlayer({ streamingUrl, params }: Props) {
   const router = useRouter()
+  const { toast } = useToast()
   const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const gotoEpisodeRef = useRef(params.number)
@@ -148,6 +150,14 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         video.muted = !video.muted
       },
       PiP() {
+        if (!video.requestPictureInPicture) {
+          toast({
+            title: 'Picture-in-Picture tidak didukung di browser ini',
+          })
+
+          return
+        }
+
         if (document.pictureInPictureElement === video) {
           document.exitPictureInPicture()
         } else {
