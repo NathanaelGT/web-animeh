@@ -1,9 +1,9 @@
-export const ucFirst = (str: string) => {
+export const ucFirst = <T extends string>(str: T): Capitalize<T> => {
   if (str === '') {
-    return ''
+    return '' as any
   }
 
-  return str[0]!.toUpperCase() + str.slice(1)
+  return (str[0]!.toUpperCase() + str.slice(1)) as any
 }
 
 export const kebabCaseToTitleCase = (str: string) => {

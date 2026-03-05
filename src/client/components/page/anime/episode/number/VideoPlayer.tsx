@@ -106,11 +106,11 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
     const setting = clientProfileSettingsStore.state
     const getJumpTime = (variant: '' | 'long' = '') => {
-      // @ts-ignore
-      const time = setting.videoPlayer[(variant ? variant + 'J' : 'j') + 'umpSec'] as number
+      const prefix = variant ? (`${variant}J` as const) : 'j'
 
-      // @ts-ignore
-      const isRelative = setting.videoPlayer[`relative${ucFirst(variant)}Jump`] as boolean
+      const time = setting.videoPlayer[`${prefix}umpSec`]
+
+      const isRelative = setting.videoPlayer[`relative${ucFirst(variant)}Jump`]
 
       return isRelative ? time * video.playbackRate : time
     }
