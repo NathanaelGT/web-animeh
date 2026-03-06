@@ -8,8 +8,13 @@
   </head>
   <body>
     <div id="root" style="visibility:hidden;overflow:scroll;width:99px"></div>
-    <div id="void" tabindex="-1" style="display:none">
-      <video id="player" controls controlsList="nodownload" class="h-full w-full"></video>
+    <div id="miniplayer" tabindex="-1" class="hidden fixed rounded-md md:right-8 md:bottom-6 lg:right-12 lg:bottom-10 w-96 h-54 z-90" style="opacity:0">
+      <button class="absolute left-2 top-2 bg-background/75 m-2 rounded-xl w-6 h-6 flex items-center justify-center cursor-pointer" style="opacity:0;transition:opacity 0.2s ease-in-out">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 15 6 6"/><path d="m15 9 6-6"/><path d="M21 16v5h-5"/><path d="M21 8V3h-5"/><path d="M3 16v5h5"/><path d="m3 21 6-6"/><path d="M3 8V3h5"/><path d="M9 9 3 3"/></svg>
+      </button>
+      <button class="absolute right-2 top-2 bg-background/75 m-2 rounded-xl w-6 h-6 flex items-center justify-center cursor-pointer" style="opacity:0;transition:opacity 0.2s ease-in-out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
     </div>
     <script type="module" src="/src/client/main.ts"></script>
   </body>

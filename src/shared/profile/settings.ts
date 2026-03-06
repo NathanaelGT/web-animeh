@@ -1,6 +1,5 @@
 import * as v from 'valibot'
-// @ts-ignore cuma import type
-import type { keybindModifiers } from '~c/utils/keybind'
+import type { keybindModifiers } from 'src/shared/utils/keybind'
 
 export const themes = ['dark', 'light', 'system'] as const
 
@@ -60,7 +59,8 @@ export const keybindSchema = object({
     previous: createKeybind('p'),
     next: createKeybind('n'),
     mute: createKeybind('m'),
-    PiP: createKeybind('i'),
+    miniplayer: createKeybind('i'),
+    PiP: createKeybind('Shift', 'i'),
     fullscreen: createKeybind('f'),
     playPause: createKeybind(' '),
   }),

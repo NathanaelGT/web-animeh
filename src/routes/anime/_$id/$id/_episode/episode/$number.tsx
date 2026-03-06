@@ -35,19 +35,11 @@ function EpisodeNumber() {
     <main className="mb-auto">
       <div className="flex aspect-video bg-primary-foreground/85">
         {status === 'DOWNLOADING' ? (
-          <VideoPlayerOrStatus
-            key={`${params.id}|${params.number}`}
-            params={params}
-            progress={download.progress}
-          />
+          <VideoPlayerOrStatus params={params} progress={download.progress} />
         ) : status === 'OTHER' ? (
           <Status icon={<EpisodeStateIcon data={download} />}>{download.text}</Status>
         ) : status === 'DOWNLOADED' || streamingUrl ? (
-          <VideoPlayer
-            key={`${params.id}|${params.number}`}
-            streamingUrl={streamingUrl}
-            params={params}
-          />
+          <VideoPlayer streamingUrl={streamingUrl} params={params} />
         ) : status === 'NOT_DOWNLOADED' ? (
           <Download params={params} setStreamingUrl={setStreamingUrl} />
         ) : status === 'RESUME' ? (

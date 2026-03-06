@@ -1,7 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import { App } from '~/App'
-
-const root = document.getElementById('root')!
+import { root, videoEl } from './elements'
 
 export const scrollbarWidth = root.offsetWidth - root.clientWidth
 
@@ -26,7 +25,5 @@ setTimeout(() => {
     }
   }
 
-  document
-    .querySelector<HTMLVideoElement>('video#player')!
-    .addEventListener('keydown', videoKeydownHandler, true)
+  videoEl.addEventListener('keydown', videoKeydownHandler, true)
 })

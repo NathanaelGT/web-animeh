@@ -1,7 +1,12 @@
 import { useRouter } from '@tanstack/react-router'
-import { useStore } from '@tanstack/react-store'
-import { useRef, useEffect } from 'react'
-import { animeWatchSessionStore, episodeListStore } from '~c/stores'
+import { useRef, useLayoutEffect } from 'react'
+import {
+  miniplayerCloseButtonEl,
+  miniplayerEl,
+  miniplayerFullscreenButtonEl,
+  videoEl,
+} from '~c/elements'
+import { animeWatchSessionStore, episodeListStore, videoPlayerStore } from '~c/stores'
 import { clientProfileSettingsStore } from '~c/stores'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
@@ -27,70 +32,108 @@ export const getSrc = (animeId: string, episodeString: string) => {
   return `${basePath}/videos/${animeId}/${episodeString.padStart(2, '0')}.mp4`
 }
 
-const video = document.querySelector<HTMLVideoElement>('video#player')!
+const pathIdentifier = (loc: { pathname: string } = location) => {
+  return loc.pathname.replace(/\d+/g, '0')
+}
+
+let removeKeybindHandler = () => {}
+
+let forceUseMiniplayer = false
+
+let lastPathIdentifier = ''
+
+const TRANSITION_TIME = 0.3
+const TRANSITION_TIMING = 'ease-in-out'
+const videoTransition = (percent: number) => {
+  const suffix = TRANSITION_TIME * percent + 's ' + TRANSITION_TIMING
+
+  return `transform ${suffix}, border-radius ${suffix}, box-shadow ${suffix}`
+}
 
 export function VideoPlayer({ streamingUrl, params }: Props) {
   const router = useRouter()
   const { toast } = useToast()
-  const watchSession = useStore(animeWatchSessionStore)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const gotoEpisodeRef = useRef(params.number)
 
-  useEffect(() => {
+  let skipEffectDoubleCall = import.meta.env.DEV
+
+  useLayoutEffect(() => {
     const container = containerRef.current
     if (!container) {
       return
     }
 
-    const autoplay = () => {
-      video.addEventListener(
-        'loadeddata',
-        () => {
-          const play = () => {
-            video.muted = true
-            video.play().then(() => {
-              video.muted = false
-            })
-          }
-
-          if (document.hidden) {
-            document.addEventListener('visibilitychange', play, { once: true })
-          } else {
-            play()
-          }
-        },
-        { once: true },
-      )
+    if (import.meta.env.DEV && skipEffectDoubleCall) {
+      skipEffectDoubleCall = false
+      return
     }
 
-    const src = streamingUrl || getSrc(params.id, params.number)
-    if (video.dataset.id === watchSession.id) {
-      if (video.src !== src) {
-        video.src = src
-        autoplay()
+    const containerBounding = container.getBoundingClientRect()
+
+    if (forceUseMiniplayer || lastPathIdentifier !== pathIdentifier()) {
+      lastPathIdentifier = pathIdentifier()
+
+      const miniplayerBounding = miniplayerEl.getBoundingClientRect()
+      if (miniplayerBounding.width) {
+        miniplayerFullscreenButtonEl.style.opacity = '0'
+        miniplayerCloseButtonEl.style.opacity = '0'
+
+        const videoBounding = videoEl.getBoundingClientRect()
+
+        const animationProgress =
+          1 -
+          (videoBounding.width - miniplayerBounding.width) /
+            (containerBounding.width - miniplayerBounding.width)
+
+        const deltaX = containerBounding.left - miniplayerBounding.left
+        const deltaY = containerBounding.top - miniplayerBounding.top
+        const deltaS = containerBounding.width / miniplayerBounding.width
+
+        videoEl.controls = false
+        videoEl.style.transition = videoTransition(animationProgress)
+        videoEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
+        videoEl.style.borderRadius = '0'
+        videoEl.style.boxShadow = '0'
+
+        videoEl.ontransitionend = function onTransitionEnd() {
+          // ada race condition transitionend dipanggil padahal masih ditengah-tengah animasi
+          // jadi buat ngakalinnya dicek dulu widthnya, kalo belum sama dengan container berarti masih dalam proses animasi
+          const videoBounding = videoEl.getBoundingClientRect()
+          if (videoBounding.width !== containerBounding.width) {
+            videoEl.ontransitionend = onTransitionEnd
+
+            return
+          }
+
+          videoEl.ontransitionend = null
+
+          videoEl.controls = true
+          videoEl.style.transition = ''
+          videoEl.style.transform = ''
+          container.appendChild(videoEl)
+          miniplayerEl.classList.add('hidden')
+        }
+      } else {
+        videoEl.onended = null
+        container.appendChild(videoEl)
+        miniplayerEl.classList.add('hidden')
       }
     } else {
-      video.dataset.id = watchSession.id
-      video.src = src
-      autoplay()
+      container.appendChild(videoEl)
     }
-
-    container.appendChild(video)
 
     const changeEpisode = (episodeTarget: number) => {
       const episode = searchEpisode(episodeListStore.state, episodeTarget)
       if (!episode) {
-        return
+        return false
       }
 
       const episodeString = episodeTarget.toString()
 
-      if (
-        (episode.download.status === 'DOWNLOADED' || streamingUrl) &&
-        document.fullscreenElement === video
-      ) {
-        video.src = streamingUrl || getSrc(params.id, episodeString)
-        video.play()
+      if (episode.download.status === 'DOWNLOADED' && document.fullscreenElement === videoEl) {
+        videoEl.src = getSrc(params.id, episodeString)
+        videoEl.play()
 
         gotoEpisodeRef.current = episodeString
       } else {
@@ -102,105 +145,187 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
           },
         })
       }
+
+      return true
     }
 
-    const setting = clientProfileSettingsStore.state
-    const getJumpTime = (variant: '' | 'long' = '') => {
-      const prefix = variant ? (`${variant}J` as const) : 'j'
-
-      const time = setting.videoPlayer[`${prefix}umpSec`]
-
-      const isRelative = setting.videoPlayer[`relative${ucFirst(variant)}Jump`]
-
-      return isRelative ? time * video.playbackRate : time
+    const setPlayerState = (id: string | null, ep: string | null) => {
+      videoPlayerStore.setState(state => ({
+        id,
+        ep,
+        session: state.session,
+      }))
     }
 
-    const keybindHandler: Record<string, () => void> = {
-      back() {
-        video.currentTime -= getJumpTime()
-      },
-      forward() {
-        video.currentTime += getJumpTime()
-      },
-      longBack() {
-        video.currentTime -= getJumpTime('long')
-      },
-      longForward() {
-        video.currentTime += getJumpTime('long')
-      },
-      volumeUp() {
-        video.volume = Math.min(1, video.volume + setting.videoPlayer.volumeStep)
-      },
-      volumeDown() {
-        video.volume = Math.max(0, video.volume - setting.videoPlayer.volumeStep)
-      },
-      toStart() {
-        video.currentTime = 0
-      },
-      toEnd() {
-        video.currentTime = video.duration
-      },
-      previous() {
-        changeEpisode(Number(gotoEpisodeRef.current) - 1)
-      },
-      next() {
-        changeEpisode(Number(gotoEpisodeRef.current) + 1)
-      },
-      mute() {
-        video.muted = !video.muted
-      },
-      PiP() {
-        if (!video.requestPictureInPicture) {
-          toast({
-            title: 'Picture-in-Picture tidak didukung di browser ini',
-          })
+    forceUseMiniplayer = false
 
-          return
-        }
+    if (videoPlayerStore.state.id !== params.id || videoPlayerStore.state.ep !== params.number) {
+      setPlayerState(null, null)
 
-        if (document.pictureInPictureElement === video) {
-          document.exitPictureInPicture()
-        } else {
-          video.requestPictureInPicture()
-        }
-      },
-      fullscreen() {
-        if (document.fullscreenElement === video) {
-          document.exitFullscreen()
-        } else {
-          video.requestFullscreen()
-        }
-      },
-      playPause() {
-        if (video.paused || video.ended) {
-          video.play()
-        } else {
-          video.pause()
-        }
-      },
-    } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
+      const src = streamingUrl || getSrc(params.id, params.number)
+      const autoplay = () => {
+        videoEl.src = src
+        videoEl.addEventListener(
+          'loadeddata',
+          () => {
+            const play = () => {
+              videoEl.muted = true
+              videoEl.play().then(() => {
+                videoEl.muted = false
+              })
+            }
 
-    const removeKeybindHandler = createGlobalKeydownHandler(event => {
-      const keybindMatch = createKeybindMatcher(event)
-
-      for (const handlerName in keybindHandler) {
-        const combination =
-          setting.keybind.videoPlayer[handlerName as keyof KeybindGroups['videoPlayer']]
-
-        if (!keybindMatch(combination)) {
-          continue
-        }
-
-        event.preventDefault()
-
-        keybindHandler[handlerName]!()
-
-        return
+            if (document.hidden) {
+              document.addEventListener('visibilitychange', play, { once: true })
+            } else {
+              play()
+            }
+          },
+          { once: true },
+        )
       }
-    })
 
-    const videoEndedHandler = () => {
-      changeEpisode(Number(gotoEpisodeRef.current) + 1)
+      if (videoPlayerStore.state.session === animeWatchSessionStore.state.id) {
+        if (videoEl.src !== src) {
+          autoplay()
+        }
+      } else {
+        videoPlayerStore.state.session = animeWatchSessionStore.state.id
+        autoplay()
+      }
+
+      const getJumpTime = (variant: '' | 'long' = '') => {
+        const prefix = variant ? (`${variant}J` as const) : 'j'
+
+        const time = clientProfileSettingsStore.state.videoPlayer[`${prefix}umpSec`]
+
+        const isRelative =
+          clientProfileSettingsStore.state.videoPlayer[`relative${ucFirst(variant)}Jump`]
+
+        return isRelative ? time * videoEl.playbackRate : time
+      }
+
+      const keybindHandler = {
+        back() {
+          videoEl.currentTime -= getJumpTime()
+        },
+        forward() {
+          videoEl.currentTime += getJumpTime()
+        },
+        longBack() {
+          videoEl.currentTime -= getJumpTime('long')
+        },
+        longForward() {
+          videoEl.currentTime += getJumpTime('long')
+        },
+        volumeUp() {
+          videoEl.volume = Math.min(
+            1,
+            videoEl.volume + clientProfileSettingsStore.state.videoPlayer.volumeStep,
+          )
+        },
+        volumeDown() {
+          videoEl.volume = Math.max(
+            0,
+            videoEl.volume - clientProfileSettingsStore.state.videoPlayer.volumeStep,
+          )
+        },
+        toStart() {
+          videoEl.currentTime = 0
+        },
+        toEnd() {
+          videoEl.currentTime = videoEl.duration
+        },
+        previous() {
+          changeEpisode(Number(gotoEpisodeRef.current) - 1)
+        },
+        next() {
+          changeEpisode(Number(gotoEpisodeRef.current) + 1)
+        },
+        mute() {
+          videoEl.muted = !videoEl.muted
+        },
+        miniplayer() {
+          forceUseMiniplayer = true
+
+          router.navigate({
+            to:
+              lastPathIdentifier === pathIdentifier(router.latestLocation)
+                ? '/anime/$id'
+                : '/anime/$id/episode/$number',
+            params,
+          })
+        },
+        PiP() {
+          if (!videoEl.requestPictureInPicture) {
+            toast({
+              title: 'Picture-in-Picture tidak didukung di browser ini',
+            })
+
+            return
+          }
+
+          if (document.pictureInPictureElement === videoEl) {
+            document.exitPictureInPicture()
+          } else {
+            videoEl.requestPictureInPicture()
+          }
+        },
+        fullscreen() {
+          if (document.fullscreenElement === videoEl) {
+            document.exitFullscreen()
+          } else {
+            videoEl.requestFullscreen()
+          }
+        },
+        playPause() {
+          if (videoEl.paused || videoEl.ended) {
+            videoEl.play()
+          } else {
+            videoEl.pause()
+          }
+        },
+      } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
+
+      removeKeybindHandler = createGlobalKeydownHandler(event => {
+        const keybindMatch = createKeybindMatcher(event)
+
+        let handlerName: keyof KeybindGroups['videoPlayer']
+        for (handlerName in keybindHandler) {
+          const combination = clientProfileSettingsStore.state.keybind.videoPlayer[handlerName]
+
+          if (keybindMatch(combination)) {
+            event.preventDefault()
+
+            keybindHandler[handlerName]()
+
+            return
+          }
+        }
+      })
+
+      miniplayerCloseButtonEl.onclick = () => {
+        miniplayerCloseButtonEl.onclick = null
+
+        miniplayerEl.style.transition = `opacity ${TRANSITION_TIME}s ${TRANSITION_TIMING}`
+        miniplayerEl.style.opacity = '0'
+        miniplayerEl.ontransitionend = () => {
+          miniplayerEl.ontransitionend = null
+
+          miniplayerEl.style.transition = ''
+          miniplayerEl.classList.add('hidden')
+
+          requestAnimationFrame(() => {
+            // remove bakal otomatis ngeluarin dari PiP
+            videoEl.remove()
+            videoEl.src = ''
+          })
+        }
+
+        removeKeybindHandler()
+
+        setPlayerState(null, null)
+      }
     }
 
     const videoFullscreenChangeHandler = () => {
@@ -208,11 +333,11 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       // tapi karena tombolnya bagian dari shadow dom, jadi document.activeElement = video
       // pada saat focusnya adalah tombol fullscreen, kalo user mencet spasi,
       // bakal keoverride jadi toggle fullscreen
-      if (document.activeElement === video) {
-        video.focus()
+      if (document.activeElement === videoEl) {
+        videoEl.focus()
       }
 
-      if (gotoEpisodeRef.current === params.number || document.fullscreenElement === video) {
+      if (gotoEpisodeRef.current === params.number || document.fullscreenElement === videoEl) {
         return
       }
 
@@ -233,45 +358,112 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       const ms = Math.min(Math.max(errorRetryCount++ - 2, 1) * 500, 30000)
 
       errorTimeoutId = setTimeout(() => {
-        const time = video.currentTime
+        const time = videoEl.currentTime
 
-        video.onloadeddata = () => {
-          video.currentTime = time
+        videoEl.onloadeddata = () => {
+          videoEl.currentTime = time
         }
 
-        video.load()
+        videoEl.load()
       }, ms)
     }
 
-    video.addEventListener('ended', videoEndedHandler)
-    video.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
-    video.addEventListener('error', errorHandler)
+    let shouldPlayInMiniplayer = true
+    const videoEndedHandler = () => {
+      const episodeFound = changeEpisode(Number(gotoEpisodeRef.current) + 1)
+
+      if (!episodeFound) {
+        shouldPlayInMiniplayer = false
+      }
+    }
+
+    videoEl.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
+    videoEl.addEventListener('error', errorHandler)
+    videoEl.addEventListener('ended', videoEndedHandler)
 
     return () => {
-      const voidEl = document.getElementById('void')
-
-      voidEl?.appendChild(video)
-
-      video.removeEventListener('ended', videoEndedHandler)
-      video.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
-      video.removeEventListener('error', errorHandler)
-      video.onloadeddata = null
+      videoEl.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
+      videoEl.removeEventListener('error', errorHandler)
+      videoEl.removeEventListener('ended', videoEndedHandler)
+      videoEl.onloadeddata = null
 
       clearTimeout(errorTimeoutId)
 
-      removeKeybindHandler()
+      // masih di halamanan episode, cuma pindah episode
+      if (lastPathIdentifier === pathIdentifier()) {
+        removeKeybindHandler()
 
-      setTimeout(() => {
-        if (voidEl?.contains(video)) {
-          video.src = ''
+        return
+      }
+      lastPathIdentifier = ''
 
-          if (document.pictureInPictureElement === video) {
-            document.exitPictureInPicture()
-          }
+      if (
+        !forceUseMiniplayer &&
+        !(
+          shouldPlayInMiniplayer &&
+          !videoEl.paused &&
+          // 7% + op, untuk anime 24 menit = ~3 menit
+          videoEl.currentTime > (videoEl.duration / 100) * 7 + 90 &&
+          // 5 menit terakhir
+          videoEl.currentTime < videoEl.duration - 300
+        )
+      ) {
+        miniplayerCloseButtonEl.click()
+
+        return
+      }
+
+      setPlayerState(params.id, params.number)
+
+      videoEl.onended = () => {
+        videoEl.onended = null
+        miniplayerCloseButtonEl.click()
+      }
+
+      const videoBounding = videoEl.getBoundingClientRect()
+
+      miniplayerEl.ontransitionend = null
+      miniplayerEl.classList.remove('hidden')
+      miniplayerEl.style.opacity = '1'
+      miniplayerEl.prepend(videoEl)
+
+      const miniplayerStyle = getComputedStyle(miniplayerEl)
+      const miniplayerWidth = parseInt(miniplayerStyle.width)
+      const miniplayerLeft = innerWidth - miniplayerWidth - parseInt(miniplayerStyle.right)
+      const miniplayerTop =
+        innerHeight - parseInt(miniplayerStyle.height) - parseInt(miniplayerStyle.bottom)
+
+      const deltaX = videoBounding.left - miniplayerLeft
+      const deltaY = videoBounding.top - miniplayerTop
+      const deltaS = videoBounding.width / miniplayerWidth
+
+      videoEl.controls = false
+      videoEl.style.transition = ''
+      videoEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
+
+      requestAnimationFrame(() => {
+        const videoBounding = videoEl.getBoundingClientRect()
+
+        const animationProgress = videoBounding.width / containerBounding.width
+
+        videoEl.style.transition = videoTransition(animationProgress)
+        videoEl.style.transform = 'translate(0, 0) scale(1)'
+        videoEl.style.borderRadius = 'var(--radius-md)'
+        videoEl.style.boxShadow = 'var(--shadow-md)'
+
+        videoEl.ontransitionend = () => {
+          videoEl.ontransitionend = null
+
+          videoEl.controls = true
+          videoEl.style.transition = ''
+          videoEl.style.transform = ''
+
+          miniplayerFullscreenButtonEl.style.opacity = '1'
+          miniplayerCloseButtonEl.style.opacity = '1'
         }
       })
     }
-  }, [streamingUrl])
+  }, [streamingUrl, params.id, params.number])
 
-  return <div ref={containerRef} className="h-full w-full" />
+  return <div ref={containerRef} className="h-full w-full rounded-md" />
 }

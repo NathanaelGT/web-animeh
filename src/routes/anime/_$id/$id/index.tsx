@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
 import { useEffect, useMemo, memo, type ReactNode } from 'react'
-import { animeDataStore, type AnimeData } from '~c/stores'
+import { animeDataStore, videoPlayerStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
 import { AnimeDuration } from '@/Anime/Duration'
@@ -41,6 +41,12 @@ function AnimeId() {
 
 function RealAnimeId({ animeData }: { animeData: AnimeData }) {
   const router = useRouter()
+  const playEpisode = useStore(videoPlayerStore, videoPlayer => {
+    if (videoPlayer.id === animeData.id.toString()) {
+      return videoPlayer.ep || '1'
+    }
+    return '1'
+  })
 
   useEffect(() => {
     const id = animeData?.id
@@ -120,7 +126,7 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
             >
               <Link
                 to="/anime/$id/episode/$number"
-                params={{ id: animeData.id.toString(), number: '1' }}
+                params={{ id: animeData.id.toString(), number: playEpisode }}
               >
                 <Play />
                 Nonton

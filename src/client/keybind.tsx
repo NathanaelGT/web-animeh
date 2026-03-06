@@ -77,6 +77,7 @@ export const keybindTranslation = {
     previous: ['Episode sebelumnya'],
     next: ['Episode selanjutnya'],
     mute: ['Toggle mute'],
+    miniplayer: ['Toggle miniplayer'],
     PiP: ['Toggle picture in picture'],
     fullscreen: ['Toggle fullscreen'],
     playPause: ['Play/Pause'],

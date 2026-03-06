@@ -1,6 +1,5 @@
+import { keybindModifiers } from '~/shared/utils/keybind'
 import type { AllowedDefaultModifier, AllowedDefaultKey } from '~/shared/profile/settings'
-
-export const keybindModifiers = ['Control', 'Shift', 'Alt'] as const
 
 export const captureKeybindFromEvent = (
   event: React.KeyboardEvent<HTMLElement> | KeyboardEvent,
