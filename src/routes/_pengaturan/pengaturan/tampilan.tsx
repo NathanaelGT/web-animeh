@@ -52,7 +52,7 @@ interface SelectProps<TOptions extends ReadonlyArray<string>> {
   ) => void
 }
 
-function Select<TOptions extends ReadonlyArray<string>>({
+export function Select<TOptions extends ReadonlyArray<string>>({
   label,
   options,
   value,
@@ -69,13 +69,13 @@ function Select<TOptions extends ReadonlyArray<string>>({
           <Button
             variant="outline"
             role="combobox"
-            className="w-48 justify-between text-muted-foreground"
+            className="w-60 justify-between text-muted-foreground"
           >
             {ucFirst(value)}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-48 p-0">
+        <PopoverContent className="w-60 p-0">
           <Command>
             <CommandList>
               <CommandGroup>

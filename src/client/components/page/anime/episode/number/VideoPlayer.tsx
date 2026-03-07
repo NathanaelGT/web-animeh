@@ -42,10 +42,16 @@ let forceUseMiniplayer = false
 
 let lastPathIdentifier = ''
 
-const TRANSITION_TIME = 0.3
 const TRANSITION_TIMING = 'ease-in-out'
+
+const getMiniplayerAnimationDuration = () => {
+  // kalo 0, ontransitionend gabakal dicall kalo disetnya setelah requestAnimationFrame
+  // jadi dilimit minnya 0, secara hasil 1ms gabakal keliatan animasinya
+  return clientProfileSettingsStore.state.videoPlayer.miniplayerAnimationDuration || 1
+}
+
 const videoTransition = (percent: number) => {
-  const suffix = TRANSITION_TIME * percent + 's ' + TRANSITION_TIMING
+  const suffix = getMiniplayerAnimationDuration() * percent + 'ms ' + TRANSITION_TIMING
 
   return `transform ${suffix}, border-radius ${suffix}, box-shadow ${suffix}`
 }
@@ -307,7 +313,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       miniplayerCloseButtonEl.onclick = () => {
         miniplayerCloseButtonEl.onclick = null
 
-        miniplayerEl.style.transition = `opacity ${TRANSITION_TIME}s ${TRANSITION_TIMING}`
+        miniplayerEl.style.transition = `opacity ${getMiniplayerAnimationDuration()}ms ${TRANSITION_TIMING}`
         miniplayerEl.style.opacity = '0'
         miniplayerEl.ontransitionend = () => {
           miniplayerEl.ontransitionend = null
@@ -389,23 +395,35 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
       clearTimeout(errorTimeoutId)
 
-      // masih di halamanan episode, cuma pindah episode
-      if (lastPathIdentifier === pathIdentifier()) {
-        removeKeybindHandler()
+      if (!forceUseMiniplayer) {
+        if (clientProfileSettingsStore.state.videoPlayer.miniplayerMode === 'No Auto') {
+          setPlayerState(null, null)
+          removeKeybindHandler()
+          videoEl.remove()
+          videoEl.src = ''
 
-        return
+          return
+        }
+
+        // masih di halamanan episode, cuma pindah episode
+        if (lastPathIdentifier === pathIdentifier()) {
+          removeKeybindHandler()
+
+          return
+        }
+        lastPathIdentifier = ''
       }
-      lastPathIdentifier = ''
 
       if (
         !forceUseMiniplayer &&
         !(
           shouldPlayInMiniplayer &&
-          !videoEl.paused &&
-          // 7% + op, untuk anime 24 menit = ~3 menit
-          videoEl.currentTime > (videoEl.duration / 100) * 7 + 90 &&
-          // 5 menit terakhir
-          videoEl.currentTime < videoEl.duration - 300
+          (clientProfileSettingsStore.state.videoPlayer.miniplayerMode === 'Selalu' ||
+            (!videoEl.paused &&
+              // 7% + op, untuk anime 24 menit = ~3 menit
+              videoEl.currentTime > (videoEl.duration / 100) * 7 + 90 &&
+              // 5 menit terakhir
+              videoEl.currentTime < videoEl.duration - 300))
         )
       ) {
         miniplayerCloseButtonEl.click()

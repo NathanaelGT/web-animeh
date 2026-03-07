@@ -7,6 +7,8 @@ export const headerPositions = ['static', 'sticky', 'hybrid'] as const
 
 export const episodeDisplayMode = ['Padat', 'Detail', 'Auto'] as const
 
+export const miniplayerMode = ['Smart', 'Selalu', 'No Auto'] as const
+
 export const episodeFilterSchema = object({
   displayMode: picklist(episodeDisplayMode, 'Auto'),
   sortLatest: boolean(false),
@@ -26,6 +28,8 @@ export const videoPlayerSchema = object({
   relativeJump: boolean(true),
   relativeLongJump: boolean(false),
   volumeStep: number(0.05, 0.01, 1),
+  miniplayerMode: picklist(miniplayerMode, 'Smart'),
+  miniplayerAnimationDuration: number(300),
 })
 
 export const keybindSchema = object({

@@ -7,78 +7,93 @@ import { clientProfileSettingsStore, profileStore } from '~c/stores'
 import { api } from '~c/trpc'
 import { cn } from '~c/utils'
 import { formatKeybind } from '~c/utils/keybind'
-import { Card } from '@/ui/card'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import { SimpleTooltip } from '@/ui/tooltip'
+import {
+  type videoPlayerSchema,
+  type settingsSchema,
+  miniplayerMode,
+} from '~/shared/profile/settings'
 import { clamp } from '~/shared/utils/number'
-import { ucFirst } from '~/shared/utils/string'
+import { Select } from './tampilan'
 import type { InferOutput } from 'valibot'
-import type { videoPlayerSchema, settingsSchema } from '~/shared/profile/settings'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/pemutar-video')({
   component: VideoPlayer,
 })
 
 function VideoPlayer() {
-  return (
-    <Card className="bg-border/50 p-6">
-      <Group>
-        <InputNumberSwitch
-          name="jumpSec"
-          label="Durasi maju/mundur"
-          tooltip={
-            <KeybindCombinationWrapper>
-              <KeybindCombination id={['videoPlayer', 'forward']} />
-              <KeybindCombination id={['videoPlayer', 'back']} />
-            </KeybindCombinationWrapper>
-          }
-          switchName="relativeJump"
-          switchLabel="Relatif"
-          switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
-          unit="detik"
-          min={0.1}
-        />
-
-        <InputNumberSwitch
-          name="longJumpSec"
-          label="Durasi maju/mundur jauh"
-          tooltip={
-            <KeybindCombinationWrapper>
-              <KeybindCombination id={['videoPlayer', 'longForward']} />
-              <KeybindCombination id={['videoPlayer', 'longBack']} />
-            </KeybindCombinationWrapper>
-          }
-          switchName="relativeLongJump"
-          switchLabel="Relatif"
-          switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
-          unit="detik"
-          min={0.1}
-        />
-
-        <InputNumber
-          name="volumeStep"
-          label="Volume naik/turun"
-          tooltip={
-            <KeybindCombinationWrapper>
-              <KeybindCombination id={['videoPlayer', 'volumeUp']} />
-              <KeybindCombination id={['videoPlayer', 'volumeDown']} />
-            </KeybindCombinationWrapper>
-          }
-          unit="persen"
-          multiplier={100}
-          min={0.01}
-          max={1}
-        />
-      </Group>
-    </Card>
+  const storedMiniplayerMode = useStore(
+    clientProfileSettingsStore,
+    settings => settings.videoPlayer.miniplayerMode,
   )
-}
 
-function Group({ children }: PropsWithChildren) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] gap-x-8 gap-y-4">
-      {children}
+    <div className="grid gap-y-4 py-2 pb-4">
+      <InputNumber
+        name="volumeStep"
+        label="Volume naik/turun"
+        tooltip={
+          <KeybindCombinationWrapper>
+            <KeybindCombination id={['videoPlayer', 'volumeUp']} />
+            <KeybindCombination id={['videoPlayer', 'volumeDown']} />
+          </KeybindCombinationWrapper>
+        }
+        unit="Persen"
+        multiplier={100}
+        min={0.01}
+        max={1}
+      />
+
+      <InputNumberSwitch
+        name="jumpSec"
+        label="Durasi maju/mundur"
+        tooltip={
+          <KeybindCombinationWrapper>
+            <KeybindCombination id={['videoPlayer', 'forward']} />
+            <KeybindCombination id={['videoPlayer', 'back']} />
+          </KeybindCombinationWrapper>
+        }
+        switchName="relativeJump"
+        switchLabel="Relatif"
+        switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
+        unit="Detik"
+        min={0.1}
+      />
+
+      <InputNumberSwitch
+        name="longJumpSec"
+        label="Durasi maju/mundur jauh"
+        tooltip={
+          <KeybindCombinationWrapper>
+            <KeybindCombination id={['videoPlayer', 'longForward']} />
+            <KeybindCombination id={['videoPlayer', 'longBack']} />
+          </KeybindCombinationWrapper>
+        }
+        switchName="relativeLongJump"
+        switchLabel="Relatif"
+        switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
+        unit="Detik"
+        min={0.1}
+      />
+
+      <Select
+        label="Mode miniplayer"
+        options={miniplayerMode}
+        value={storedMiniplayerMode}
+        onChange={(settings, mode) => {
+          settings.videoPlayer.miniplayerMode = mode
+        }}
+      />
+
+      <InputNumber
+        name="miniplayerAnimationDuration"
+        label="Durasi animasi miniplayer"
+        unit="ms"
+        min={0}
+        max={10000}
+      />
     </div>
   )
 }
@@ -126,9 +141,9 @@ function InputNumber({
     setValue(isNaN(value) ? undefined : clamp(value, min, max))
 
     if (min !== undefined && value < min) {
-      setInputError(`${label} minimal ${min} ${unit}`)
+      setInputError(`${label} minimal ${min} ${unit.toLowerCase()}`)
     } else if (max !== undefined && value > max) {
-      setInputError(`${label} maksimal ${max} ${unit}`)
+      setInputError(`${label} maksimal ${max} ${unit.toLowerCase()}`)
     } else {
       setInputError('')
     }
@@ -171,17 +186,17 @@ function InputNumber({
   )
 
   const inputWrapperClassName =
-    'border border-primary/15 bg-primary/10 ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
+    'border border-primary/15 ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
 
   return (
-    <div className="flex max-w-80 flex-col gap-y-2">
-      <div className={`grid gap-y-2 ${children ? 'grid-cols-[1fr_min-content]' : ''}`}>
+    <div className="flex flex-col gap-y-2">
+      <div className={`grid gap-y-2 ${children ? 'grid-cols-[min-content_min-content]' : ''}`}>
         {tooltip ? <SimpleTooltip title={tooltip}>{labelElement}</SimpleTooltip> : labelElement}
 
         {nextLabel}
 
         <div
-          className={`flex h-10 ${children ? 'rounded-l-md' : 'rounded-md'} ${inputWrapperClassName}`}
+          className={`flex h-10 w-60 ${children ? 'rounded-l-md' : 'rounded-md'} ${inputWrapperClassName}`}
         >
           <input
             id={name}
@@ -195,7 +210,7 @@ function InputNumber({
             htmlFor={name}
             className="flex items-center border-l border-primary/15 bg-primary/10 px-3"
           >
-            {ucFirst(unit)}
+            {unit}
           </label>
         </div>
 
