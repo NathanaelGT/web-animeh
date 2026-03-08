@@ -100,6 +100,28 @@ const removeVideoStateFromSearchParams = (searchParams = getSearchParams()) => {
   router.history.replace(location.pathname + (params ? '?' + params : ''))
 }
 
+const changeEpisodeInMiniplayer = async (
+  animeId: string,
+  episodeTarget: number,
+  episodeRef: { current: string },
+) => {
+  const isDownloaded = await rpc.anime.isEpisodeDownloaded.query({
+    id: animeId,
+    ep: episodeTarget,
+  })
+
+  if (isDownloaded) {
+    const episodeString = episodeTarget.toString()
+
+    videoEl.src = getSrc(animeId, episodeString)
+    videoEl.play()
+
+    episodeRef.current = episodeString
+
+    setPlayerState(animeId, episodeString)
+  }
+}
+
 const setupVideoPlayer = (
   params: Props['params'],
   episodeRef: { current: string },
@@ -159,15 +181,22 @@ const setupVideoPlayer = (
       videoEl.muted = !videoEl.muted
     },
     miniplayer() {
-      forceUseMiniplayer = true
+      if (lastPathIdentifier === pathIdentifier(router.latestLocation)) {
+        forceUseMiniplayer = true
 
-      router.navigate({
-        to:
-          lastPathIdentifier === pathIdentifier(router.latestLocation)
-            ? '/anime/$id'
-            : '/anime/$id/episode/$number',
-        params,
-      })
+        router.navigate({
+          to: '/anime/$id',
+          params,
+        })
+      } else {
+        router.navigate({
+          to: '/anime/$id/episode/$number',
+          params: {
+            id: videoPlayerStore.state.id!.toString(),
+            number: videoPlayerStore.state.ep!.toString(),
+          },
+        })
+      }
     },
     PiP() {
       if (!videoEl.requestPictureInPicture) {
@@ -322,6 +351,12 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
     }
 
     const changeEpisode = (episodeTarget: number) => {
+      if (miniplayerEl.contains(videoEl)) {
+        changeEpisodeInMiniplayer(params.id, episodeTarget, gotoEpisodeRef)
+
+        return
+      }
+
       const episode = searchEpisode(episodeListStore.state, episodeTarget)
       if (!episode) {
         return false
@@ -685,21 +720,7 @@ requestAnimationFrame(() => {
 
   const episodeRef = { current: ep }
 
-  setupVideoPlayer({ id, number: ep }, episodeRef, async episodeTarget => {
-    const isDownloaded = await rpc.anime.isEpisodeDownloaded.query({
-      id,
-      ep: episodeTarget,
-    })
-
-    if (isDownloaded) {
-      const episodeString = episodeTarget.toString()
-
-      videoEl.src = getSrc(id, episodeString)
-      videoEl.play()
-
-      episodeRef.current = episodeString
-
-      setPlayerState(id, episodeString)
-    }
+  setupVideoPlayer({ id, number: ep }, episodeRef, episodeTarget => {
+    changeEpisodeInMiniplayer(id, episodeTarget, episodeRef)
   })
 })
