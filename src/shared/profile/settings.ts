@@ -9,6 +9,8 @@ export const episodeDisplayMode = ['Padat', 'Detail', 'Auto'] as const
 
 export const miniplayerMode = ['Smart', 'Selalu', 'No Auto'] as const
 
+export const backupStateMode = ['Smart', 'On Pause', 'Disable'] as const
+
 export const episodeFilterSchema = object({
   displayMode: picklist(episodeDisplayMode, 'Auto'),
   sortLatest: boolean(false),
@@ -30,6 +32,7 @@ export const videoPlayerSchema = object({
   volumeStep: number(0.05, 0.01, 1),
   miniplayerMode: picklist(miniplayerMode, 'Smart'),
   miniplayerAnimationDuration: number(300),
+  backupStateMode: picklist(backupStateMode, 'Smart'),
 })
 
 export const keybindSchema = object({

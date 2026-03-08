@@ -14,6 +14,7 @@ import {
   type videoPlayerSchema,
   type settingsSchema,
   miniplayerMode,
+  backupStateMode,
 } from '~/shared/profile/settings'
 import { clamp } from '~/shared/utils/number'
 import { Select } from './tampilan'
@@ -24,9 +25,11 @@ export const Route = createFileRoute('/_pengaturan/pengaturan/pemutar-video')({
 })
 
 function VideoPlayer() {
-  const storedMiniplayerMode = useStore(
+  const [storedMiniplayerMode, storedBackupStateMode] = useStore(
     clientProfileSettingsStore,
-    settings => settings.videoPlayer.miniplayerMode,
+    ({ videoPlayer }) => {
+      return [videoPlayer.miniplayerMode, videoPlayer.backupStateMode]
+    },
   )
 
   return (
@@ -93,6 +96,15 @@ function VideoPlayer() {
         unit="ms"
         min={0}
         max={10000}
+      />
+
+      <Select
+        label="Simpan state pemutar video"
+        options={backupStateMode}
+        value={storedBackupStateMode}
+        onChange={(settings, mode) => {
+          settings.videoPlayer.backupStateMode = mode
+        }}
       />
     </div>
   )

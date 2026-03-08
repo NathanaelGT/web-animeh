@@ -8,11 +8,14 @@ import {
 } from '~c/elements'
 import { animeWatchSessionStore, episodeListStore, videoPlayerStore } from '~c/stores'
 import { clientProfileSettingsStore } from '~c/stores'
+import { rpc } from '~c/trpc'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
-import { useToast } from '@/ui/use-toast'
+import { toast } from '@/ui/use-toast'
+import { router } from '~/router'
 import { searchEpisode } from '~/shared/utils/episode'
 import { ucFirst } from '~/shared/utils/string'
+import { formatTime, parseTime } from '~/shared/utils/time'
 import type { InferOutput } from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
 
@@ -36,6 +39,10 @@ const pathIdentifier = (loc: { pathname: string } = location) => {
   return loc.pathname.replace(/\d+/g, '0')
 }
 
+const isInWatchingPage = () => {
+  return pathIdentifier() === '/anime/0/episode/0'
+}
+
 let removeKeybindHandler = () => {}
 
 let forceUseMiniplayer = false
@@ -56,9 +63,194 @@ const videoTransition = (percent: number) => {
   return `transform ${suffix}, border-radius ${suffix}, box-shadow ${suffix}`
 }
 
+const getSearchParams = () => new URLSearchParams(location.search)
+
+const storeVideoStateToSearchParams = (searchParams = getSearchParams()) => {
+  if (!isInWatchingPage()) {
+    const { id, ep } = videoPlayerStore.state
+
+    if (id && ep) {
+      searchParams.set('a', id)
+
+      if (ep !== '1') {
+        searchParams.set('e', ep)
+      }
+    }
+  }
+
+  const time = Math.round(videoEl.currentTime)
+  if (time) {
+    searchParams.set('t', formatTime(time))
+  }
+
+  const params = searchParams.toString().replaceAll('%3A', ':')
+
+  router.history.replace(location.pathname + (params ? '?' + params : ''))
+
+  return params
+}
+
+const removeVideoStateFromSearchParams = (searchParams = getSearchParams()) => {
+  searchParams.delete('a')
+  searchParams.delete('e')
+  searchParams.delete('t')
+
+  const params = searchParams.toString()
+
+  router.history.replace(location.pathname + (params ? '?' + params : ''))
+}
+
+const setupVideoPlayer = (
+  params: Props['params'],
+  episodeRef: { current: string },
+  changeEpisode: (episodeTarget: number) => void,
+) => {
+  episodeRef.current = params.number
+
+  const getJumpTime = (variant: '' | 'long' = '') => {
+    const prefix = variant ? (`${variant}J` as const) : 'j'
+
+    const time = clientProfileSettingsStore.state.videoPlayer[`${prefix}umpSec`]
+
+    const isRelative =
+      clientProfileSettingsStore.state.videoPlayer[`relative${ucFirst(variant)}Jump`]
+
+    return isRelative ? time * videoEl.playbackRate : time
+  }
+
+  const keybindHandler = {
+    back() {
+      videoEl.currentTime -= getJumpTime()
+    },
+    forward() {
+      videoEl.currentTime += getJumpTime()
+    },
+    longBack() {
+      videoEl.currentTime -= getJumpTime('long')
+    },
+    longForward() {
+      videoEl.currentTime += getJumpTime('long')
+    },
+    volumeUp() {
+      videoEl.volume = Math.min(
+        1,
+        videoEl.volume + clientProfileSettingsStore.state.videoPlayer.volumeStep,
+      )
+    },
+    volumeDown() {
+      videoEl.volume = Math.max(
+        0,
+        videoEl.volume - clientProfileSettingsStore.state.videoPlayer.volumeStep,
+      )
+    },
+    toStart() {
+      videoEl.currentTime = 0
+    },
+    toEnd() {
+      videoEl.currentTime = videoEl.duration
+    },
+    previous() {
+      changeEpisode(Number(episodeRef.current) - 1)
+    },
+    next() {
+      changeEpisode(Number(episodeRef.current) + 1)
+    },
+    mute() {
+      videoEl.muted = !videoEl.muted
+    },
+    miniplayer() {
+      forceUseMiniplayer = true
+
+      router.navigate({
+        to:
+          lastPathIdentifier === pathIdentifier(router.latestLocation)
+            ? '/anime/$id'
+            : '/anime/$id/episode/$number',
+        params,
+      })
+    },
+    PiP() {
+      if (!videoEl.requestPictureInPicture) {
+        toast({
+          title: 'Picture-in-Picture tidak didukung di browser ini',
+        })
+
+        return
+      }
+
+      if (document.pictureInPictureElement === videoEl) {
+        document.exitPictureInPicture()
+      } else {
+        videoEl.requestPictureInPicture()
+      }
+    },
+    fullscreen() {
+      if (document.fullscreenElement === videoEl) {
+        document.exitFullscreen()
+      } else {
+        videoEl.requestFullscreen()
+      }
+    },
+    playPause() {
+      if (videoEl.paused || videoEl.ended) {
+        videoEl.play()
+      } else {
+        videoEl.pause()
+      }
+    },
+  } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
+
+  removeKeybindHandler = createGlobalKeydownHandler(event => {
+    const keybindMatch = createKeybindMatcher(event)
+
+    let handlerName: keyof KeybindGroups['videoPlayer']
+    for (handlerName in keybindHandler) {
+      const combination = clientProfileSettingsStore.state.keybind.videoPlayer[handlerName]
+
+      if (keybindMatch(combination)) {
+        event.preventDefault()
+
+        keybindHandler[handlerName]()
+
+        return
+      }
+    }
+  })
+
+  miniplayerCloseButtonEl.onclick = () => {
+    miniplayerCloseButtonEl.onclick = null
+
+    miniplayerEl.style.transition = `opacity ${getMiniplayerAnimationDuration()}ms ${TRANSITION_TIMING}`
+    miniplayerEl.style.opacity = '0'
+    miniplayerEl.ontransitionend = () => {
+      miniplayerEl.ontransitionend = null
+
+      miniplayerEl.style.transition = ''
+      miniplayerEl.classList.add('hidden')
+
+      requestAnimationFrame(() => {
+        // remove bakal otomatis ngeluarin dari PiP
+        videoEl.remove()
+        videoEl.src = ''
+      })
+    }
+
+    removeKeybindHandler()
+
+    setPlayerState(null, null)
+  }
+}
+
+const setPlayerState = (id: string | null, ep: string | null) => {
+  videoPlayerStore.setState(state => ({
+    id,
+    ep,
+    session: state.session,
+  }))
+}
+
 export function VideoPlayer({ streamingUrl, params }: Props) {
   const router = useRouter()
-  const { toast } = useToast()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const gotoEpisodeRef = useRef(params.number)
 
@@ -155,14 +347,6 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       return true
     }
 
-    const setPlayerState = (id: string | null, ep: string | null) => {
-      videoPlayerStore.setState(state => ({
-        id,
-        ep,
-        session: state.session,
-      }))
-    }
-
     forceUseMiniplayer = false
 
     if (videoPlayerStore.state.id !== params.id || videoPlayerStore.state.ep !== params.number) {
@@ -171,6 +355,24 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       const src = streamingUrl || getSrc(params.id, params.number)
       const autoplay = () => {
         videoEl.src = src
+
+        const { backupStateMode } = clientProfileSettingsStore.state.videoPlayer
+        if (backupStateMode !== 'Disable') {
+          const searchParams = getSearchParamsFromSession() || getSearchParams()
+          const time = searchParams.get('t')
+          if (time) {
+            videoEl.currentTime = parseTime(time)
+
+            if (backupStateMode === 'Smart') {
+              removeVideoStateFromSearchParams(searchParams)
+            }
+
+            if (videoEl.currentTime) {
+              return
+            }
+          }
+        }
+
         videoEl.addEventListener(
           'loadeddata',
           () => {
@@ -200,138 +402,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         autoplay()
       }
 
-      const getJumpTime = (variant: '' | 'long' = '') => {
-        const prefix = variant ? (`${variant}J` as const) : 'j'
-
-        const time = clientProfileSettingsStore.state.videoPlayer[`${prefix}umpSec`]
-
-        const isRelative =
-          clientProfileSettingsStore.state.videoPlayer[`relative${ucFirst(variant)}Jump`]
-
-        return isRelative ? time * videoEl.playbackRate : time
-      }
-
-      const keybindHandler = {
-        back() {
-          videoEl.currentTime -= getJumpTime()
-        },
-        forward() {
-          videoEl.currentTime += getJumpTime()
-        },
-        longBack() {
-          videoEl.currentTime -= getJumpTime('long')
-        },
-        longForward() {
-          videoEl.currentTime += getJumpTime('long')
-        },
-        volumeUp() {
-          videoEl.volume = Math.min(
-            1,
-            videoEl.volume + clientProfileSettingsStore.state.videoPlayer.volumeStep,
-          )
-        },
-        volumeDown() {
-          videoEl.volume = Math.max(
-            0,
-            videoEl.volume - clientProfileSettingsStore.state.videoPlayer.volumeStep,
-          )
-        },
-        toStart() {
-          videoEl.currentTime = 0
-        },
-        toEnd() {
-          videoEl.currentTime = videoEl.duration
-        },
-        previous() {
-          changeEpisode(Number(gotoEpisodeRef.current) - 1)
-        },
-        next() {
-          changeEpisode(Number(gotoEpisodeRef.current) + 1)
-        },
-        mute() {
-          videoEl.muted = !videoEl.muted
-        },
-        miniplayer() {
-          forceUseMiniplayer = true
-
-          router.navigate({
-            to:
-              lastPathIdentifier === pathIdentifier(router.latestLocation)
-                ? '/anime/$id'
-                : '/anime/$id/episode/$number',
-            params,
-          })
-        },
-        PiP() {
-          if (!videoEl.requestPictureInPicture) {
-            toast({
-              title: 'Picture-in-Picture tidak didukung di browser ini',
-            })
-
-            return
-          }
-
-          if (document.pictureInPictureElement === videoEl) {
-            document.exitPictureInPicture()
-          } else {
-            videoEl.requestPictureInPicture()
-          }
-        },
-        fullscreen() {
-          if (document.fullscreenElement === videoEl) {
-            document.exitFullscreen()
-          } else {
-            videoEl.requestFullscreen()
-          }
-        },
-        playPause() {
-          if (videoEl.paused || videoEl.ended) {
-            videoEl.play()
-          } else {
-            videoEl.pause()
-          }
-        },
-      } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
-
-      removeKeybindHandler = createGlobalKeydownHandler(event => {
-        const keybindMatch = createKeybindMatcher(event)
-
-        let handlerName: keyof KeybindGroups['videoPlayer']
-        for (handlerName in keybindHandler) {
-          const combination = clientProfileSettingsStore.state.keybind.videoPlayer[handlerName]
-
-          if (keybindMatch(combination)) {
-            event.preventDefault()
-
-            keybindHandler[handlerName]()
-
-            return
-          }
-        }
-      })
-
-      miniplayerCloseButtonEl.onclick = () => {
-        miniplayerCloseButtonEl.onclick = null
-
-        miniplayerEl.style.transition = `opacity ${getMiniplayerAnimationDuration()}ms ${TRANSITION_TIMING}`
-        miniplayerEl.style.opacity = '0'
-        miniplayerEl.ontransitionend = () => {
-          miniplayerEl.ontransitionend = null
-
-          miniplayerEl.style.transition = ''
-          miniplayerEl.classList.add('hidden')
-
-          requestAnimationFrame(() => {
-            // remove bakal otomatis ngeluarin dari PiP
-            videoEl.remove()
-            videoEl.src = ''
-          })
-        }
-
-        removeKeybindHandler()
-
-        setPlayerState(null, null)
-      }
+      setupVideoPlayer(params, gotoEpisodeRef, changeEpisode)
     }
 
     const videoFullscreenChangeHandler = () => {
@@ -485,3 +556,150 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
   return <div ref={containerRef} className="h-full w-full rounded-md" />
 }
+
+clientProfileSettingsStore.subscribe(() => {
+  const set = ({
+    onpause,
+    onplay,
+    onvisibilitychange,
+    onbeforeunload,
+  }: Partial<
+    Pick<typeof videoEl, 'onpause' | 'onplay'> &
+      Pick<typeof document, 'onvisibilitychange'> &
+      Pick<typeof window, 'onbeforeunload'>
+  >) => {
+    videoEl.onpause = onpause || null
+    videoEl.onplay = onplay || null
+    document.onvisibilitychange = onvisibilitychange || null
+    window.onbeforeunload = onbeforeunload || null
+  }
+
+  const { backupStateMode } = clientProfileSettingsStore.state.videoPlayer
+
+  if (backupStateMode === 'Disable') {
+    set({})
+  } else if (backupStateMode === 'On Pause') {
+    set({
+      onpause() {
+        storeVideoStateToSearchParams()
+      },
+
+      onplay() {
+        removeVideoStateFromSearchParams()
+      },
+    })
+  } else if (backupStateMode === 'Smart') {
+    set({
+      onvisibilitychange() {
+        if (!document.body.contains(videoEl) || !videoEl.paused) {
+          return
+        }
+
+        const searchParams = getSearchParams()
+        if (document.hidden) {
+          storeVideoStateToSearchParams(searchParams)
+        } else if (searchParams.has('t')) {
+          removeVideoStateFromSearchParams(searchParams)
+        }
+      },
+
+      onbeforeunload() {
+        if (document.body.contains(videoEl)) {
+          const searchParams = storeVideoStateToSearchParams()
+
+          sessionStorage.setItem('videoPlayerState', Date.now() + '|' + searchParams)
+        }
+      },
+    })
+  }
+})
+
+// yang dari URL ga selalu bisa diandalkan. Kalo user refresh tab,
+// browser bakal ngambil snapshot url sebelum direfresh, jadinya state yang di URL bakal diabaikan
+const getSearchParamsFromSession = () => {
+  const state = sessionStorage.getItem('videoPlayerState')
+  if (!state) {
+    return
+  }
+
+  sessionStorage.removeItem('videoPlayerState')
+
+  const [timestampRaw, params] = state.split('|') as [string, string]
+  const timestamp = parseInt(timestampRaw)
+
+  // dengan spek cpu modern, selisihnya cuma 1ms
+  if (isFinite(timestamp) && timestamp + performance.now() - Date.now() > 50) {
+    return
+  }
+
+  return new URLSearchParams(params)
+}
+
+requestAnimationFrame(() => {
+  if (isInWatchingPage()) {
+    return
+  }
+
+  const getSearchParamsFromUrl = () => {
+    const searchParams = getSearchParams()
+
+    if (searchParams.has('a')) {
+      removeVideoStateFromSearchParams()
+    }
+
+    return searchParams
+  }
+
+  const searchParams = getSearchParamsFromSession() ?? getSearchParamsFromUrl()
+  const id = searchParams.get('a')
+  if (!id) {
+    return
+  }
+
+  const ep = searchParams.get('e') || '1'
+
+  videoPlayerStore.setState(() => ({
+    id,
+    ep,
+    session: Math.random().toString().slice(2),
+  }))
+
+  videoEl.src = getSrc(id, ep)
+
+  videoEl.onended = () => {
+    videoEl.onended = null
+    miniplayerCloseButtonEl.click()
+  }
+
+  const time = searchParams.get('t')
+  if (time) {
+    videoEl.currentTime = parseTime(time)
+  }
+
+  miniplayerEl.classList.remove('hidden')
+  miniplayerEl.style.opacity = '1'
+  miniplayerEl.prepend(videoEl)
+
+  miniplayerFullscreenButtonEl.style.opacity = '1'
+  miniplayerCloseButtonEl.style.opacity = '1'
+
+  const episodeRef = { current: ep }
+
+  setupVideoPlayer({ id, number: ep }, episodeRef, async episodeTarget => {
+    const isDownloaded = await rpc.anime.isEpisodeDownloaded.query({
+      id,
+      ep: episodeTarget,
+    })
+
+    if (isDownloaded) {
+      const episodeString = episodeTarget.toString()
+
+      videoEl.src = getSrc(id, episodeString)
+      videoEl.play()
+
+      episodeRef.current = episodeString
+
+      setPlayerState(id, episodeString)
+    }
+  })
+})
