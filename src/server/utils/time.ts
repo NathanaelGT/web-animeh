@@ -1,4 +1,4 @@
-import { formatFloat } from 'src/shared/utils/number'
+import { formatFloat } from '~/shared/utils/number'
 
 export const formatNs = (ns: number) => {
   if (ns > 1e11) {

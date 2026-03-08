@@ -1,5 +1,5 @@
 import * as v from 'valibot'
-import type { keybindModifiers } from 'src/shared/utils/keybind'
+import type { keybindModifiers } from '~/shared/utils/keybind'
 
 export const themes = ['dark', 'light', 'system'] as const
 
