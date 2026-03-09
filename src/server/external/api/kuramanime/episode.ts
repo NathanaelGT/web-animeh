@@ -493,6 +493,8 @@ export const downloadEpisode = async (
             let historyIndex = 0
             let historyCount = 0
 
+            let faststart: boolean | null = null
+
             let speed: number
 
             const emitProgress = () => {
@@ -525,6 +527,7 @@ export const downloadEpisode = async (
                 speed,
                 receivedLength,
                 totalLength,
+                faststart,
               })
             }
 
@@ -572,6 +575,10 @@ export const downloadEpisode = async (
 
                   fetchedLength += value.length
                   receivedLength += value.length
+
+                  if (faststart === null) {
+                    faststart = await isFastStart(tempFilePath)
+                  }
                 }
 
                 clearInterval(emitIntervalId)
@@ -596,6 +603,7 @@ export const downloadEpisode = async (
                     speed: 0,
                     receivedLength,
                     totalLength,
+                    faststart,
                   }
 
                   if (iteration > 1) {

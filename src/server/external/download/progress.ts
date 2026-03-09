@@ -6,6 +6,7 @@ export type DownloadProgress = {
   speed: number
   receivedLength: number
   totalLength: number | null
+  faststart: boolean | null
 }
 
 export type DownloadProgressData =
