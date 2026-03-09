@@ -8,7 +8,7 @@ type Props = PropsWithChildren<{
 
 export function Status({ icon, progress, suffix, children }: Props) {
   return (
-    <div className="m-auto grid w-11/12 gap-2 lg:max-w-xl">
+    <div className={'m-auto grid w-11/12 gap-2 lg:max-w-xl ' + (suffix ? 'pt-14' : '')}>
       <div className="mx-auto mb-2 flex gap-2">
         <div className="my-auto w-6">{icon}</div>
 
@@ -17,7 +17,7 @@ export function Status({ icon, progress, suffix, children }: Props) {
 
       {progress}
 
-      <div className="mt-4 flex h-10 justify-center">{suffix}</div>
+      {suffix && <div className="mt-4 flex h-10 justify-center">{suffix}</div>}
     </div>
   )
 }
