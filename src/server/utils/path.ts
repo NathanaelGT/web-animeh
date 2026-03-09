@@ -41,16 +41,3 @@ export const safePath = (basePath: string | string[], userProvidedPath: string |
 
   throw new Error('Illegal path')
 }
-
-export const animeVideoRealDirPath = async (animeId: string | number) => {
-  // TODO: cari cara buat "fast return", dari Bun memang ga disediakan
-  const [videoDirName] = await glob(videosDirPath, `{*.${animeId},${animeId}}`, {
-    onlyFiles: false,
-  })
-
-  if (videoDirName) {
-    return videosDirPath + videoDirName + path.sep
-  }
-
-  return null
-}

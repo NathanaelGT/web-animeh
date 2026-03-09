@@ -14,7 +14,7 @@ import {
 } from 'drizzle-orm'
 import * as v from 'valibot'
 import { updateCharacter } from '~s/anime/character/update'
-import { getStoredAnimeIds } from '~s/anime/episode/stored'
+import { downloadedPaths } from '~s/anime/episode/stored'
 import { updateEpisode } from '~s/anime/episode/update'
 import { updateOngoingProviderData } from '~s/anime/seed'
 import { fetchAndUpdate } from '~s/anime/update'
@@ -66,7 +66,7 @@ export const RouteRouter = router({
           break
 
         case 'downloaded': {
-          filter = inArray(anime.id, await getStoredAnimeIds())
+          filter = inArray(anime.id, (await downloadedPaths).keys().toArray())
 
           break
         }

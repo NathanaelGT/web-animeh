@@ -106,7 +106,7 @@ const changeEpisodeInMiniplayer = async (
   episodeRef: { current: string },
 ) => {
   const isDownloaded = await rpc.anime.isEpisodeDownloaded.query({
-    id: animeId,
+    id: Number(animeId),
     ep: episodeTarget,
   })
 

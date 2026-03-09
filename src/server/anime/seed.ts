@@ -1,3 +1,4 @@
+import fs from 'fs/promises'
 import * as v from 'valibot'
 import { db } from '~s/db'
 import { genres, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
@@ -10,7 +11,7 @@ import * as kyInstances from '~s/ky'
 import { prepareStudioData } from '~s/studio/prepare'
 import { buildConflictUpdateColumns } from '~s/utils/db'
 import { parseMalId } from '~s/utils/mal'
-import { glob, imagesDirPath } from '~s/utils/path'
+import { imagesDirPath } from '~s/utils/path'
 import { getPastDate } from '~/shared/utils/date'
 import { extension } from '~/shared/utils/file'
 import { updateCharacter } from './character/update'
@@ -124,8 +125,25 @@ async function fetchStudio(startPage: number) {
   }
 }
 
+const getImageList = async () => {
+  const imageList = new Set<string>()
+
+  try {
+    const files = await fs.readdir(imagesDirPath, { withFileTypes: true })
+    for (const file of files) {
+      if (file.isFile()) {
+        imageList.add(file.name)
+      }
+    }
+  } catch {
+    //
+  }
+
+  return imageList
+}
+
 const populate = async () => {
-  const imageList = new Set(await glob(imagesDirPath, '*'))
+  const imageList = await getImageList()
 
   await fetchAll(animeList => {
     return insertKuramanimeAnimeListToDb(animeList, imageList, { withCreatedAt: false })
@@ -133,12 +151,10 @@ const populate = async () => {
 }
 
 const sync = async () => {
-  const imageListPromise = glob(imagesDirPath, '*')
   const [perPage, lastPage] = kv.get('kuramanimeCrawl')
 
-  let [parsedData, imageListArr] = await Promise.all([fetchPage(lastPage), imageListPromise])
+  let [parsedData, imageList] = await Promise.all([fetchPage(lastPage), getImageList()])
   const newPerPage = parsedData.animes.per_page
-  const imageList = new Set(imageListArr)
 
   const insertParsedDataToDb = async () => {
     await Promise.all([

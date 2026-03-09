@@ -1,41 +1,52 @@
-import { glob, videosDirPath } from '~s/utils/path'
+import fs from 'fs/promises'
+import path from 'path'
+import { videosDirPath } from '~s/utils/path'
 
-export const getFreshStoredAnimeIds = async () => {
-  return (await glob(videosDirPath, '*', { onlyFiles: false }))
-    .map(dirName => {
-      const index = dirName.lastIndexOf('.')
-      const id = dirName.slice(index + 1)
+export const downloadedPaths = fs.readdir(videosDirPath, { withFileTypes: true }).then(files => {
+  const downloadedPaths = new Map<number, string>()
 
-      return Number(id)
-    })
-    .filter(isFinite)
+  for (const file of files) {
+    const index = file.name.lastIndexOf('.')
+    const id = Number(file.name.slice(index + 1))
+
+    if (isFinite(id) && file.isDirectory()) {
+      downloadedPaths.set(id, file.name)
+    }
+  }
+
+  return downloadedPaths
+})
+
+export const animeVideoRealDirPath = async (animeId: number) => {
+  const videoDirName = (await downloadedPaths).get(animeId)
+
+  if (videoDirName) {
+    return videosDirPath + videoDirName + path.sep
+  }
+
+  return null
 }
 
-let cache: Awaited<ReturnType<typeof getFreshStoredAnimeIds>> | null
-let pending: ReturnType<typeof getFreshStoredAnimeIds> | null
-export const getStoredAnimeIds = async () => {
-  if (cache) {
-    return cache
-  }
-  if (pending) {
-    return pending
+export const getStoredEpisodes = async (animeId: number) => {
+  const videoRealDir = await animeVideoRealDirPath(animeId)
+
+  if (!videoRealDir) {
+    return []
   }
 
-  pending = getFreshStoredAnimeIds()
+  const episodes: string[] = []
 
   try {
-    cache = await pending
+    const files = await fs.readdir(videoRealDir, { withFileTypes: true })
 
-    setTimeout(() => {
-      cache = null
-    }, 2500)
-
-    return cache
-  } finally {
-    pending = null
+    for (const file of files) {
+      if (file.isFile() && file.name.endsWith('.mp4')) {
+        episodes.push(file.name)
+      }
+    }
+  } catch {
+    //
   }
-}
 
-export const purgeStoredCache = () => {
-  cache = null
+  return episodes
 }

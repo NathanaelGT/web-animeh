@@ -1,6 +1,6 @@
 import fs from 'fs'
+import { animeVideoRealDirPath } from '~s/anime/episode/stored'
 import { downloadSizeMap } from '~s/external/download/progress'
-import { animeVideoRealDirPath as realAnimeVideoDirPath } from '~s/utils/path'
 import { withoutExtension } from '~/shared/utils/file'
 import { parseNumber } from '~/shared/utils/number'
 
@@ -91,7 +91,7 @@ const getRealVideoDirPath = async (animeId: string) => {
     return [cache, true] as const
   }
 
-  const result = await realAnimeVideoDirPath(animeId)
+  const result = await animeVideoRealDirPath(Number(animeId))
   if (result) {
     realVideoDirPathCache.set(animeId, result)
 

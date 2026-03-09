@@ -1,6 +1,7 @@
 import { observable } from '@trpc/server/observable'
 import * as v from 'valibot'
 import { episodeMitt } from '~s/anime/episode/event'
+import { animeVideoRealDirPath } from '~s/anime/episode/stored'
 import * as episodeRepository from '~s/db/repository/episode'
 import {
   downloadProgress,
@@ -8,7 +9,6 @@ import {
   type DownloadProgressData,
 } from '~s/external/download/progress'
 import { procedure, router } from '~s/trpc'
-import { animeVideoRealDirPath } from '~s/utils/path'
 import * as downloadText from '~/shared/anime/episode/downloadText'
 import { searchEpisode } from '~/shared/utils/episode'
 
@@ -110,7 +110,7 @@ export const AnimeRouter = router({
   }),
 
   isEpisodeDownloaded: procedure
-    .input(v.parser(v.object({ id: v.union([v.string(), v.number()]), ep: v.number() })))
+    .input(v.parser(v.object({ id: v.number(), ep: v.number() })))
     .query(async ({ input: { id, ep } }) => {
       const downloadedEpisodePaths = await animeVideoRealDirPath(id)
       const episodePath = downloadedEpisodePaths + ep.toString().padStart(2, '0') + '.mp4'

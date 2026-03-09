@@ -1,8 +1,8 @@
 import { and, eq, sql } from 'drizzle-orm'
+import { getStoredEpisodes } from '~s/anime/episode/stored'
 import { db } from '~s/db'
 import { providerEpisodes, episodes, type anime } from '~s/db/schema'
 import { downloadProgressSnapshot, type DownloadProgressData } from '~s/external/download/progress'
-import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { searchEpisode } from '~/shared/utils/episode'
 import { omit } from '~/shared/utils/object'
 
@@ -24,9 +24,7 @@ type Download =
 
 export const findByAnime = async (animeData: Pick<typeof anime.$inferSelect, 'id' | 'title'>) => {
   const [downloadedEpisodePaths, episodeList] = await Promise.all([
-    animeVideoRealDirPath(animeData.id).then(videoRealDir => {
-      return videoRealDir ? glob(videoRealDir, '*.mp4') : []
-    }),
+    getStoredEpisodes(animeData.id),
 
     db
       .select({

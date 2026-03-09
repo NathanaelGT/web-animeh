@@ -3,7 +3,7 @@ import fs from 'fs/promises'
 import path from 'path'
 import ky, { HTTPError } from 'ky'
 import * as v from 'valibot'
-import { purgeStoredCache } from '~s/anime/episode/stored'
+import { animeVideoRealDirPath, downloadedPaths } from '~s/anime/episode/stored'
 import { anime, animeMetadata } from '~s/db/schema'
 import {
   EpisodeNotFoundError,
@@ -26,7 +26,7 @@ import { isOffline } from '~s/utils/error'
 import { fetchText } from '~s/utils/fetch'
 import { logger } from '~s/utils/logger'
 import { isFastStart } from '~s/utils/mp4'
-import { videosDirPath, animeVideoRealDirPath } from '~s/utils/path'
+import { videosDirPath } from '~s/utils/path'
 import { env } from '~/env'
 import * as downloadText from '~/shared/anime/episode/downloadText'
 import { ReaderNotFoundError, TimeoutError } from '~/shared/error'
@@ -267,40 +267,35 @@ export const downloadEpisode = async (
   }
 
   let animeDirPath = await animeVideoRealDirPath(animeData.id)
-  let shouldCheck = true
+  let isDirNewlyCreated = false
+  let slug = ''
   if (!animeDirPath) {
-    animeDirPath = videosDirPath + generateDirSlug() + path.sep
-    shouldCheck = false
-
-    function generateDirSlug() {
-      // list lengkap dan penjelasannya: https://stackoverflow.com/a/31976060
-
-      let result = ''
-
-      const forbiddenChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']) // 1
-      for (const char of animeData.title) {
-        if (!forbiddenChars.has(char) && char.charCodeAt(0) > 31 /* 2 */) {
-          result += char
-        }
+    // list lengkap dan penjelasannya: https://stackoverflow.com/a/31976060
+    const forbiddenChars = new Set(['<', '>', ':', '"', '/', '\\', '|', '?', '*']) // 1
+    for (const char of animeData.title) {
+      if (!forbiddenChars.has(char) && char.charCodeAt(0) > 31 /* 2 */) {
+        slug += char
       }
-
-      // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
-
-      return result.replace(/\s+/g, ' ') + '.' + animeData.id
     }
+
+    // nomor 3 engga perlu diperhitungan, karena slugnya bakal diconcat sama id anime
+    slug = slug.replace(/\s+/g, ' ') + '.' + animeData.id
+
+    animeDirPath = videosDirPath + slug + path.sep
+    isDirNewlyCreated = true
   }
 
   const fileName = episodeNumber.toString().padStart(2, '0')
   const filePath = animeDirPath + fileName + '.mp4'
 
-  if (shouldCheck && (await Bun.file(filePath).exists())) {
+  if (!isDirNewlyCreated && (await Bun.file(filePath).exists())) {
     done('Episode ini telah diunduh')
 
     return null
   }
 
   const tempFilePath = animeDirPath + fileName + '_.mp4'
-  const initialLength = Bun.file(tempFilePath).size
+  const initialLength = isDirNewlyCreated ? 0 : Bun.file(tempFilePath).size
 
   const abortController = new AbortController()
   const { signal } = abortController
@@ -468,14 +463,21 @@ export const downloadEpisode = async (
 
             formattedTotalLengthCb?.(formattedTotalLength)
 
-            if (totalLength) {
-              downloadSizeMap.set(`${animeData.id}:${episodeNumber}`, totalLength)
-            }
-
             await fs.mkdir(animeDirPath, { recursive: true })
 
-            if (!shouldCheck) {
-              purgeStoredCache()
+            if (isDirNewlyCreated) {
+              const peeked = Bun.peek(downloadedPaths)
+              if (peeked instanceof Map) {
+                // seharusnya pada saat ini `downloadedPaths` sudah diresolve
+                peeked.set(animeData.id, slug)
+              } else {
+                // tapi kalo somehow belum, jangan blocking
+                peeked.then(paths => paths.set(animeData.id, slug))
+              }
+            }
+
+            if (totalLength) {
+              downloadSizeMap.set(`${animeData.id}:${episodeNumber}`, totalLength)
             }
 
             const UPDATES_PER_SECOND = 16

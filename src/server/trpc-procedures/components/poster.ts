@@ -1,4 +1,5 @@
 import * as v from 'valibot'
+import { getStoredEpisodes } from '~s/anime/episode/stored'
 import { updateEpisode } from '~s/anime/episode/update'
 import { db } from '~s/db'
 import * as episodeRepository from '~s/db/repository/episode'
@@ -9,7 +10,6 @@ import {
 } from '~s/external/api/kuramanime/episode'
 import { downloadProgressSnapshot } from '~s/external/download/progress'
 import { procedure, router } from '~s/trpc'
-import { animeVideoRealDirPath, glob } from '~s/utils/path'
 import { picker } from '~/shared/utils/object'
 
 export const PosterRouter = router({
@@ -64,21 +64,17 @@ export const PosterRouter = router({
         },
       }),
 
-      animeVideoRealDirPath(input).then(videoRealDir => {
-        return videoRealDir
-          ? glob(videoRealDir, '*.mp4').then(episodes => {
-              const downloadedEpisodeList: number[] = []
+      getStoredEpisodes(input).then(episodes => {
+        const downloadedEpisodeList: number[] = []
 
-              for (const episodeFilename of episodes) {
-                const episodeNo = episodeFilename.match(/(\d+).mp4/)?.[1]
-                if (episodeNo) {
-                  downloadedEpisodeList.push(parseInt(episodeNo))
-                }
-              }
+        for (const episodeFilename of episodes) {
+          const episodeNo = episodeFilename.match(/(\d+).mp4/)?.[1]
+          if (episodeNo) {
+            downloadedEpisodeList.push(parseInt(episodeNo))
+          }
+        }
 
-              return downloadedEpisodeList
-            })
-          : []
+        return downloadedEpisodeList
       }),
     ])
 
