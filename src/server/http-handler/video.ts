@@ -1,7 +1,6 @@
 import fs from 'fs'
 import { animeVideoRealDirPath } from '~s/anime/episode/stored'
 import { downloadSizeMap } from '~s/external/download/progress'
-import { withoutExtension } from '~/shared/utils/file'
 import { parseNumber } from '~/shared/utils/number'
 
 export const handleVideoRequest = async (request: Request, path: string): Promise<Response> => {
@@ -21,7 +20,9 @@ export const handleVideoRequest = async (request: Request, path: string): Promis
     return new Response(video)
   }
 
-  let size = isDownloading ? downloadSizeMap.get(withoutExtension(pathArr.join(':'))) : video.size
+  let size = isDownloading
+    ? downloadSizeMap.get(pathArr[0] + ':' + parseInt(pathArr[1]))
+    : video.size
   if (!size) {
     return notFound()
   }
