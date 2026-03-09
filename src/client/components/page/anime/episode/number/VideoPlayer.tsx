@@ -649,17 +649,15 @@ clientProfileSettingsStore.subscribe(() => {
   }
 })
 
-// yang dari URL ga selalu bisa diandalkan. Kalo user refresh tab,
-// browser bakal ngambil snapshot url sebelum direfresh, jadinya state yang di URL bakal diabaikan
-const getSearchParamsFromSession = () => {
-  const state = sessionStorage.getItem('videoPlayerState')
+const getFromSessionStorage = (key: string) => {
+  const state = sessionStorage.getItem(key)
   if (!state) {
     return
   }
 
-  sessionStorage.removeItem('videoPlayerState')
+  sessionStorage.removeItem(key)
 
-  const [timestampRaw, params] = state.split('|') as [string, string]
+  const [timestampRaw, value] = state.split('|') as [string, string]
   const timestamp = parseInt(timestampRaw)
 
   // dengan spek cpu modern, selisihnya cuma 1ms
@@ -667,7 +665,16 @@ const getSearchParamsFromSession = () => {
     return
   }
 
-  return new URLSearchParams(params)
+  return value
+}
+
+// yang dari URL ga selalu bisa diandalkan. Kalo user refresh tab,
+// browser bakal ngambil snapshot url sebelum direfresh, jadinya state yang di URL bakal diabaikan
+const getSearchParamsFromSession = () => {
+  const params = getFromSessionStorage('videoPlayerEpisode')
+  if (params) {
+    return new URLSearchParams(params)
+  }
 }
 
 requestAnimationFrame(() => {
@@ -723,4 +730,26 @@ requestAnimationFrame(() => {
   setupVideoPlayer({ id, number: ep }, episodeRef, episodeTarget => {
     changeEpisodeInMiniplayer(id, episodeTarget, episodeRef)
   })
+})
+
+if (isInWatchingPage()) {
+  const urlEpisode = getFromSessionStorage('videoPlayerEpisode')
+
+  if (urlEpisode) {
+    history.replaceState(history.state, '', location.pathname.replace(/\d+$/, urlEpisode))
+  }
+}
+
+window.addEventListener('beforeunload', () => {
+  if (isInWatchingPage() && document.fullscreenElement === videoEl) {
+    const { pathname } = location
+    const { src } = videoEl
+
+    const urlEpisode = parseInt(pathname.slice(pathname.lastIndexOf('/') + 1))
+    const videoEpisode = parseInt(src.slice(src.lastIndexOf('/') + 1))
+
+    if (urlEpisode !== videoEpisode) {
+      sessionStorage.setItem('videoPlayerEpisode', Date.now() + '|' + videoEpisode)
+    }
+  }
 })
