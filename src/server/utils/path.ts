@@ -1,4 +1,3 @@
-import fs from 'fs/promises'
 import path from 'path'
 import type { GlobScanOptions } from 'bun'
 
@@ -15,16 +14,15 @@ export const glob = async (
   pattern: string,
   options?: Omit<GlobScanOptions, 'cwd'>,
 ) => {
-  const isExists = await fs.exists(path)
-  if (isExists) {
+  try {
     if (options) {
       ;(options as GlobScanOptions).cwd = path
     }
 
     return Array.fromAsync(new Bun.Glob(pattern).scan(options ?? path))
+  } catch {
+    return []
   }
-
-  return []
 }
 
 export const safePath = (basePath: string | string[], userProvidedPath: string | string[]) => {
