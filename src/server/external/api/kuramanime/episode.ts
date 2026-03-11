@@ -91,146 +91,142 @@ const getDownloadUrl = async (
   signal?: AbortSignal,
 ): Promise<string> => {
   const url = await (async () => {
-    {
-      const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
+    const episodeUrl = `anime/${metadata.providerId}/${metadata.providerSlug}/episode/${episodeNumber}`
 
-      if (!kMIX_PAGE_TOKEN_VALUE || !kProcessEnv) {
-        emit('Mengambil token dari Kuramanime')
+    if (!kMIX_PAGE_TOKEN_VALUE || !kProcessEnv) {
+      emit('Mengambil token dari Kuramanime')
 
-        try {
-          ;[kMIX_PAGE_TOKEN_VALUE, kProcessEnv] = await getKuramanimeProcess(episodeUrl)
-        } catch (error) {
-          if (error instanceof LeviathanError) {
-            emit(
-              'Gagal mendapatkan token auth Kuramanime\nHarap update Web Animeh ke versi terbaru',
-            )
+      try {
+        ;[kMIX_PAGE_TOKEN_VALUE, kProcessEnv] = await getKuramanimeProcess(episodeUrl)
+      } catch (error) {
+        if (error instanceof LeviathanError) {
+          emit('Gagal mendapatkan token auth Kuramanime\nHarap update Web Animeh ke versi terbaru')
 
-            throw SilentError.from(error).log('Failed to get Kuramanime auth token')
-          }
+          throw SilentError.from(error).log('Failed to get Kuramanime auth token')
+        }
 
-          throw error
+        throw error
+      }
+    }
+
+    const searchParams = toSearchParamString({
+      [kProcessEnv.MIX_PAGE_TOKEN_KEY]: kMIX_PAGE_TOKEN_VALUE,
+      [kProcessEnv.MIX_STREAM_SERVER_KEY]: 'kuramadrive',
+      page: 1,
+    })
+
+    emit('Mengambil tautan unduh dari Kuramanime')
+
+    const responseHtml = await fetchText(
+      `${episodeUrl}?${searchParams}`,
+      {
+        signal,
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: 'authorization=' + leviathanAuthorizationToken,
+      },
+      kyInstances.kuramanime.post,
+    )
+
+    const handleDownloadUrlNotFound = () => {
+      // authorization tokennya expired
+      if (responseHtml.includes('Terjadi kesalahan saat mengambil video')) {
+        leviathanAuthorizationToken = null
+
+        return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
+      }
+
+      // tokennya expired
+      if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
+        kMIX_PAGE_TOKEN_VALUE = null
+        kProcessEnv = null
+
+        return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
+      }
+
+      // video streaming masih diproses
+      if (responseHtml.includes('Streaming sedang diproses')) {
+        const index =
+          responseHtml.indexOf('updatedAtPlus5Min" value="') + 'updatedAtPlus5Min" value="'.length
+        if (index !== -1) {
+          const updatedAtPlus5Min = responseHtml.slice(index, responseHtml.indexOf('"', index))
+
+          const updatedAtPlus5MinDate = new Date(updatedAtPlus5Min)
+          const now = new Date()
+
+          const diff = updatedAtPlus5MinDate.getTime() - now.getTime()
+
+          emit(`Video sedang diproses. Mulai mengunduh dalam ${diff / 1e3} detik`)
+
+          return new Promise<string>(resolve => {
+            setTimeout(() => {
+              resolve(getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal))
+            }, diff)
+          })
         }
       }
 
-      const searchParams = toSearchParamString({
-        [kProcessEnv.MIX_PAGE_TOKEN_KEY]: kMIX_PAGE_TOKEN_VALUE,
-        [kProcessEnv.MIX_STREAM_SERVER_KEY]: 'kuramadrive',
-        page: 1,
+      done('Terjadi error yang tidak diketahui. Harap cek log')
+
+      logger.error('Download episode: unknown error', {
+        localAnime: animeData,
+        metadata,
+        episodeNumber,
+        responseHtml,
       })
 
-      emit('Mengambil tautan unduh dari Kuramanime')
+      throw new SilentError('unknown error')
+    }
 
-      const responseHtml = await fetchText(
-        `${episodeUrl}?${searchParams}`,
-        {
-          signal,
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
-          },
-          body: 'authorization=' + leviathanAuthorizationToken,
-        },
-        kyInstances.kuramanime.post,
-      )
-
-      const handleDownloadUrlNotFound = () => {
-        // authorization tokennya expired
-        if (responseHtml.includes('Terjadi kesalahan saat mengambil video')) {
-          leviathanAuthorizationToken = null
-
-          return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
-        }
-
-        // tokennya expired
-        if (responseHtml.includes('Terjadi kesalahan saat mengambil tautan unduh')) {
-          kMIX_PAGE_TOKEN_VALUE = null
-          kProcessEnv = null
-
-          return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
-        }
-
-        // video streaming masih diproses
-        if (responseHtml.includes('Streaming sedang diproses')) {
-          const index =
-            responseHtml.indexOf('updatedAtPlus5Min" value="') + 'updatedAtPlus5Min" value="'.length
-          if (index !== -1) {
-            const updatedAtPlus5Min = responseHtml.slice(index, responseHtml.indexOf('"', index))
-
-            const updatedAtPlus5MinDate = new Date(updatedAtPlus5Min)
-            const now = new Date()
-
-            const diff = updatedAtPlus5MinDate.getTime() - now.getTime()
-
-            emit(`Video sedang diproses. Mulai mengunduh dalam ${diff / 1e3} detik`)
-
-            return new Promise<string>(resolve => {
-              setTimeout(() => {
-                resolve(getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal))
-              }, diff)
-            })
-          }
-        }
-
-        done('Terjadi error yang tidak diketahui. Harap cek log')
-
-        logger.error('Download episode: unknown error', {
-          localAnime: animeData,
-          metadata,
-          episodeNumber,
-          responseHtml,
-        })
-
-        throw new SilentError('unknown error')
-      }
-
-      const videoOpenTagIndex = responseHtml.indexOf('<video')
-      if (videoOpenTagIndex === -1) {
-        return handleDownloadUrlNotFound()
-      }
-
-      const videoCloseTagIndex = responseHtml.indexOf('</video>')
-      const videoTag = responseHtml.slice(videoOpenTagIndex, videoCloseTagIndex)
-
-      const sourceTags = videoTag.split('<source')
-
-      const sources: string[] = []
-
-      // index pertama isinya tag video, bukan source
-      for (let i = 1; i < sourceTags.length; i++) {
-        const sourceTag = sourceTags[i]!
-
-        const getAttributeValue = (attributeName: string) => {
-          const attributeIndex = sourceTag.indexOf(`${attributeName}="`)
-          if (attributeIndex === -1) {
-            return null
-          }
-
-          const value = sourceTag.slice(attributeIndex + attributeName.length + '="'.length)
-
-          return value.slice(0, value.indexOf('"'))
-        }
-
-        const downloadUrl = getAttributeValue('src')
-        const size = parseInt(getAttributeValue('size') ?? '')
-
-        if (!downloadUrl || isNaN(size)) {
-          continue
-        } else if (size === 720) {
-          return downloadUrl
-        }
-
-        sources[size] = downloadUrl
-      }
-
-      for (let i = sources.length; i >= 0; i--) {
-        const downloadUrl = sources[i]
-        if (downloadUrl) {
-          return downloadUrl
-        }
-      }
-
+    const videoOpenTagIndex = responseHtml.indexOf('<video')
+    if (videoOpenTagIndex === -1) {
       return handleDownloadUrlNotFound()
     }
+
+    const videoCloseTagIndex = responseHtml.indexOf('</video>')
+    const videoTag = responseHtml.slice(videoOpenTagIndex, videoCloseTagIndex)
+
+    const sourceTags = videoTag.split('<source')
+
+    const sources: string[] = []
+
+    // index pertama isinya tag video, bukan source
+    for (let i = 1; i < sourceTags.length; i++) {
+      const sourceTag = sourceTags[i]!
+
+      const getAttributeValue = (attributeName: string) => {
+        const attributeIndex = sourceTag.indexOf(`${attributeName}="`)
+        if (attributeIndex === -1) {
+          return null
+        }
+
+        const value = sourceTag.slice(attributeIndex + attributeName.length + '="'.length)
+
+        return value.slice(0, value.indexOf('"'))
+      }
+
+      const downloadUrl = getAttributeValue('src')
+      const size = parseInt(getAttributeValue('size') ?? '')
+
+      if (!downloadUrl || isNaN(size)) {
+        continue
+      } else if (size === 720) {
+        return downloadUrl
+      }
+
+      sources[size] = downloadUrl
+    }
+
+    for (let i = sources.length; i >= 0; i--) {
+      const downloadUrl = sources[i]
+      if (downloadUrl) {
+        return downloadUrl
+      }
+    }
+
+    return handleDownloadUrlNotFound()
   })()
 
   return url.replaceAll('&amp;', '&').replace(/%5C$/, '')
