@@ -129,6 +129,8 @@ const malStudioSynonymType = createRepetitiveStringsColumnType('Japanese', 'Syno
 
 const providerType = createEnumStringsColumnType('kuramanime')
 
+export const episodeSkipType = createEnumStringsColumnType('op', 'ed', 'recap')
+
 type Settings = v.InferInput<typeof settingsSchema>
 export type AnimeType =
   | 'TV'
@@ -312,6 +314,21 @@ export const providerEpisodes = sqliteTable(
   ],
 )
 
+export const episodeSkips = sqliteTable(
+  'episode_skips',
+  {
+    animeId: integer('anime_id')
+      .notNull()
+      .references(() => anime.id, { onDelete: 'cascade' }),
+    episodeNumber: integer('episode_number').notNull(),
+    type: episodeSkipType('type').notNull(),
+    startTime: integer('start_time').notNull(),
+    endTime: integer('end_time').notNull(),
+    episodeLength: integer('episode_length').notNull(),
+  },
+  t => [primaryKey({ columns: [t.animeId, t.episodeNumber, t.type] })],
+)
+
 export const characters = sqliteTable('characters', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
@@ -367,6 +384,7 @@ export const animeRelations = relations(anime, ({ one, many }) => ({
   animeToGenres: many(animeToGenres),
   animeToStudios: many(animeToStudios),
   characters: many(animeToCharacters),
+  episodeSkips: many(episodeSkips),
 }))
 
 export const animeSynonymsRelations = relations(animeSynonyms, ({ one }) => ({
@@ -419,6 +437,10 @@ export const providerEpisodesRelations = relations(providerEpisodes, ({ one }) =
     fields: [providerEpisodes.animeId, providerEpisodes.provider, providerEpisodes.providerId],
     references: [animeMetadata.animeId, animeMetadata.provider, animeMetadata.providerId],
   }),
+}))
+
+export const episodeSkipsRelations = relations(episodeSkips, ({ one }) => ({
+  anime: one(anime, { fields: [episodeSkips.animeId], references: [anime.id] }),
 }))
 
 export const charactersRelations = relations(characters, ({ many }) => ({

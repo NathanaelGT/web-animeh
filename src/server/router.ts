@@ -3,6 +3,7 @@ import { AnimeRouter } from './trpc-procedures/anime'
 import { AnimeTitleRouter } from './trpc-procedures/components/anime-title'
 import { PosterRouter } from './trpc-procedures/components/poster'
 import { DownloadRouter } from './trpc-procedures/download'
+import { EpisodeRouter } from './trpc-procedures/episode'
 import { ImageSubscriptionProcedure } from './trpc-procedures/image'
 import { LogProcedure } from './trpc-procedures/log'
 import { ProfileRouter } from './trpc-procedures/profile'
@@ -12,6 +13,7 @@ import { SearchProcedure } from './trpc-procedures/search'
 export const TRPCRouter = router({
   log: LogProcedure,
   anime: AnimeRouter,
+  episode: EpisodeRouter,
   route: RouteRouter,
   search: SearchProcedure,
   profile: ProfileRouter,

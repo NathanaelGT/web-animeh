@@ -92,6 +92,17 @@ CREATE TABLE `characters` (
 	`image_url` text
 );
 --> statement-breakpoint
+CREATE TABLE `episode_skips` (
+	`anime_id` integer NOT NULL,
+	`episode_number` integer NOT NULL,
+	`type` integer NOT NULL,
+	`start_time` integer NOT NULL,
+	`end_time` integer NOT NULL,
+	`episode_length` integer NOT NULL,
+	PRIMARY KEY(`anime_id`, `episode_number`, `type`),
+	FOREIGN KEY (`anime_id`) REFERENCES `anime`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
 CREATE TABLE `episodes` (
 	`anime_id` integer NOT NULL,
 	`number` integer NOT NULL,

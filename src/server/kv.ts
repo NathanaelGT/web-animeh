@@ -12,6 +12,7 @@ const defaultKv = () => ({
   kuramanimeOngoing: [0, 0] as [lastFetchAt: number, lastResetAt: number],
   kuramanimeLeviathan: [null, null] as [id: null, token: null] | [id: string, token: string],
   kuramanimeCookie: [] as [key: string, [value: string, expires: number]][],
+  aniskipVersion: 0,
 })
 
 type KV = ReturnType<typeof defaultKv>

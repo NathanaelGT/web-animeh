@@ -2,6 +2,7 @@ import fs from 'fs/promises'
 import * as v from 'valibot'
 import { db } from '~s/db'
 import { genres, ongoingAnimeUpdates, studios, studioSynonyms } from '~s/db/schema'
+import { resetAniskipDump } from '~s/external/api/aniskip'
 import { jikanClient, producerClient, jikanQueue } from '~s/external/api/jikan'
 import { fetchAll, fetchPage } from '~s/external/api/kuramanime/fetch'
 import { insertKuramanimeAnimeListToDb } from '~s/external/api/kuramanime/insert'
@@ -14,6 +15,7 @@ import { parseMalId } from '~s/utils/mal'
 import { imagesDirPath } from '~s/utils/path'
 import { getPastDate } from '~/shared/utils/date'
 import { extension } from '~/shared/utils/file'
+import { howManyWeeksSince } from '~/shared/utils/time'
 import { updateCharacter } from './character/update'
 import { updateEpisode } from './episode/update'
 import { fetchAndUpdate } from './update'
@@ -37,6 +39,8 @@ export const seed = async () => {
   if (!Bun.env.PROD) {
     return
   }
+
+  await populateEpisodeSkips()
 
   await updateIncompleteAnimeData()
 
@@ -299,6 +303,22 @@ export const updateOngoingProviderData = async () => {
     clearTimeout(updateOngoingProviderDataTimer)
   }
   updateOngoingProviderDataTimer = setTimeout(updateOngoingProviderData, 15 * 60 * 1000)
+}
+
+const populateEpisodeSkips = async () => {
+  const ANISKIP_SERVICE_FIRST_RUN = 1773288000000
+  const TEN_MINUTES = 10 * 60 * 1000
+
+  // ditambahin 10 menit karena github ngereturn response dengan cache internal 5 menit
+  // 5 menitnya lagi untuk sparetime kalo servicenya runnya lambat
+  const latestVersion = howManyWeeksSince(ANISKIP_SERVICE_FIRST_RUN + TEN_MINUTES) + 1
+  const lastVersion = kv.get('aniskipVersion')
+
+  if (latestVersion > lastVersion) {
+    await resetAniskipDump()
+
+    await kv.set('aniskipVersion', latestVersion)
+  }
 }
 
 const updateIncompleteAnimeData = async () => {

@@ -158,3 +158,7 @@ const createKuramanimeInstance = (host: string) => {
 }
 
 export let kuramanime = createKuramanimeInstance(kv.get('kuramanimeHost'))
+
+export const waService = ky.extend({
+  prefixUrl: 'https://github.com/NathanaelGT/web-animeh-services/raw/refs/heads/main/',
+})

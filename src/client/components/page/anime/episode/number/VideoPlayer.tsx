@@ -246,6 +246,81 @@ const setupVideoPlayer = (
     }
   })
 
+  const fetchSkips = (id: number, ep: number) => {
+    return rpc.episode.skips.query({ id, ep })
+  }
+
+  type Skips = Awaited<ReturnType<typeof fetchSkips>>
+
+  let skips: Skips | null | undefined
+
+  const skippedSkips = new Set<Skips[number]>()
+
+  videoEl.onloadstart = async () => {
+    videoEl.ontimeupdate = null
+    skips = null
+
+    const { src } = videoEl
+    const slashLastIndex = src.lastIndexOf('/')
+
+    const animeId = parseInt(src.slice(src.lastIndexOf('/', slashLastIndex - 1) + 1))
+    const episodeNumber = parseInt(src.slice(slashLastIndex + 1))
+
+    skips = await fetchSkips(animeId, episodeNumber)
+
+    if (skips.length) {
+      const setupSkipper = () => {
+        const duration = videoEl.duration
+
+        const normalizedSkips = skips?.filter(skip => Math.abs(duration - skip.episodeLength) < 60)
+        if (!normalizedSkips?.length) {
+          videoEl.ontimeupdate = null
+
+          return
+        }
+
+        videoEl.currentTime = duration - normalizedSkips[0]!.episodeLength
+
+        videoEl.ontimeupdate = () => {
+          if (!skips?.length) {
+            videoEl.ontimeupdate = null
+
+            return
+          }
+
+          const time = videoEl.currentTime
+
+          for (const skip of skips) {
+            if (skippedSkips.has(skip)) {
+              continue
+            }
+
+            const durationDiff = duration - skip.episodeLength
+
+            if (time >= skip.startTime + durationDiff && time < skip.endTime + durationDiff) {
+              videoEl.currentTime = skip.endTime
+
+              if (skippedSkips.size === skips.length - 1) {
+                videoEl.ontimeupdate = null
+              } else {
+                skippedSkips.add(skip)
+              }
+            }
+          }
+        }
+      }
+
+      if (isNaN(videoEl.duration)) {
+        videoEl.oncanplay = () => {
+          videoEl.oncanplay = null
+          setupSkipper()
+        }
+      } else {
+        setupSkipper()
+      }
+    }
+  }
+
   miniplayerCloseButtonEl.onclick = () => {
     miniplayerCloseButtonEl.onclick = null
 
@@ -260,7 +335,7 @@ const setupVideoPlayer = (
       requestAnimationFrame(() => {
         // remove bakal otomatis ngeluarin dari PiP
         videoEl.remove()
-        videoEl.src = ''
+        videoEl.removeAttribute('src')
       })
     }
 
@@ -506,7 +581,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
           setPlayerState(null, null)
           removeKeybindHandler()
           videoEl.remove()
-          videoEl.src = ''
+          videoEl.removeAttribute('src')
 
           return
         }

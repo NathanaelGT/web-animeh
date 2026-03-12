@@ -36,3 +36,22 @@ export const parseTime = (timeStr: string, separator = ':') => {
 
   return result
 }
+
+export const getTime = (date: Date | number) => {
+  if (typeof date === 'number') {
+    return date
+  }
+  return date.getTime()
+}
+
+export const howManyWeeksSince = (since: Date | number, compareTo: Date | number = Date.now()) => {
+  const diff = getTime(compareTo) - getTime(since)
+
+  if (diff < 0) {
+    return 0
+  }
+
+  const MS_IN_WEEK = 7 * 24 * 60 * 60 * 1000
+
+  return Math.floor(diff / MS_IN_WEEK)
+}
