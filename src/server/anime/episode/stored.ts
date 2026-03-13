@@ -1,21 +1,29 @@
 import fs from 'fs/promises'
 import path from 'path'
+import { logger } from '~s/utils/logger'
 import { videosDirPath } from '~s/utils/path'
 
-export const downloadedPaths = fs.readdir(videosDirPath, { withFileTypes: true }).then(files => {
-  const downloadedPaths = new Map<number, string>()
+export const downloadedPaths = fs
+  .readdir(videosDirPath, { withFileTypes: true })
+  .then(files => {
+    const downloadedPaths = new Map<number, string>()
 
-  for (const file of files) {
-    const index = file.name.lastIndexOf('.')
-    const id = Number(file.name.slice(index + 1))
+    for (const file of files) {
+      const index = file.name.lastIndexOf('.')
+      const id = Number(file.name.slice(index + 1))
 
-    if (isFinite(id) && file.isDirectory()) {
-      downloadedPaths.set(id, file.name)
+      if (isFinite(id) && file.isDirectory()) {
+        downloadedPaths.set(id, file.name)
+      }
     }
-  }
 
-  return downloadedPaths
-})
+    return downloadedPaths
+  })
+  .catch(error => {
+    logger.error('Could not read downloaded videos directory', { error })
+
+    return new Map<number, string>()
+  })
 
 export const animeVideoRealDirPath = async (animeId: number) => {
   const videoDirName = (await downloadedPaths).get(animeId)
