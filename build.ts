@@ -1,6 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import Bun, { $ } from 'bun'
+import { minify } from 'html-minifier-terser'
 import packageJson from 'package.json'
 import { formatNs } from 'src/server/utils/time'
 import { formatBytes } from 'src/shared/utils/byte'
@@ -117,11 +118,17 @@ await Promise.all([
     let jsOriginalPath: string
     let cssOriginalPath: string
 
-    let indexHtml = (await Bun.file('./dist/public/index.html').text())
-      .replaceAll(' />', '>')
-      .split('\n')
-      .map(line => line.trim())
-      .join('')
+    let indexHtml = await Bun.file('./dist/public/index.html').text()
+
+    indexHtml = indexHtml.replace(/^<!doctype/, '<!DOCTYPE')
+
+    indexHtml = await minify(indexHtml, {
+      collapseWhitespace: true,
+      minifyCSS: true,
+      noNewlinesBeforeTagClose: true,
+    })
+
+    indexHtml = indexHtml
       .replace(
         /<script type="module" crossorigin src="(.*?)"><\/script>/,
         (_, jsRelPath: string) => {
