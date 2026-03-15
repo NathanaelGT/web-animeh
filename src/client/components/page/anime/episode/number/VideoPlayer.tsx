@@ -1,9 +1,11 @@
 import { useRouter } from '@tanstack/react-router'
 import { useRef, useLayoutEffect } from 'react'
 import {
+  controlEl,
   miniplayerCloseButtonEl,
   miniplayerEl,
   miniplayerFullscreenButtonEl,
+  playerEl,
   videoEl,
 } from '~c/elements'
 import { animeWatchSessionStore, episodeListStore, videoPlayerStore } from '~c/stores'
@@ -11,6 +13,7 @@ import { clientProfileSettingsStore } from '~c/stores'
 import { rpc } from '~c/trpc'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
+import { toggleMute, toggleFullscreen, togglePlayback } from '~c/videoPlayer/setup'
 import { toast } from '@/ui/use-toast'
 import { router } from '~/router'
 import { searchEpisode } from '~/shared/utils/episode'
@@ -177,9 +180,7 @@ const setupVideoPlayer = (
     next() {
       changeEpisode(Number(episodeRef.current) + 1)
     },
-    mute() {
-      videoEl.muted = !videoEl.muted
-    },
+    mute: toggleMute,
     miniplayer() {
       if (lastPathIdentifier === pathIdentifier(router.latestLocation)) {
         forceUseMiniplayer = true
@@ -213,20 +214,8 @@ const setupVideoPlayer = (
         videoEl.requestPictureInPicture()
       }
     },
-    fullscreen() {
-      if (document.fullscreenElement === videoEl) {
-        document.exitFullscreen()
-      } else {
-        videoEl.requestFullscreen()
-      }
-    },
-    playPause() {
-      if (videoEl.paused || videoEl.ended) {
-        videoEl.play()
-      } else {
-        videoEl.pause()
-      }
-    },
+    fullscreen: toggleFullscreen,
+    playPause: togglePlayback,
   } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
 
   removeKeybindHandler = createGlobalKeydownHandler(event => {
@@ -334,7 +323,7 @@ const setupVideoPlayer = (
 
       requestAnimationFrame(() => {
         // remove bakal otomatis ngeluarin dari PiP
-        videoEl.remove()
+        playerEl.remove()
         videoEl.removeAttribute('src')
       })
     }
@@ -381,52 +370,52 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         miniplayerFullscreenButtonEl.style.opacity = '0'
         miniplayerCloseButtonEl.style.opacity = '0'
 
-        const videoBounding = videoEl.getBoundingClientRect()
+        const playerBounding = playerEl.getBoundingClientRect()
 
         const animationProgress =
           1 -
-          (videoBounding.width - miniplayerBounding.width) /
+          (playerBounding.width - miniplayerBounding.width) /
             (containerBounding.width - miniplayerBounding.width)
 
         const deltaX = containerBounding.left - miniplayerBounding.left
         const deltaY = containerBounding.top - miniplayerBounding.top
         const deltaS = containerBounding.width / miniplayerBounding.width
 
-        videoEl.controls = false
-        videoEl.style.transition = videoTransition(animationProgress)
-        videoEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
-        videoEl.style.borderRadius = '0'
-        videoEl.style.boxShadow = '0'
+        controlEl.classList.add('hidden')
+        playerEl.style.transition = videoTransition(animationProgress)
+        playerEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
+        playerEl.style.borderRadius = '0'
+        playerEl.style.boxShadow = '0'
 
-        videoEl.ontransitionend = function onTransitionEnd() {
+        playerEl.ontransitionend = function onTransitionEnd() {
           // ada race condition transitionend dipanggil padahal masih ditengah-tengah animasi
           // jadi buat ngakalinnya dicek dulu widthnya, kalo belum sama dengan container berarti masih dalam proses animasi
-          const videoBounding = videoEl.getBoundingClientRect()
+          const videoBounding = playerEl.getBoundingClientRect()
           if (videoBounding.width !== containerBounding.width) {
-            videoEl.ontransitionend = onTransitionEnd
+            playerEl.ontransitionend = onTransitionEnd
 
             return
           }
 
-          videoEl.ontransitionend = null
+          playerEl.ontransitionend = null
 
-          videoEl.controls = true
-          videoEl.style.transition = ''
-          videoEl.style.transform = ''
-          container.appendChild(videoEl)
+          playerEl.style.transition = ''
+          playerEl.style.transform = ''
+          container.append(playerEl)
+          controlEl.classList.remove('hidden')
           miniplayerEl.classList.add('hidden')
         }
       } else {
         videoEl.onended = null
-        container.appendChild(videoEl)
+        container.append(playerEl)
         miniplayerEl.classList.add('hidden')
       }
     } else {
-      container.appendChild(videoEl)
+      container.append(playerEl)
     }
 
     const changeEpisode = (episodeTarget: number) => {
-      if (miniplayerEl.contains(videoEl)) {
+      if (miniplayerEl.contains(playerEl)) {
         changeEpisodeInMiniplayer(params.id, episodeTarget, gotoEpisodeRef)
 
         return
@@ -439,7 +428,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
       const episodeString = episodeTarget.toString()
 
-      if (episode.download.status === 'DOWNLOADED' && document.fullscreenElement === videoEl) {
+      if (episode.download.status === 'DOWNLOADED' && document.fullscreenElement === playerEl) {
         videoEl.src = getSrc(params.id, episodeString)
         videoEl.play()
 
@@ -524,7 +513,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         videoEl.focus()
       }
 
-      if (gotoEpisodeRef.current === params.number || document.fullscreenElement === videoEl) {
+      if (gotoEpisodeRef.current === params.number || document.fullscreenElement === playerEl) {
         return
       }
 
@@ -564,12 +553,12 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       }
     }
 
-    videoEl.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
+    playerEl.addEventListener('fullscreenchange', videoFullscreenChangeHandler)
     videoEl.addEventListener('error', errorHandler)
     videoEl.addEventListener('ended', videoEndedHandler)
 
     return () => {
-      videoEl.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
+      playerEl.removeEventListener('fullscreenchange', videoFullscreenChangeHandler)
       videoEl.removeEventListener('error', errorHandler)
       videoEl.removeEventListener('ended', videoEndedHandler)
       videoEl.onloadeddata = null
@@ -580,7 +569,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         if (clientProfileSettingsStore.state.videoPlayer.miniplayerMode === 'No Auto') {
           setPlayerState(null, null)
           removeKeybindHandler()
-          videoEl.remove()
+          playerEl.remove()
           videoEl.removeAttribute('src')
 
           return
@@ -619,12 +608,12 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         miniplayerCloseButtonEl.click()
       }
 
-      const videoBounding = videoEl.getBoundingClientRect()
+      const playerBounding = videoEl.getBoundingClientRect()
 
       miniplayerEl.ontransitionend = null
       miniplayerEl.classList.remove('hidden')
       miniplayerEl.style.opacity = '1'
-      miniplayerEl.prepend(videoEl)
+      miniplayerEl.prepend(playerEl)
 
       const miniplayerStyle = getComputedStyle(miniplayerEl)
       const miniplayerWidth = parseInt(miniplayerStyle.width)
@@ -632,30 +621,30 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       const miniplayerTop =
         innerHeight - parseInt(miniplayerStyle.height) - parseInt(miniplayerStyle.bottom)
 
-      const deltaX = videoBounding.left - miniplayerLeft
-      const deltaY = videoBounding.top - miniplayerTop
-      const deltaS = videoBounding.width / miniplayerWidth
+      const deltaX = playerBounding.left - miniplayerLeft
+      const deltaY = playerBounding.top - miniplayerTop
+      const deltaS = playerBounding.width / miniplayerWidth
 
-      videoEl.controls = false
-      videoEl.style.transition = ''
-      videoEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
+      controlEl.classList.add('hidden')
+      playerEl.style.transition = ''
+      playerEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
 
       requestAnimationFrame(() => {
-        const videoBounding = videoEl.getBoundingClientRect()
+        const videoBounding = playerEl.getBoundingClientRect()
 
         const animationProgress = videoBounding.width / containerBounding.width
 
-        videoEl.style.transition = videoTransition(animationProgress)
-        videoEl.style.transform = 'translate(0, 0) scale(1)'
-        videoEl.style.borderRadius = 'var(--radius-md)'
-        videoEl.style.boxShadow = 'var(--shadow-md)'
+        playerEl.style.transition = videoTransition(animationProgress)
+        playerEl.style.transform = 'translate(0, 0) scale(1)'
+        playerEl.style.borderRadius = 'var(--radius-md)'
+        playerEl.style.boxShadow = 'var(--shadow-md)'
 
-        videoEl.ontransitionend = () => {
-          videoEl.ontransitionend = null
+        playerEl.ontransitionend = () => {
+          playerEl.ontransitionend = null
 
-          videoEl.controls = true
-          videoEl.style.transition = ''
-          videoEl.style.transform = ''
+          controlEl.classList.remove('hidden')
+          playerEl.style.transition = ''
+          playerEl.style.transform = ''
 
           miniplayerFullscreenButtonEl.style.opacity = '1'
           miniplayerCloseButtonEl.style.opacity = '1'
@@ -701,7 +690,7 @@ clientProfileSettingsStore.subscribe(() => {
   } else if (backupStateMode === 'Smart') {
     set({
       onvisibilitychange() {
-        if (!document.body.contains(videoEl) || !videoEl.paused) {
+        if (!document.body.contains(playerEl) || !videoEl.paused) {
           return
         }
 
@@ -714,7 +703,7 @@ clientProfileSettingsStore.subscribe(() => {
       },
 
       onbeforeunload() {
-        if (document.body.contains(videoEl)) {
+        if (document.body.contains(playerEl)) {
           const searchParams = storeVideoStateToSearchParams()
 
           sessionStorage.setItem('videoPlayerState', Date.now() + '|' + searchParams)
@@ -795,7 +784,7 @@ requestAnimationFrame(() => {
 
   miniplayerEl.classList.remove('hidden')
   miniplayerEl.style.opacity = '1'
-  miniplayerEl.prepend(videoEl)
+  miniplayerEl.prepend(playerEl)
 
   miniplayerFullscreenButtonEl.style.opacity = '1'
   miniplayerCloseButtonEl.style.opacity = '1'
@@ -816,7 +805,7 @@ if (isInWatchingPage()) {
 }
 
 window.addEventListener('beforeunload', () => {
-  if (isInWatchingPage() && document.fullscreenElement === videoEl) {
+  if (isInWatchingPage() && document.fullscreenElement === playerEl) {
     const { pathname } = location
     const { src } = videoEl
 
