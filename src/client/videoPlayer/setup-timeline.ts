@@ -4,6 +4,8 @@ import { after } from '~/shared/utils/string'
 
 const [seekerEl, handleEl] = timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement]
 
+export { handleEl }
+
 const allTransition = handleEl.style.transition
 const widthHeightTransition = after(handleEl.style.transition, ', ')
 

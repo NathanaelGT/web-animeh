@@ -1,5 +1,5 @@
 import { playerEl, iconsEl } from '../elements'
-import { moduleChild } from './util'
+import { moduleChild, updateTooltip } from './util'
 
 playerEl.addEventListener('fullscreenchange', () => {
   moduleChild(
@@ -8,10 +8,16 @@ playerEl.addEventListener('fullscreenchange', () => {
   )
 })
 
-export function toggleFullscreen() {
-  if (document.fullscreenElement === playerEl) {
-    document.exitFullscreen()
-  } else {
-    playerEl.requestFullscreen()
-  }
+export async function toggleFullscreen() {
+  const promise =
+    document.fullscreenElement === playerEl
+      ? document.exitFullscreen()
+      : playerEl.requestFullscreen()
+
+  await promise
+
+  updateTooltip(
+    'fullscreen',
+    `${document.fullscreenElement === playerEl ? 'Exit f' : 'F'}ullscreen`,
+  )
 }

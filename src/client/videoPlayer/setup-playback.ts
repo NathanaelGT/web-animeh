@@ -1,6 +1,6 @@
 import { videoEl, iconsEl } from '~c/elements'
 import { toggleFullscreen } from './setup-fullscreen'
-import { moduleChild } from './util'
+import { moduleChild, updateTooltip } from './util'
 
 videoEl.addEventListener('play', () => {
   moduleChild('playback', iconsEl.pause)
@@ -28,7 +28,9 @@ videoEl.addEventListener('click', () => {
 export function togglePlayback() {
   if (videoEl.paused || videoEl.ended) {
     videoEl.play()
+    updateTooltip('playback', 'Pause')
   } else {
     videoEl.pause()
+    updateTooltip('playback', 'Play')
   }
 }

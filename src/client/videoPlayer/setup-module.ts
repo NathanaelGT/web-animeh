@@ -2,24 +2,28 @@ import { leftControlEl, centerControlEl, rightControlEl, iconsEl } from '~c/elem
 import { toggleFullscreen } from './setup-fullscreen'
 import { togglePlayback } from './setup-playback'
 import { timeEl } from './setup-timeline'
+import { attachTooltip } from './setup-tooltip'
 import { toggleMute, volumeSliderEl } from './setup-volume'
 
 export const controlModule = (() => {
-  const module = {
-    playback: el(iconsEl.play, togglePlayback),
+  const playback = el(iconsEl.play, togglePlayback)
+  const volume = el(iconsEl.volume.high, toggleMute)
+  const time = timeEl
+  const fullscreen = el(iconsEl.maximize, toggleFullscreen)
 
-    volume: el(iconsEl.volume.high, toggleMute),
+  leftControlEl.append(group(playback), group([volume, volumeSliderEl]))
+  centerControlEl.append(group(time))
+  rightControlEl.append(group(fullscreen))
 
-    time: timeEl,
-
-    fullscreen: el(iconsEl.maximize, toggleFullscreen),
+  return {
+    el: { playback, volume, time, fullscreen },
+    tooltip: {
+      playback: attachTooltip<'Play' | 'Pause'>(playback, 'Play'),
+      volume: attachTooltip<'Mute' | 'Unmute'>(volume, 'Mute'),
+      volumeSlider: attachTooltip(volumeSliderEl, 'Volume'),
+      fullscreen: attachTooltip<'Fullscreen' | 'Exit fullscreen'>(fullscreen, 'Fullscreen'),
+    },
   }
-
-  leftControlEl.append(group(module.playback), group([module.volume, volumeSliderEl]))
-  centerControlEl.append(group(module.time))
-  rightControlEl.append(group(module.fullscreen))
-
-  return module
 
   function el(defaultIcon: SVGElement, onClick: () => void) {
     const element = div()

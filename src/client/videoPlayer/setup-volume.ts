@@ -1,5 +1,5 @@
 import { videoEl, iconsEl } from '~c/elements'
-import { moduleChild } from './util'
+import { moduleChild, updateTooltip } from './util'
 
 videoEl.addEventListener('volumechange', () => {
   const volume = videoEl.volume
@@ -35,4 +35,6 @@ volumeSliderEl.addEventListener('input', () => {
 
 export function toggleMute() {
   videoEl.muted = !videoEl.muted
+
+  updateTooltip('volume', videoEl.muted ? 'Unmute' : 'Mute')
 }
