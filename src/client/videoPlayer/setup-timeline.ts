@@ -1,6 +1,7 @@
 import { videoEl, timelineEl } from '~c/elements'
 import { clamp } from '~/shared/utils/number'
 import { after } from '~/shared/utils/string'
+import { controlState } from './setup-player'
 
 const [seekerEl, handleEl] = timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement]
 
@@ -91,6 +92,12 @@ videoEl.addEventListener('loadedmetadata', () => {
 })
 
 videoEl.addEventListener('timeupdate', () => {
+  if (controlState.isVisible) {
+    updateTimeline()
+  }
+})
+
+export function updateTimeline() {
   const time = videoEl.currentTime
   const second = Math.floor(time)
 
@@ -100,7 +107,7 @@ videoEl.addEventListener('timeupdate', () => {
   }
 
   updateSeeker(time)
-})
+}
 
 function updateTime(seconds: number) {
   const isNegative = timeSignEl.textContent === '-'
