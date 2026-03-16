@@ -32,7 +32,7 @@ timeEl.addEventListener('click', () => {
     timeSignEl.textContent = '-'
   }
 
-  timeStartEl.textContent = updateTime(Math.floor(videoEl.currentTime))
+  timeStartEl.textContent = updateTime(videoEl.currentTime)
 })
 
 let isDragging = false
@@ -52,7 +52,7 @@ timelineEl.addEventListener('mousedown', event => {
   const newTime = getScrubTime(event)
 
   videoEl.currentTime = newTime
-  timeStartEl.textContent = updateTime(Math.floor(newTime))
+  timeStartEl.textContent = updateTime(newTime)
   handleEl.classList.add('hover')
 
   handleEl.style.transition = widthHeightTransition
@@ -69,7 +69,7 @@ window.addEventListener('mousemove', event => {
 
   const newTime = getScrubTime(event)
 
-  timeStartEl.textContent = updateTime(Math.floor(newTime))
+  timeStartEl.textContent = updateTime(newTime)
   updateSeeker(videoEl.currentTime)
 
   const now = performance.now()
@@ -93,7 +93,7 @@ videoEl.addEventListener('loadedmetadata', () => {
   lastSecond = 0
 
   timeStartEl.textContent = '0:00'
-  timeEndEl.textContent = updateTime(Math.floor(videoEl.duration))
+  timeEndEl.textContent = updateTime(videoEl.duration)
 })
 
 videoEl.addEventListener('timeupdate', () => {
@@ -115,14 +115,16 @@ export function updateTimeline() {
 }
 
 function updateTime(seconds: number) {
-  const isNegative = timeSignEl.textContent === '-'
-
-  if (isNegative) {
-    seconds = Math.floor(videoEl.duration - seconds)
+  if (timeSignEl.textContent === '-') {
+    return formatTime(videoEl.duration - seconds)
   }
 
+  return formatTime(seconds)
+}
+
+function formatTime(seconds: number) {
   const minutes = Math.floor(seconds / 60)
-  const remainingSeconds = seconds % 60
+  const remainingSeconds = Math.floor(seconds % 60)
 
   return minutes + ':' + remainingSeconds.toString().padStart(2, '0')
 }
