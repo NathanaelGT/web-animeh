@@ -388,26 +388,25 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       return
     }
 
-    const containerBounding = container.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
 
     if (forceUseMiniplayer || lastPathIdentifier !== pathIdentifier()) {
       lastPathIdentifier = pathIdentifier()
 
-      const miniplayerBounding = miniplayerEl.getBoundingClientRect()
-      if (miniplayerBounding.width) {
+      const miniplayerRect = miniplayerEl.getBoundingClientRect()
+      if (miniplayerRect.width) {
         miniplayerFullscreenButtonEl.style.opacity = '0'
         miniplayerCloseButtonEl.style.opacity = '0'
 
-        const playerBounding = playerEl.getBoundingClientRect()
+        const playerRect = playerEl.getBoundingClientRect()
 
         const animationProgress =
           1 -
-          (playerBounding.width - miniplayerBounding.width) /
-            (containerBounding.width - miniplayerBounding.width)
+          (playerRect.width - miniplayerRect.width) / (containerRect.width - miniplayerRect.width)
 
-        const deltaX = containerBounding.left - miniplayerBounding.left
-        const deltaY = containerBounding.top - miniplayerBounding.top
-        const deltaS = containerBounding.width / miniplayerBounding.width
+        const deltaX = containerRect.left - miniplayerRect.left
+        const deltaY = containerRect.top - miniplayerRect.top
+        const deltaS = containerRect.width / miniplayerRect.width
 
         controlEl.classList.add('hidden')
         playerEl.style.transition = videoTransition(animationProgress)
@@ -415,13 +414,8 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         playerEl.style.borderRadius = '0'
         playerEl.style.boxShadow = '0'
 
-        playerEl.ontransitionend = function onTransitionEnd() {
-          // ada race condition transitionend dipanggil padahal masih ditengah-tengah animasi
-          // jadi buat ngakalinnya dicek dulu widthnya, kalo belum sama dengan container berarti masih dalam proses animasi
-          const videoBounding = playerEl.getBoundingClientRect()
-          if (videoBounding.width !== containerBounding.width) {
-            playerEl.ontransitionend = onTransitionEnd
-
+        playerEl.ontransitionend = event => {
+          if (event.propertyName !== 'transform') {
             return
           }
 
@@ -636,7 +630,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
         miniplayerCloseButtonEl.click()
       }
 
-      const playerBounding = videoEl.getBoundingClientRect()
+      const videoRect = videoEl.getBoundingClientRect()
 
       miniplayerEl.ontransitionend = null
       miniplayerEl.classList.remove('hidden')
@@ -649,18 +643,18 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       const miniplayerTop =
         innerHeight - parseInt(miniplayerStyle.height) - parseInt(miniplayerStyle.bottom)
 
-      const deltaX = playerBounding.left - miniplayerLeft
-      const deltaY = playerBounding.top - miniplayerTop
-      const deltaS = playerBounding.width / miniplayerWidth
+      const deltaX = videoRect.left - miniplayerLeft
+      const deltaY = videoRect.top - miniplayerTop
+      const deltaS = videoRect.width / miniplayerWidth
 
       controlEl.classList.add('hidden')
       playerEl.style.transition = ''
       playerEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${deltaS})`
 
       requestAnimationFrame(() => {
-        const videoBounding = playerEl.getBoundingClientRect()
+        const playerRect = playerEl.getBoundingClientRect()
 
-        const animationProgress = videoBounding.width / containerBounding.width
+        const animationProgress = playerRect.width / containerRect.width
 
         playerEl.style.transition = videoTransition(animationProgress)
         playerEl.style.transform = 'translate(0, 0) scale(1)'

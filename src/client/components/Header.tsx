@@ -11,8 +11,11 @@ import {
 import { ProfileSwitcher } from '@/header/ProfileSwitcher'
 import { Search, HEADER_CLASS_ON_SEARCH_INPUT_FOCUS } from '@/header/Search'
 import { Button } from '@/ui/button'
+import { createReactiveDOMRect } from '../utils/reactiveRect'
 
 export const HYBRID_HEADER_CLASS_ON_HIDDEN = 'translate-y-[calc(-100%+1px)]'
+
+const bodyRect = createReactiveDOMRect(document.body)
 
 export function Header() {
   const headerPosition = useStore(clientProfileSettingsStore, store => store.headerPosition)
@@ -57,9 +60,7 @@ export function Header() {
 
     newSubscriberHandlerRef.current = () => {}
 
-    const getWindowY = () => document.body.getBoundingClientRect().y
-
-    headerLatestYStore.setState(getWindowY)
+    headerLatestYStore.setState(() => bodyRect.y)
     let headerTop = -1
 
     const scrollHandler = () => {
@@ -74,8 +75,7 @@ export function Header() {
         return
       }
 
-      const currentY = getWindowY()
-      const top = headerLatestYStore.state < currentY ? 0 : header.offsetHeight
+      const top = headerLatestYStore.state < bodyRect.y ? 0 : header.offsetHeight
 
       if (headerTop !== top) {
         const getMethod = (condition: boolean) => (condition ? 'remove' : 'add')
@@ -86,7 +86,7 @@ export function Header() {
       }
 
       headerTop = top
-      headerLatestYStore.setState(() => currentY)
+      headerLatestYStore.setState(() => bodyRect.y)
     }
 
     document.addEventListener('scroll', scrollHandler, { passive: true })

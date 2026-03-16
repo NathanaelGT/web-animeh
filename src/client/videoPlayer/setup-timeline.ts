@@ -1,4 +1,5 @@
 import { videoEl, timelineEl } from '~c/elements'
+import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import { clamp } from '~/shared/utils/number'
 import { after } from '~/shared/utils/string'
 import { controlState } from './setup-player'
@@ -37,11 +38,11 @@ timeEl.addEventListener('click', () => {
 
 let isDragging = false
 
-function getScrubTime(event: MouseEvent) {
-  const rect = timelineEl.getBoundingClientRect()
+const timelineRect = createReactiveDOMRect(timelineEl)
 
-  const x = event.clientX - rect.left
-  const width = rect.width
+function getScrubTime(event: MouseEvent) {
+  const x = event.clientX - timelineRect.left
+  const width = timelineRect.width
 
   return clamp(x / width, 0, 1) * videoEl.duration
 }

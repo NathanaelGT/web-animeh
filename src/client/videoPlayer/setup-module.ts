@@ -1,4 +1,5 @@
 import { leftControlEl, centerControlEl, rightControlEl, iconsEl } from '~c/elements'
+import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import { toggleFullscreen } from './setup-fullscreen'
 import { togglePlayback } from './setup-playback'
 import { timeEl } from './setup-timeline'
@@ -55,9 +56,10 @@ export const controlModule = (() => {
         const wrapper = div(classList.join(' ') + ' flex items-center gap-3')
         wrapper.append(...el)
 
+        const wrapperRect = createReactiveDOMRect(wrapper)
+
         element.addEventListener('mouseenter', () => {
-          const target = wrapper.getBoundingClientRect().width
-          element.style.width = `calc(${target}px + var(--spacing) * 2)` // padding
+          element.style.width = `calc(${wrapperRect.width}px + var(--spacing) * 2)` // padding
         })
 
         element.addEventListener('mouseleave', () => {
