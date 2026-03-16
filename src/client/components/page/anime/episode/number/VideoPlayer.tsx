@@ -13,7 +13,7 @@ import { clientProfileSettingsStore } from '~c/stores'
 import { rpc } from '~c/trpc'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
-import { toggleMute, toggleFullscreen, togglePlayback } from '~c/videoPlayer/setup'
+import { toggleMute, toggleFullscreen, togglePlayback, setChapter } from '~c/videoPlayer/setup'
 import { toast } from '@/ui/use-toast'
 import { router } from '~/router'
 import { searchEpisode } from '~/shared/utils/episode'
@@ -248,6 +248,7 @@ const setupVideoPlayer = (
   videoEl.onloadstart = async () => {
     videoEl.ontimeupdate = null
     skips = null
+    setChapter([])
 
     const { src } = videoEl
     const slashLastIndex = src.lastIndexOf('/')
@@ -267,6 +268,33 @@ const setupVideoPlayer = (
 
           return
         }
+
+        setChapter(
+          normalizedSkips.map(skip => {
+            let title: string
+            let color: string
+
+            if (skip.type === 'op') {
+              title = 'Opening'
+              color = 'oklch(65% 0.22 310)'
+            } else if (skip.type === 'ed') {
+              title = 'Ending'
+              color = 'oklch(60% 0.18 260)'
+            } else {
+              title = 'Recap'
+              color = 'oklch(70% 0.10 85)'
+            }
+
+            const durationDiff = duration - skip.episodeLength
+
+            return {
+              title,
+              start: skip.startTime + durationDiff,
+              end: skip.endTime + durationDiff,
+              color,
+            }
+          }),
+        )
 
         videoEl.currentTime = duration - normalizedSkips[0]!.episodeLength
 

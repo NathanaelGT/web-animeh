@@ -2,8 +2,13 @@ import { videoEl, timelineEl } from '~c/elements'
 import { clamp } from '~/shared/utils/number'
 import { after } from '~/shared/utils/string'
 import { controlState } from './setup-player'
+import { attachTooltip } from './setup-tooltip'
 
-const [seekerEl, handleEl] = timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement]
+const [seekerEl, chapterContainerEl, handleEl] = timelineEl.children as unknown as [
+  HTMLDivElement,
+  HTMLDivElement,
+  HTMLDivElement,
+]
 
 export { handleEl }
 
@@ -131,4 +136,27 @@ function updateSeeker(currentTime: number) {
   const position = percentage * containerWidth
 
   handleEl.style.transform = `translate(calc(${position}px - var(--x)), calc(-50% - 2px))`
+}
+
+type Chapter = {
+  title: string
+  start: number
+  end: number
+  color: string
+}
+
+export function setChapter(chapters: Chapter[]) {
+  chapterContainerEl.replaceChildren(
+    ...chapters.map(chapter => {
+      const el = document.createElement('div')
+      el.className = 'absolute top-0 h-full'
+      el.style.left = (chapter.start / videoEl.duration) * 100 + '%'
+      el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
+      el.style.backgroundColor = chapter.color
+
+      attachTooltip(el, chapter.title)
+
+      return el
+    }),
+  )
 }
