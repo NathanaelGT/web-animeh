@@ -11,8 +11,6 @@ const [seekerEl, chapterContainerEl, handleEl] = timelineEl.children as unknown 
   HTMLDivElement,
 ]
 
-export { handleEl }
-
 const allTransition = handleEl.style.transition
 const widthHeightTransition = after(handleEl.style.transition, ', ')
 
@@ -103,6 +101,13 @@ videoEl.addEventListener('timeupdate', () => {
   }
 })
 
+attachTooltip(timelineEl, ({ clientX, ownerRect }) => {
+  const percent = clamp((clientX - ownerRect.left) / ownerRect.width, 0, 1)
+  const seconds = percent * videoEl.duration
+
+  return formatTime(seconds)
+})
+
 export function updateTimeline() {
   const time = videoEl.currentTime
   const second = Math.floor(time)
@@ -157,7 +162,12 @@ export function setChapter(chapters: Chapter[]) {
       el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
       el.style.backgroundColor = chapter.color
 
-      attachTooltip(el, chapter.title)
+      attachTooltip(el, ({ clientX, ownerRect }) => {
+        const percent = (clientX - ownerRect.left) / ownerRect.width
+        const seconds = percent * (chapter.end - chapter.start) + chapter.start
+
+        return chapter.title + '\n' + formatTime(seconds)
+      })
 
       return el
     }),

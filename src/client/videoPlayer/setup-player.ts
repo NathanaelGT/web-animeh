@@ -1,5 +1,6 @@
 import { controlEl, playerEl } from '~c/elements'
 import { updateTimeline } from './setup-timeline'
+import { scheduleHide } from './setup-tooltip'
 
 let isHoveringVideo = false
 let isHoveringControls = false
@@ -22,8 +23,7 @@ const showControls = () => {
 
   if (isHoveringVideo && !isHoveringControls) {
     hideTimer = setTimeout(() => {
-      controlState.isVisible = false
-      controlEl.style.opacity = '0'
+      hideControl()
       playerEl.style.cursor = 'none'
     }, 2000)
   }
@@ -44,8 +44,7 @@ playerEl.addEventListener('mouseleave', () => {
 
   setTimeout(() => {
     if (!isHoveringVideo && !isHoveringControls) {
-      controlState.isVisible = false
-      controlEl.style.opacity = '0'
+      hideControl()
       playerEl.style.cursor = 'default'
     }
   }, 500)
@@ -60,3 +59,10 @@ controlEl.addEventListener('mouseleave', () => {
   isHoveringControls = false
   showControls()
 })
+
+function hideControl() {
+  controlState.isVisible = false
+  controlEl.style.opacity = '0'
+
+  scheduleHide()
+}
