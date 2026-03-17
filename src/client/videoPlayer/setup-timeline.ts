@@ -1,4 +1,5 @@
 import { videoEl, timelineWrapperEl, timelineEl } from '~c/elements'
+import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import {
   STORYBOARD_FRAME_WIDTH,
@@ -47,18 +48,15 @@ export function setChapter(newChapters: Chapter[]) {
 
   chapterContainerEl.replaceChildren(
     ...chapters.map(chapter => {
-      const el = document.createElement('div')
-      el.className = 'absolute top-0 h-full overflow-hidden'
+      const el = createElement('absolute top-0 h-full overflow-hidden')
       el.style.left = (chapter.start / videoEl.duration) * 100 + '%'
       el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
 
-      const fg = document.createElement('div')
-      fg.className = 'w-full h-full absolute inset-0 will-change-transform'
+      const fg = createElement('w-full h-full absolute inset-0 will-change-transform')
       fg.style.transform = 'translateX(-100%)'
       fg.style.backgroundColor = chapter.color
 
-      const bg = document.createElement('div')
-      bg.className = 'w-full h-full absolute inset-0'
+      const bg = createElement('w-full h-full absolute inset-0')
       bg.style.backgroundColor = chapter.color
       bg.style.opacity = '0.5'
 
@@ -83,8 +81,7 @@ const timeSignEl = document.createTextNode('')
 const timeStartEl = document.createTextNode('0:00')
 const timeEndEl = document.createTextNode('0:00')
 
-export const timeEl = document.createElement('div')
-timeEl.className = 'flex items-center gap-1 px-2 py-1'
+export const timeEl = createElement('flex items-center gap-1 px-2 py-1')
 timeEl.append(timeSignEl, timeStartEl, ' / ', timeEndEl)
 
 timeEl.addEventListener('click', () => {

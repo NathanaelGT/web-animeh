@@ -1,4 +1,5 @@
 import { videoEl, iconsEl } from '~c/elements'
+import { createElement } from '~c/utils/dom'
 import { moduleChild, updateTooltip } from './util'
 
 videoEl.addEventListener('volumechange', () => {
@@ -20,14 +21,15 @@ videoEl.addEventListener('volumechange', () => {
   volumeSliderEl.valueAsNumber = volume
 })
 
-export const volumeSliderEl = document.createElement('input')
+export const volumeSliderEl = createElement(
+  'py-1flex flex h-1 w-24 cursor-pointer appearance-none items-center gap-1 rounded-full bg-gray-50 outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-50',
+  'input',
+)
 volumeSliderEl.type = 'range'
 volumeSliderEl.min = '0'
 volumeSliderEl.max = '1'
 volumeSliderEl.step = '0.01'
 volumeSliderEl.valueAsNumber = videoEl.volume
-volumeSliderEl.className =
-  'py-1flex flex h-1 w-24 cursor-pointer appearance-none items-center gap-1 rounded-full bg-gray-50 outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-50'
 
 volumeSliderEl.addEventListener('input', () => {
   videoEl.volume = volumeSliderEl.valueAsNumber

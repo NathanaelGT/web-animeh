@@ -1,4 +1,5 @@
 import { leftControlEl, centerControlEl, rightControlEl, iconsEl } from '~c/elements'
+import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import { toggleFullscreen } from './setup-fullscreen'
 import { togglePlayback } from './setup-playback'
@@ -27,7 +28,7 @@ export const controlModule = (() => {
   }
 
   function el(defaultIcon: SVGElement, onClick: () => void) {
-    const element = div()
+    const element = createElement()
 
     element.append(defaultIcon)
     element.addEventListener('click', onClick)
@@ -40,7 +41,7 @@ export const controlModule = (() => {
 
   function group(...elements: AtLeastOne<GroupElement>) {
     const classList = ['cursor-pointer', 'rounded-full', 'p-1', 'hover:bg-gray-50/10']
-    const element = div(
+    const element = createElement(
       'flex items-center rounded-full bg-black/40 p-1 has-[>:nth-child(2)]:*:px-3',
     )
 
@@ -53,7 +54,7 @@ export const controlModule = (() => {
         element.classList.add('w-10', 'overflow-hidden')
         element.style.transition = 'width 0.2s ease-in-out'
 
-        const wrapper = div(classList.join(' ') + ' flex items-center gap-3')
+        const wrapper = createElement(classList.join(' ') + ' flex items-center gap-3')
         wrapper.append(...el)
 
         const wrapperRect = createReactiveDOMRect(wrapper)
@@ -73,13 +74,5 @@ export const controlModule = (() => {
     }
 
     return element
-  }
-
-  function div(className = '') {
-    const div = document.createElement('div')
-
-    div.className = className
-
-    return div
   }
 })()

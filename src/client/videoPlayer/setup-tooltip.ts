@@ -1,10 +1,11 @@
 import { controlEl, playerEl, timelineEl } from '~c/elements'
+import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import { clamp } from '~/shared/utils/number'
 
-const tooltip = document.createElement('div')
-tooltip.className =
-  'fixed text-md text-white bg-background px-2 py-1 rounded-md pointer-events-none z-1 whitespace-pre-wrap text-center'
+const tooltip = createElement(
+  'fixed text-md text-white bg-background px-2 py-1 rounded-md pointer-events-none z-1 whitespace-pre-wrap text-center',
+)
 
 tooltip.style.left = '0'
 tooltip.style.bottom = '0'
