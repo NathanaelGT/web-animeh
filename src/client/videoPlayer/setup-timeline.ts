@@ -22,6 +22,12 @@ const [storyboardEl, timePreviewEl] = storyboardWrapperEl.children as unknown as
   HTMLDivElement,
 ]
 
+const seekerColor = 'var(--color-red-600)'
+seekerEl.style.backgroundColor = seekerColor
+
+let lastHandleColor = seekerColor
+handleEl.style.backgroundColor = lastHandleColor
+
 type Chapter = {
   title: string
   start: number
@@ -29,16 +35,37 @@ type Chapter = {
   color: string
 }
 
-let chapters: Chapter[] = []
+type InternalChapter = Chapter & {
+  fg: HTMLDivElement
+  bg: HTMLDivElement
+  state?: 1 | 2 | 3
+}
+
+let chapters: InternalChapter[] = []
 export function setChapter(newChapters: Chapter[]) {
-  chapters = newChapters
+  chapters = newChapters as InternalChapter[]
+
   chapterContainerEl.replaceChildren(
     ...chapters.map(chapter => {
       const el = document.createElement('div')
-      el.className = 'absolute top-0 h-full'
+      el.className = 'absolute top-0 h-full overflow-hidden'
       el.style.left = (chapter.start / videoEl.duration) * 100 + '%'
       el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
-      el.style.backgroundColor = chapter.color
+
+      const fg = document.createElement('div')
+      fg.className = 'w-full h-full absolute inset-0 will-change-transform'
+      fg.style.transform = 'translateX(-100%)'
+      fg.style.backgroundColor = chapter.color
+
+      const bg = document.createElement('div')
+      bg.className = 'w-full h-full absolute inset-0'
+      bg.style.backgroundColor = chapter.color
+      bg.style.opacity = '0.5'
+
+      el.append(fg, bg)
+
+      chapter.fg = fg
+      chapter.bg = bg
 
       return el
     }),
@@ -241,6 +268,41 @@ export function updateTimeline() {
   }
 
   updateSeeker(time)
+
+  let currentColor = seekerColor
+  for (let i = 0; i < chapters.length; i++) {
+    const chapter = chapters[i]!
+
+    if (second > chapter.end) {
+      if (chapter.state !== 1) {
+        chapter.state = 1
+        chapter.fg.style.transform = 'translateX(0%)'
+        chapter.bg.style.opacity = '1'
+      }
+    } else if (second < chapter.start) {
+      if (chapter.state !== 2) {
+        chapter.state = 2
+        chapter.fg.style.transform = 'translateX(-100%)'
+        chapter.bg.style.opacity = '0.5'
+      }
+    } else {
+      const percent = (second - chapter.start) / (chapter.end - chapter.start)
+
+      chapter.fg.style.transform = `translateX(-${100 - percent * 100}%)`
+
+      if (chapter.state !== 3) {
+        chapter.state = 3
+        chapter.bg.style.opacity = '0.5'
+      }
+
+      currentColor = chapter.color
+    }
+  }
+
+  if (lastHandleColor !== currentColor) {
+    lastHandleColor = currentColor
+    handleEl.style.backgroundColor = currentColor
+  }
 }
 
 function updateTime(seconds: number) {
