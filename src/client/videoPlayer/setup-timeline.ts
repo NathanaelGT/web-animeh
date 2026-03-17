@@ -1,4 +1,4 @@
-import { videoEl, timelineEl } from '~c/elements'
+import { videoEl, timelineWrapperEl, timelineEl } from '~c/elements'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import {
   STORYBOARD_FRAME_WIDTH,
@@ -13,14 +13,37 @@ import {
 import { clamp } from '~/shared/utils/number'
 import { after } from '~/shared/utils/string'
 import { controlState } from './setup-player'
-import { attachTooltip } from './setup-tooltip'
 
-const [seekerEl, chapterContainerEl, handleEl, storyboardEl] = timelineEl.children as unknown as [
-  HTMLDivElement,
-  HTMLDivElement,
+const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
+  timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
+
+const [storyboardEl, timePreviewEl] = storyboardWrapperEl.children as unknown as [
   HTMLDivElement,
   HTMLDivElement,
 ]
+
+type Chapter = {
+  title: string
+  start: number
+  end: number
+  color: string
+}
+
+let chapters: Chapter[] = []
+export function setChapter(newChapters: Chapter[]) {
+  chapters = newChapters
+  chapterContainerEl.replaceChildren(
+    ...chapters.map(chapter => {
+      const el = document.createElement('div')
+      el.className = 'absolute top-0 h-full'
+      el.style.left = (chapter.start / videoEl.duration) * 100 + '%'
+      el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
+      el.style.backgroundColor = chapter.color
+
+      return el
+    }),
+  )
+}
 
 const allTransition = handleEl.style.transition
 const widthHeightTransition = after(handleEl.style.transition, ',')
@@ -60,7 +83,7 @@ function getScrubTime(event: PointerEvent) {
   return clamp(x / width, 0, 1) * videoEl.duration
 }
 
-timelineEl.addEventListener('pointerdown', event => {
+timelineWrapperEl.addEventListener('pointerdown', event => {
   isDragging = true
 
   const newTime = getScrubTime(event)
@@ -72,7 +95,7 @@ timelineEl.addEventListener('pointerdown', event => {
   handleEl.style.transition = widthHeightTransition
   updateSeeker(videoEl.currentTime)
 
-  storyboardEl.style.opacity = '1'
+  showStoryboardWrapper()
 })
 
 let lastUpdate = 0
@@ -106,28 +129,37 @@ window.addEventListener('pointerup', () => {
     isDragging = false
     handleEl.classList.remove('hover')
     handleEl.style.transition = allTransition
-    storyboardEl.style.opacity = '0'
+    storyboardWrapperEl.style.opacity = '0'
   }
 })
 
-timelineEl.addEventListener('pointerenter', () => {
-  storyboardEl.style.opacity = '1'
-})
+timelineWrapperEl.addEventListener('pointerenter', showStoryboardWrapper)
 
 let hideTimer: NodeJS.Timeout | null = null
-timelineEl.addEventListener('pointerleave', () => {
+timelineWrapperEl.addEventListener('pointerleave', () => {
   if (isDragging) {
     return
   }
 
   hideTimer ??= setTimeout(() => {
     hideTimer = null
-    storyboardEl.style.opacity = '0'
+    storyboardWrapperEl.style.opacity = '0'
   }, 150)
 })
 
+function showStoryboardWrapper() {
+  storyboardWrapperEl.classList.replace('hidden', 'flex')
+  storyboardWrapperEl.style.opacity = '1'
+}
+
+storyboardWrapperEl.addEventListener('transitionend', () => {
+  if (storyboardWrapperEl.style.opacity === '0') {
+    storyboardEl.classList.replace('flex', 'hidden')
+  }
+})
+
 let timelinePointerMoveRaf = 0
-timelineEl.addEventListener('pointermove', event => {
+timelineWrapperEl.addEventListener('pointermove', event => {
   timelinePointerMoveRaf ||= requestAnimationFrame(() => {
     timelinePointerMoveRaf = 0
     updateStoryboard(event)
@@ -160,9 +192,24 @@ function updateStoryboard(event: PointerEvent) {
   const y = Math.floor(localFrameIndex / STORYBOARD_GRID_ROWS)
   const posX = x * STORYBOARD_FRAME_PERFECT_WIDTH
   const posY = y * STORYBOARD_FRAME_PERFECT_HEIGHT
-
   storyboardEl.style.backgroundPosition = `-${posX}px -${posY}px`
-  storyboardEl.style.transform = `translateX(${clamp(relX - STORYBOARD_FRAME_PERFECT_WIDTH / 2, 0, timelineRect.width - STORYBOARD_FRAME_PERFECT_WIDTH)}px)`
+
+  const centeredX = relX - STORYBOARD_FRAME_PERFECT_WIDTH / 2
+  const maxX = timelineRect.width - STORYBOARD_FRAME_PERFECT_WIDTH
+  storyboardWrapperEl.style.transform = `translateX(${clamp(centeredX, 0, maxX)}px)`
+
+  let timePreview = formatTime(percent * videoEl.duration)
+  for (let i = 0; i < chapters.length; i++) {
+    const chapter = chapters[i]!
+
+    if (hoverTimeSeconds >= chapter.start && hoverTimeSeconds <= chapter.end) {
+      timePreview += ' - ' + chapter.title
+
+      break
+    }
+  }
+
+  timePreviewEl.textContent = timePreview
 }
 
 function applyStoryboardUrl(gridIndex: number) {
@@ -182,13 +229,6 @@ videoEl.addEventListener('timeupdate', () => {
   if (controlState.isVisible) {
     updateTimeline()
   }
-})
-
-attachTooltip(timelineEl, ({ clientX, ownerRect }) => {
-  const percent = clamp((clientX - ownerRect.left) / ownerRect.width, 0, 1)
-  const seconds = percent * videoEl.duration
-
-  return formatTime(seconds)
 })
 
 export function updateTimeline() {
@@ -227,32 +267,4 @@ function updateSeeker(currentTime: number) {
   const position = percentage * containerWidth
 
   handleEl.style.transform = `translate(calc(${position}px - var(--x)), calc(-50% - 2px))`
-}
-
-type Chapter = {
-  title: string
-  start: number
-  end: number
-  color: string
-}
-
-export function setChapter(chapters: Chapter[]) {
-  chapterContainerEl.replaceChildren(
-    ...chapters.map(chapter => {
-      const el = document.createElement('div')
-      el.className = 'absolute top-0 h-full'
-      el.style.left = (chapter.start / videoEl.duration) * 100 + '%'
-      el.style.width = ((chapter.end - chapter.start) / videoEl.duration) * 100 + '%'
-      el.style.backgroundColor = chapter.color
-
-      attachTooltip(el, ({ clientX, ownerRect }) => {
-        const percent = (clientX - ownerRect.left) / ownerRect.width
-        const seconds = percent * (chapter.end - chapter.start) + chapter.start
-
-        return formatTime(seconds) + ' - ' + chapter.title
-      })
-
-      return el
-    }),
-  )
 }

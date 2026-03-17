@@ -22,28 +22,37 @@
           class="control absolute right-0 bottom-0 left-0 flex h-14 items-center justify-between gap-8 p-4"
           style="opacity: 0; transition: opacity 0.2s ease-in-out"
         >
+          <!-- kalo pake px, bakal jadi padding-inline. dan itu gatau kenapa ngebuat jadi ga works -->
           <div
-            class="group absolute -top-[4px] right-[16px] left-[16px] h-[4px] cursor-pointer rounded-full bg-gray-700"
+            class="group absolute -top-[12px] right-[16px] left-[16px] z-2 cursor-pointer"
+            style="padding: 8px 0 6px"
           >
-            <div
-              class="h-full origin-left bg-red-600 will-change-transform"
-              style="transform: scaleX(0)"
-            ></div>
-            <div class="absolute inset-0"></div>
-            <div
-              class="absolute left-0 h-[12px] w-[12px] rounded-full bg-red-600 will-change-transform [--h:12px] [--x:6px] group-hover:h-[18px] group-hover:w-[18px] group-hover:[--x:9px] [&.hover]:h-[18px] [&.hover]:w-[18px] [&.hover]:[--x:9px]"
-              style="
-                transform: translate(calc(var(--x) * -1), calc(-50% - 2px));
-                transition:
-                  transform 0.2s ease-in-out,
-                  width 0.2s ease-in-out,
-                  height 0.2s ease-in-out;
-              "
-            ></div>
-            <div
-              class="pointer-events-none absolute bottom-[calc(20px+2rem)] rounded-sm border border-border bg-background bg-no-repeat will-change-[background-position] will-change-transform"
-              style="opacity: 0; transition: opacity 0.2s ease-in-out"
-            ></div>
+            <div class="relative h-[4px] w-full rounded-full bg-gray-700">
+              <div
+                class="h-full origin-left bg-red-600 will-change-transform"
+                style="transform: scaleX(0)"
+              ></div>
+              <div class="absolute inset-0"></div>
+              <div
+                class="absolute left-0 h-[12px] w-[12px] rounded-full bg-red-600 will-change-transform [--h:12px] [--x:6px] group-hover:h-[18px] group-hover:w-[18px] group-hover:[--x:9px] [&.hover]:h-[18px] [&.hover]:w-[18px] [&.hover]:[--x:9px]"
+                style="
+                  transform: translate(calc(var(--x) * -1), calc(-50% - 2px));
+                  transition:
+                    transform 0.2s ease-in-out,
+                    width 0.2s ease-in-out,
+                    height 0.2s ease-in-out;
+                "
+              ></div>
+              <div
+                class="pointer-events-none absolute bottom-4 hidden flex-col items-center gap-2 will-change-transform"
+                style="opacity: 0; transition: opacity 0.2s ease-in-out"
+              >
+                <div
+                  class="rounded-md border border-foreground bg-background bg-no-repeat will-change-[background-position]"
+                ></div>
+                <div class="text-md rounded-full bg-background/75 px-4 py-2 text-white"></div>
+              </div>
+            </div>
           </div>
           <div class="module flex flex-[1_1_calc(1/3*100%)] justify-start gap-4"></div>
           <div class="module flex flex-[1_1_calc(1/3*100%)] justify-center gap-4"></div>
