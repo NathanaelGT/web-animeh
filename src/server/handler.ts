@@ -1,11 +1,12 @@
 import { createBunWSHandler } from 'trpc-bun-adapter'
 import { handleVideoRequest } from '~s/http-handler/video'
 // import { safePath } from '~s/utils/path'
+import { handleStoryboardRequest } from '~s/http-handler/storyboard'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { TRPCRouter } from '~s/router'
 import { createTRPCContext } from '~s/trpc'
 import { basePath } from '~s/utils/path'
-import type { WebSocketData } from './index'
+import type { WebSocketData } from '~s/index'
 
 let indexHtml: ArrayBuffer
 
@@ -38,6 +39,10 @@ export const httpHandler = async (
 
   if (path.startsWith('videos')) {
     return handleVideoRequest(request, path)
+  }
+
+  if (path.startsWith('storyboard')) {
+    return handleStoryboardRequest(path)
   }
 
   if (!Bun.env.PROD && !Bun.argv.includes('--server-only')) {

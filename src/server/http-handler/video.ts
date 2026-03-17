@@ -86,7 +86,7 @@ const getVideoFile = async (
 }
 
 const realVideoDirPathCache = new Map<string, string>()
-const getRealVideoDirPath = async (animeId: string) => {
+export const getRealVideoDirPath = async (animeId: string) => {
   const cache = realVideoDirPathCache.get(animeId)
   if (cache) {
     return [cache, true] as const

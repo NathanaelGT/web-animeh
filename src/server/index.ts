@@ -86,6 +86,7 @@ if (firstTime) {
 
 const server = await (async (): Promise<BunServer> => {
   const serverOption: Bun.Serve.Options<WebSocketData> = {
+    idleTimeout: 180,
     port: Bun.env.PROD || Bun.argv.includes('--server-only') ? 8888 : 8887,
     websocket: argv.log
       ? {
