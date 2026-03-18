@@ -1,4 +1,13 @@
-import { videoEl, timelineWrapperEl, timelineEl } from '~c/elements'
+import {
+  videoEl,
+  timelineWrapperEl,
+  timelineEl,
+  filmstripEl,
+  filmstripTimeWrapperEl,
+  leftControlEl,
+  rightControlEl,
+  centerControlEl,
+} from '~c/elements'
 import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import {
@@ -18,16 +27,68 @@ import { controlState } from './setup-player'
 const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
   timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
 
-const [storyboardEl, timePreviewEl] = storyboardWrapperEl.children as unknown as [
+const [, storyboardEl, timePreviewEl] = storyboardWrapperEl.children as unknown as [
+  HTMLDivElement,
   HTMLDivElement,
   HTMLDivElement,
 ]
+
+const [filmstripTimeEl] = filmstripTimeWrapperEl.children as unknown as [HTMLDivElement]
+
+timelineWrapperEl.style.top = '-12px'
 
 const seekerColor = 'var(--color-red-600)'
 seekerEl.style.backgroundColor = seekerColor
 
 let lastHandleColor = seekerColor
 handleEl.style.backgroundColor = lastHandleColor
+
+let idealWindowFrameCount = 0
+let windowFrameCenter = 0
+
+let filmstripOffset = 0
+const windowFrames: [HTMLDivElement, isVisible?: boolean][] = []
+
+const filmstripObserver = new ResizeObserver(entries => {
+  const entry = entries[0]!
+
+  const { width } = entry.contentRect
+  if (!width) {
+    return
+  }
+
+  // -2 dari setengah widthnya filmstripTimeWrapperEl
+  filmstripOffset = (Math.round(width / 2) % STORYBOARD_FRAME_WIDTH) - 2
+
+  const newIdealWindowFrameCount = Math.ceil(width / 240)
+  if (idealWindowFrameCount === newIdealWindowFrameCount) {
+    return
+  }
+
+  idealWindowFrameCount = newIdealWindowFrameCount
+  windowFrameCenter = Math.floor(idealWindowFrameCount / 2)
+
+  const newCount = idealWindowFrameCount + 2
+
+  while (windowFrames.length < newCount) {
+    const el = createElement('bg-no-repeat flex-none')
+
+    el.style.width = STORYBOARD_FRAME_WIDTH + 'px'
+    el.style.height = STORYBOARD_FRAME_HEIGHT + 'px'
+    el.style.backgroundSize = `${STORYBOARD_FRAME_PERFECT_WIDTH * STORYBOARD_GRID_ROWS}px ${STORYBOARD_FRAME_PERFECT_HEIGHT * STORYBOARD_GRID_COLS}px`
+
+    windowFrames.push([el])
+    filmstripEl.append(el)
+  }
+  while (windowFrames.length > newCount) {
+    const [el] = windowFrames.pop()!
+    filmstripEl.removeChild(el)
+  }
+})
+
+filmstripObserver.observe(filmstripEl)
+
+window.addEventListener('resize', disableFineScrubbing)
 
 type Chapter = {
   title: string
@@ -107,7 +168,7 @@ function getScrubTime(event: PointerEvent) {
   return clamp(x / width, 0, 1) * videoEl.duration
 }
 
-timelineWrapperEl.addEventListener('pointerdown', event => {
+timelineEl.addEventListener('pointerdown', event => {
   isDragging = true
 
   const newTime = getScrubTime(event)
@@ -125,6 +186,71 @@ timelineWrapperEl.addEventListener('pointerdown', event => {
 let lastUpdate = 0
 const THROTTLE_MS = 1000 / 24
 
+function handleVideoPlayWhenFineScrubbing() {
+  videoEl.removeEventListener('play', handleVideoPlayWhenFineScrubbing)
+  window.removeEventListener('keydown', handleWindowKeyDownHandlerWhenFineScrubbing)
+
+  disableFineScrubbing()
+
+  isDragging = false
+}
+
+function handleWindowKeyDownHandlerWhenFineScrubbing(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    handleVideoPlayWhenFineScrubbing()
+    videoEl.play()
+  }
+}
+
+function enableFineScrubbing() {
+  controlState.isFineScrubbing = true
+
+  filmstripEl.classList.replace('hidden', 'flex')
+  filmstripTimeWrapperEl.classList.remove('hidden')
+
+  leftControlEl.style.transform = 'translateY(100%)'
+  centerControlEl.style.transform = 'translateY(100%)'
+  rightControlEl.style.transform = 'translateY(100%)'
+
+  requestAnimationFrame(() => {
+    videoEl.style.filter = 'brightness(.6)'
+    timelineWrapperEl.style.transform = 'translateY(calc(-100% + var(--spacing) * 14 + 18px))'
+    filmstripEl.style.opacity = '1'
+    filmstripTimeWrapperEl.style.opacity = '1'
+    storyboardWrapperEl.style.opacity = '0'
+    videoEl.pause()
+
+    window.addEventListener('keydown', handleWindowKeyDownHandlerWhenFineScrubbing)
+    videoEl.addEventListener('play', handleVideoPlayWhenFineScrubbing)
+  })
+}
+
+function disableFineScrubbing() {
+  controlState.isFineScrubbing = false
+  isDragging = false
+
+  leftControlEl.style.transform = 'none'
+  centerControlEl.style.transform = 'none'
+  rightControlEl.style.transform = 'none'
+  videoEl.style.filter = 'none'
+  timelineWrapperEl.style.transform = 'translateY(0)'
+  filmstripEl.style.opacity = '0'
+  filmstripTimeWrapperEl.style.opacity = '0'
+
+  filmstripEl.ontransitionend = event => {
+    if (event.propertyName === 'opacity' && filmstripEl.style.opacity === '0') {
+      filmstripEl.ontransitionend = null
+      filmstripEl.classList.replace('flex', 'hidden')
+    }
+  }
+  filmstripTimeWrapperEl.ontransitionend = event => {
+    if (event.propertyName === 'opacity' && filmstripEl.style.opacity === '0') {
+      filmstripTimeWrapperEl.ontransitionend = null
+      filmstripTimeWrapperEl.classList.add('hidden')
+    }
+  }
+}
+
 let windowPointerMoveRaf = 0
 window.addEventListener('pointermove', event => {
   if (!isDragging) {
@@ -138,18 +264,31 @@ window.addEventListener('pointermove', event => {
 
     timeStartEl.textContent = updateTime(newTime)
     updateSeeker(videoEl.currentTime)
-    updateStoryboard(event)
 
     const now = performance.now()
     if (now - lastUpdate > THROTTLE_MS) {
       videoEl.currentTime = newTime
       lastUpdate = now
     }
+
+    if (event.y - timelineRect.y < -32) {
+      if (!controlState.isFineScrubbing) {
+        enableFineScrubbing()
+      }
+
+      updateFineScrubbing(event)
+    } else if (controlState.isFineScrubbing) {
+      disableFineScrubbing()
+
+      storyboardWrapperEl.style.opacity = '1'
+
+      updateStoryboard(event)
+    }
   })
 })
 
 window.addEventListener('pointerup', () => {
-  if (isDragging) {
+  if (isDragging && !controlState.isFineScrubbing) {
     isDragging = false
     handleEl.classList.remove('hover')
     handleEl.style.transition = allTransition
@@ -157,11 +296,17 @@ window.addEventListener('pointerup', () => {
   }
 })
 
-timelineWrapperEl.addEventListener('pointerenter', showStoryboardWrapper)
+timelineEl.addEventListener('pointerenter', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
+  showStoryboardWrapper()
+})
 
 let hideTimer: NodeJS.Timeout | null = null
-timelineWrapperEl.addEventListener('pointerleave', () => {
-  if (isDragging) {
+timelineEl.addEventListener('pointerleave', () => {
+  if (isDragging || controlState.isFineScrubbing) {
     return
   }
 
@@ -183,7 +328,11 @@ storyboardWrapperEl.addEventListener('transitionend', () => {
 })
 
 let timelinePointerMoveRaf = 0
-timelineWrapperEl.addEventListener('pointermove', event => {
+timelineEl.addEventListener('pointermove', event => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   timelinePointerMoveRaf ||= requestAnimationFrame(() => {
     timelinePointerMoveRaf = 0
     updateStoryboard(event)
@@ -202,31 +351,19 @@ videoEl.addEventListener('loadedmetadata', () => {
 })
 
 function updateStoryboard(event: PointerEvent) {
-  const relX = event.clientX - timelineRect.left
-  const percent = clamp(relX / timelineRect.width, 0, 1)
+  const time = getScrubTime(event)
 
-  const hoverTimeSeconds = percent * videoEl.duration
-  const absoluteFrameIndex = Math.floor(hoverTimeSeconds * STORYBOARD_FPS)
-  const gridIndex = Math.floor(absoluteFrameIndex / STORYBOARD_FRAMES_PER_GRID) + 1
+  setStoryboardPreview(Math.floor(time * STORYBOARD_FPS), storyboardEl)
 
-  applyStoryboardUrl(gridIndex)
-
-  const localFrameIndex = absoluteFrameIndex % STORYBOARD_FRAMES_PER_GRID
-  const x = localFrameIndex % STORYBOARD_GRID_ROWS
-  const y = Math.floor(localFrameIndex / STORYBOARD_GRID_ROWS)
-  const posX = x * STORYBOARD_FRAME_PERFECT_WIDTH
-  const posY = y * STORYBOARD_FRAME_PERFECT_HEIGHT
-  storyboardEl.style.backgroundPosition = `-${posX}px -${posY}px`
-
-  const centeredX = relX - STORYBOARD_FRAME_PERFECT_WIDTH / 2
+  const centeredX = event.clientX - timelineRect.left - STORYBOARD_FRAME_PERFECT_WIDTH / 2
   const maxX = timelineRect.width - STORYBOARD_FRAME_PERFECT_WIDTH
   storyboardWrapperEl.style.transform = `translateX(${clamp(centeredX, 0, maxX)}px)`
 
-  let timePreview = formatTime(percent * videoEl.duration)
+  let timePreview = formatTime(time)
   for (let i = 0; i < chapters.length; i++) {
     const chapter = chapters[i]!
 
-    if (hoverTimeSeconds >= chapter.start && hoverTimeSeconds <= chapter.end) {
+    if (time >= chapter.start && time <= chapter.end) {
       timePreview += ' - ' + chapter.title
 
       break
@@ -236,7 +373,54 @@ function updateStoryboard(event: PointerEvent) {
   timePreviewEl.textContent = timePreview
 }
 
-function applyStoryboardUrl(gridIndex: number) {
+function setStoryboardPreview(absoluteFrameIndex: number, el: HTMLDivElement) {
+  const gridIndex = Math.floor(absoluteFrameIndex / STORYBOARD_FRAMES_PER_GRID) + 1
+  applyStoryboardUrl(gridIndex, el)
+
+  const localFrameIndex = absoluteFrameIndex % STORYBOARD_FRAMES_PER_GRID
+  const x = localFrameIndex % STORYBOARD_GRID_ROWS
+  const y = Math.floor(localFrameIndex / STORYBOARD_GRID_ROWS)
+  const posX = x * STORYBOARD_FRAME_PERFECT_WIDTH
+  const posY = y * STORYBOARD_FRAME_PERFECT_HEIGHT
+  el.style.backgroundPosition = `-${posX}px -${posY}px`
+}
+
+function updateFineScrubbing(event: PointerEvent) {
+  const time = getScrubTime(event)
+  const frameCount = videoEl.duration * STORYBOARD_FPS
+  const frame = clamp(time * STORYBOARD_FPS, 0, frameCount)
+  const baseFrame = Math.floor(frame)
+  const fraction = frame - baseFrame
+
+  const shiftX = -(fraction * STORYBOARD_FRAME_WIDTH) + filmstripOffset
+  filmstripEl.style.transform = `translateX(${shiftX}px)`
+
+  const startFrame = baseFrame - windowFrameCenter
+
+  windowFrames.forEach((frame, i) => {
+    const frameToLoad = startFrame + i
+    const [el] = frame
+
+    if (frameToLoad < 0 || frameToLoad >= frameCount) {
+      if (frame[1]) {
+        frame[1] = false
+        el.style.opacity = '0'
+      }
+
+      return
+    }
+    if (!frame[1]) {
+      frame[1] = true
+      el.style.opacity = '1'
+    }
+
+    setStoryboardPreview(frameToLoad, el)
+  })
+
+  filmstripTimeEl.textContent = formatTime(time)
+}
+
+function applyStoryboardUrl(gridIndex: number, el = storyboardEl) {
   const newUrl =
     'url(' +
     videoEl.src.replace('videos', 'storyboard').slice(0, '.mp4'.length * -1) +
@@ -244,8 +428,8 @@ function applyStoryboardUrl(gridIndex: number) {
     String(gridIndex).padStart(3, '0') +
     ')'
 
-  if (storyboardEl.style.backgroundImage !== newUrl) {
-    storyboardEl.style.backgroundImage = newUrl
+  if (el.style.backgroundImage !== newUrl) {
+    el.style.backgroundImage = newUrl
   }
 }
 

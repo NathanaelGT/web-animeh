@@ -13,7 +13,13 @@ import { clientProfileSettingsStore } from '~c/stores'
 import { rpc } from '~c/trpc'
 import { createGlobalKeydownHandler } from '~c/utils/eventHandler'
 import { createKeybindMatcher } from '~c/utils/keybind'
-import { toggleMute, toggleFullscreen, togglePlayback, setChapter } from '~c/videoPlayer/setup'
+import {
+  toggleMute,
+  toggleFullscreen,
+  togglePlayback,
+  setChapter,
+  controlState,
+} from '~c/videoPlayer/setup'
 import { toast } from '@/ui/use-toast'
 import { router } from '~/router'
 import { searchEpisode } from '~/shared/utils/episode'
@@ -568,6 +574,10 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
     let shouldPlayInMiniplayer = true
     const videoEndedHandler = () => {
+      if (controlState.isFineScrubbing) {
+        return
+      }
+
       const episodeFound = changeEpisode(Number(gotoEpisodeRef.current) + 1)
 
       if (!episodeFound) {

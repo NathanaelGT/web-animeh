@@ -8,6 +8,7 @@ let hideTimer: NodeJS.Timeout | undefined
 
 export const controlState = {
   isVisible: false,
+  isFineScrubbing: false,
 }
 
 const showControls = () => {
@@ -23,6 +24,10 @@ const showControls = () => {
 
   if (isHoveringVideo && !isHoveringControls) {
     hideTimer = setTimeout(() => {
+      if (controlState.isFineScrubbing) {
+        return
+      }
+
       hideControl()
       playerEl.style.cursor = 'none'
     }, 2000)
@@ -30,20 +35,36 @@ const showControls = () => {
 }
 
 playerEl.addEventListener('mouseenter', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   isHoveringVideo = true
   showControls()
 })
 
 playerEl.addEventListener('mousemove', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   showControls()
 })
 
 playerEl.addEventListener('mouseleave', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   isHoveringVideo = false
   clearTimeout(hideTimer)
 
   setTimeout(() => {
     if (!isHoveringVideo && !isHoveringControls) {
+      if (controlState.isFineScrubbing) {
+        return
+      }
+
       hideControl()
       playerEl.style.cursor = 'default'
     }
@@ -51,11 +72,19 @@ playerEl.addEventListener('mouseleave', () => {
 })
 
 controlEl.addEventListener('mouseenter', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   isHoveringControls = true
   clearTimeout(hideTimer)
 })
 
 controlEl.addEventListener('mouseleave', () => {
+  if (controlState.isFineScrubbing) {
+    return
+  }
+
   isHoveringControls = false
   showControls()
 })

@@ -14,7 +14,8 @@ export const [videoEl, controlEl] = playerEl.children as unknown as [
 export const [timelineWrapperEl, leftControlEl, centerControlEl, rightControlEl] =
   controlEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
 
-export const [timelineEl] = timelineWrapperEl.children as unknown as [HTMLDivElement]
+export const [timelineEl, filmstripEl, filmstripTimeWrapperEl] =
+  timelineWrapperEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement]
 
 export const iconsEl = (() => {
   const svgNS = 'http://www.w3.org/2000/svg'
