@@ -68,7 +68,8 @@ const uglify = async (js: string, hashDefineName: string, post = (result: string
       'node_modules/uglify-js/bin/uglifyjs',
       '--toplevel',
       '-c',
-      'passes=2',
+      'evaluate=true,reduce_vars=true,unsafe=true,passes=12',
+      '-m',
       '-d',
       hashDefineName + '="' + (await buildHashPromise) + '"',
     ],
@@ -126,6 +127,7 @@ await Promise.all([
       collapseWhitespace: true,
       minifyCSS: true,
       noNewlinesBeforeTagClose: true,
+      removeComments: true,
     })
 
     indexHtml = indexHtml
