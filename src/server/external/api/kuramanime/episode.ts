@@ -130,7 +130,7 @@ const getDownloadUrl = async (
       kyInstances.kuramanime.post,
     )
 
-    const handleDownloadUrlNotFound = () => {
+    const handleDownloadUrlNotFound = async () => {
       // authorization tokennya expired
       if (responseHtml.includes('Terjadi kesalahan saat mengambil video')) {
         leviathanAuthorizationToken = null
@@ -160,11 +160,9 @@ const getDownloadUrl = async (
 
           emit(`Video sedang diproses. Mulai mengunduh dalam ${diff / 1e3} detik`)
 
-          return new Promise<string>(resolve => {
-            setTimeout(() => {
-              resolve(getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal))
-            }, diff)
-          })
+          await Bun.sleep(diff)
+
+          return getDownloadUrl(animeData, metadata, episodeNumber, emit, done, signal)
         }
       }
 
@@ -649,9 +647,7 @@ export const downloadEpisode = async (
   }
 
   return new Promise(resolve => {
-    start(formattedTotalLength => {
-      resolve({ size: formattedTotalLength })
-    })
+    start(size => resolve({ size }))
   })
 }
 

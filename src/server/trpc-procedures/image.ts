@@ -8,14 +8,9 @@ import {
 import { procedure } from '~s/trpc'
 
 export const ImageSubscriptionProcedure = procedure.subscription(opts => {
-  let activate: (value: ImageEmitter | PromiseLike<ImageEmitter>) => void
+  const { promise, resolve: activate } = Promise.withResolvers<ImageEmitter>()
 
-  pendingImageEmitterMap.set(
-    opts.ctx.data.id,
-    new Promise<ImageEmitter>(resolve => {
-      activate = resolve
-    }),
-  )
+  pendingImageEmitterMap.set(opts.ctx.data.id, promise)
 
   return observable<ImageEmitterParam>(emit => {
     imageEmitterMap.set(opts.ctx.data.id, emit)

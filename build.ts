@@ -31,15 +31,12 @@ await $`rm -rf ./dist && mkdir ./dist`.quiet()
 
 let appVersion = ''
 
-let resolveBuildHash: (value: string) => void
-const buildHashPromise = new Promise<string>(resolve => {
-  resolveBuildHash = resolve
-})
+const { promise: buildHashPromise, resolve: resolveBuildHash } = Promise.withResolvers<string>()
 
-let resolveServerBuildHash: (value: string) => void
-const serverBuildHashPromise = new Promise<string>(resolve => {
-  resolveServerBuildHash = resolve
-}).then(result => {
+const { promise: serverBuildHashPromise, resolve: resolveServerBuildHash } =
+  Promise.withResolvers<string>()
+
+serverBuildHashPromise.then(result => {
   clientBuildHashPromise.then(clientResult => {
     resolveBuildHash(hash(result + clientResult))
   })
@@ -47,10 +44,10 @@ const serverBuildHashPromise = new Promise<string>(resolve => {
   return result
 })
 
-let resolveClientBuildHash: (value: string) => void
-const clientBuildHashPromise = new Promise<string>(resolve => {
-  resolveClientBuildHash = resolve
-}).then(result => {
+const { promise: clientBuildHashPromise, resolve: resolveClientBuildHash } =
+  Promise.withResolvers<string>()
+
+clientBuildHashPromise.then(result => {
   serverBuildHashPromise.then(serverResult => {
     resolveBuildHash(hash(result + serverResult))
   })
@@ -293,13 +290,11 @@ await Promise.all([
       resolveServerBuildHash(hash(scripts[0].content))
 
       scripts = (await Promise.all(
-        scripts.map(script => {
-          return new Promise<Script>(async resolve => {
-            resolve({
-              path: script.path,
-              content: await uglify(script.content, 'Bun.env.HASH'),
-            })
-          })
+        scripts.map(async script => {
+          return {
+            path: script.path,
+            content: await uglify(script.content, 'Bun.env.HASH'),
+          } satisfies Script
         }),
       )) as typeof scripts
 

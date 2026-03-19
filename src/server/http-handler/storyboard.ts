@@ -54,10 +54,7 @@ const getStoryboardFile = async ([animeId, episodeNumber_gridIndex]: [string, st
     return null
   }
 
-  let resolve: (value?: true) => void
-  const promise = new Promise<true | undefined>(r => {
-    resolve = r
-  })
+  const { promise, resolve } = Promise.withResolvers<true | undefined>()
 
   promises.set(key, promise)
 
