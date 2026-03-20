@@ -22,7 +22,7 @@ import {
 } from '~/shared/storyboard'
 import { clamp } from '~/shared/utils/number'
 import { after } from '~/shared/utils/string'
-import { controlState } from './setup-player'
+import { controlState, addPlayerListeners, removePlayerListeners } from './setup-player'
 
 const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
   timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
@@ -205,6 +205,9 @@ function handleWindowKeyDownHandlerWhenFineScrubbing(event: KeyboardEvent) {
 function enableFineScrubbing() {
   controlState.isFineScrubbing = true
 
+  removePlayerListeners()
+  removeTimelineListeners()
+
   filmstripEl.classList.replace('hidden', 'flex')
   filmstripTimeWrapperEl.classList.remove('hidden')
 
@@ -228,6 +231,9 @@ function enableFineScrubbing() {
 function disableFineScrubbing() {
   controlState.isFineScrubbing = false
   isDragging = false
+
+  addPlayerListeners()
+  addTimelineListeners()
 
   leftControlEl.style.transform = 'none'
   centerControlEl.style.transform = 'none'
@@ -296,13 +302,9 @@ window.addEventListener('pointerup', () => {
   }
 })
 
-timelineEl.addEventListener('pointerenter', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handleTimelinePointerEnter() {
   showStoryboardWrapper()
-})
+}
 
 let hideTimer: NodeJS.Timeout | null = null
 timelineEl.addEventListener('pointerleave', () => {
@@ -328,16 +330,24 @@ storyboardWrapperEl.addEventListener('transitionend', () => {
 })
 
 let timelinePointerMoveRaf = 0
-timelineEl.addEventListener('pointermove', event => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handleTimelinePointerMove(event: PointerEvent) {
   timelinePointerMoveRaf ||= requestAnimationFrame(() => {
     timelinePointerMoveRaf = 0
     updateStoryboard(event)
   })
-})
+}
+
+function addTimelineListeners() {
+  timelineEl.addEventListener('pointerenter', handleTimelinePointerEnter)
+  timelineEl.addEventListener('pointermove', handleTimelinePointerMove)
+}
+
+function removeTimelineListeners() {
+  timelineEl.removeEventListener('pointerenter', handleTimelinePointerEnter)
+  timelineEl.removeEventListener('pointermove', handleTimelinePointerMove)
+}
+
+addTimelineListeners()
 
 let lastSecond = 0
 

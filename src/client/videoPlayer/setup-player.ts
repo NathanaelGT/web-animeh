@@ -34,28 +34,16 @@ const showControls = () => {
   }
 }
 
-playerEl.addEventListener('mouseenter', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handlePlayerMouseEnter() {
   isHoveringVideo = true
   showControls()
-})
+}
 
-playerEl.addEventListener('mousemove', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handlePlayerMouseMove() {
   showControls()
-})
+}
 
-playerEl.addEventListener('mouseleave', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handlePlayerMouseLeave() {
   isHoveringVideo = false
   clearTimeout(hideTimer)
 
@@ -69,25 +57,35 @@ playerEl.addEventListener('mouseleave', () => {
       playerEl.style.cursor = 'default'
     }
   }, 500)
-})
+}
 
-controlEl.addEventListener('mouseenter', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handleControlMouseEnter() {
   isHoveringControls = true
   clearTimeout(hideTimer)
-})
+}
 
-controlEl.addEventListener('mouseleave', () => {
-  if (controlState.isFineScrubbing) {
-    return
-  }
-
+function handleControlMouseLeave() {
   isHoveringControls = false
   showControls()
-})
+}
+
+export function addPlayerListeners() {
+  playerEl.addEventListener('mouseenter', handlePlayerMouseEnter)
+  playerEl.addEventListener('mousemove', handlePlayerMouseMove)
+  playerEl.addEventListener('mouseleave', handlePlayerMouseLeave)
+  controlEl.addEventListener('mouseenter', handleControlMouseEnter)
+  controlEl.addEventListener('mouseleave', handleControlMouseLeave)
+}
+
+export function removePlayerListeners() {
+  playerEl.removeEventListener('mouseenter', handlePlayerMouseEnter)
+  playerEl.removeEventListener('mousemove', handlePlayerMouseMove)
+  playerEl.removeEventListener('mouseleave', handlePlayerMouseLeave)
+  controlEl.removeEventListener('mouseenter', handleControlMouseEnter)
+  controlEl.removeEventListener('mouseleave', handleControlMouseLeave)
+}
+
+addPlayerListeners()
 
 function hideControl() {
   controlState.isVisible = false
