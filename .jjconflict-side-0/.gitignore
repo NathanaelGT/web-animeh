@@ -1,0 +1,33 @@
+node_modules
+dist
+logs
+images
+videos
+*.local
+.env
+debug
+
+# Build hook
+build.after.ts
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Database
+db.sqlite
+db.sqlite-wal
+db.sqlite-shm
+
+# Vite
+vite.config.*.timestamp-*
+
+# Console Ninja
+unknown

@@ -1,7 +1,0 @@
-export * from './setup-fullscreen'
-export * from './setup-miniplayer'
-export * from './setup-module'
-export * from './setup-playback'
-export * from './setup-player'
-export * from './setup-timeline'
-export * from './setup-volume'
