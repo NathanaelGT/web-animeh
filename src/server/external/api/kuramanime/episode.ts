@@ -62,7 +62,10 @@ export const generateEmitKey = (
   animeData: Pick<typeof anime.$inferSelect, 'title' | 'totalEpisodes'>,
   episodeNumber: number,
 ) => {
-  return animeData.title + (animeData.totalEpisodes === 1 ? '' : `: Episode ${episodeNumber}`)
+  return (
+    animeData.title +
+    (animeData.totalEpisodes === 1 && episodeNumber === 1 ? '' : `: Episode ${episodeNumber}`)
+  )
 }
 
 export const initDownloadEpisode = (
