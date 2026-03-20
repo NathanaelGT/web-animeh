@@ -237,6 +237,8 @@ function EpisodeLayout() {
     },
   })
 
+  const hideSidebar = animeData.totalEpisodes === 1 && episodeList.length === 1
+
   return (
     <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
@@ -245,7 +247,7 @@ function EpisodeLayout() {
             Web Animeh
           </Link>,
           <AnimeTitle animeData={animeData} tag="h1" asLink />,
-          animeData.totalEpisodes === 1 ? 'Nonton' : `Episode ${currentEpisode}`,
+          hideSidebar ? 'Nonton' : `Episode ${currentEpisode}`,
         ]}
         viewTransitionPrefix={params.id}
         itemClassName="drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]"
@@ -255,10 +257,10 @@ function EpisodeLayout() {
       <div
         className={
           'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-1 outline-primary/5 outline-solid ' +
-          (animeData.totalEpisodes === 1 ? '' : 'md:grid md:grid-cols-[16rem_1fr]')
+          (hideSidebar ? '' : 'md:grid md:grid-cols-[16rem_1fr]')
         }
       >
-        {animeData.totalEpisodes !== 1 && (
+        {!hideSidebar && (
           <aside className="relative mx-auto w-full flex-1 bg-primary/3 md:h-full md:border-r md:border-primary/20">
             <div className="flex h-10 gap-2 bg-primary/75 p-2 text-slate-300 dark:bg-primary-foreground">
               <SearchFilter
