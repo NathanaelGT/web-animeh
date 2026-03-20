@@ -1,4 +1,4 @@
-import { controlEl, playerEl } from '~c/elements'
+import { controlEl, playerEl, videoEl } from '~c/elements'
 import { updateTimeline } from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
 
@@ -95,3 +95,23 @@ function hideControl() {
 
   scheduleHide()
 }
+
+const defaultKeybindKeys = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  ' ',
+  'Home',
+  'End',
+])
+
+videoEl.addEventListener(
+  'keydown',
+  event => {
+    if (defaultKeybindKeys.has(event.key)) {
+      event.preventDefault()
+    }
+  },
+  true,
+)
