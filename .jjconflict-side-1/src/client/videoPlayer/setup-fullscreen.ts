@@ -1,11 +1,20 @@
-import { playerEl, iconsEl } from '../elements'
+import { playerEl, iconsEl } from '~c/elements'
 import { moduleChild, updateTooltip } from './util'
 
+const playerBg = 'bg-primary-foreground'
+
+playerEl.classList.add(playerBg)
+
 playerEl.addEventListener('fullscreenchange', () => {
-  moduleChild(
-    'fullscreen',
-    document.fullscreenElement === playerEl ? iconsEl.minimize : iconsEl.maximize,
-  )
+  if (document.fullscreenElement === playerEl) {
+    moduleChild('fullscreen', iconsEl.minimize)
+    playerEl.classList.remove(playerBg)
+
+    return
+  }
+
+  moduleChild('fullscreen', iconsEl.maximize)
+  playerEl.classList.add(playerBg)
 })
 
 export async function toggleFullscreen() {
