@@ -76,3 +76,5 @@ export const controlModule = (() => {
     return element
   }
 })()
+
+export const tooltip = controlModule.tooltip

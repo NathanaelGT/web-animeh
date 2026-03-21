@@ -67,10 +67,14 @@ function showTooltip(owner: HTMLElement) {
   })
 }
 
+function hide() {
+  tooltip.style.opacity = '0'
+}
+
 export function scheduleHide() {
   hideTimer ??= setTimeout(() => {
     hideTimer = null
-    tooltip.style.opacity = '0'
+    hide()
   }, TRANSITION_TIME_MS * 0.75)
 }
 
@@ -117,12 +121,36 @@ controlEl.addEventListener('pointerleave', () => {
 export function attachTooltip<TText extends string>(target: HTMLElement, text: TText) {
   tooltipTexts.set(target, text)
 
-  return (newText: TText) => {
-    tooltipTexts.set(target, newText)
+  return {
+    update(newText: TText) {
+      tooltipTexts.set(target, (text = newText))
 
-    if (currentOwner === target && tooltip.parentNode) {
-      tooltip.textContent = newText
-      positionTooltip(target)
-    }
+      if (currentOwner === target && tooltip.parentNode) {
+        tooltip.textContent = newText
+        positionTooltip(target)
+      }
+    },
+
+    disable() {
+      if (currentOwner === target && tooltip.parentNode && tooltip.style.opacity !== '0') {
+        tooltip.ontransitionend = event => {
+          if (event.propertyName === 'opacity' && tooltip.style.opacity === '0') {
+            tooltip.ontransitionend = null
+            tooltipTexts.delete(target)
+          }
+        }
+        hide()
+      } else {
+        tooltipTexts.delete(target)
+      }
+    },
+
+    enable() {
+      tooltipTexts.set(target, text)
+
+      if (target.matches(':hover')) {
+        showTooltip(target)
+      }
+    },
   }
 }

@@ -4,7 +4,6 @@ import { ucFirst } from '~/shared/utils/string'
 import { controlModule } from './setup-module'
 
 type Module = keyof (typeof controlModule)['el']
-type Tooltip = keyof (typeof controlModule)['tooltip']
 
 export function moduleChild(module: Module): Element | null
 export function moduleChild(module: Module, icon: SVGSVGElement): void
@@ -19,14 +18,6 @@ export function moduleChild(module: Module, icon?: SVGSVGElement) {
     return child
   }
 }
-
-export function updateTooltip<TTooltip extends Tooltip>(
-  tooltip: TTooltip,
-  text: Parameters<(typeof controlModule.tooltip)[TTooltip]>[0],
-) {
-  controlModule.tooltip[tooltip](text as never)
-}
-
 export function getJumpTime(variant: '' | 'long' = '') {
   const prefix = variant ? (`${variant}J` as const) : 'j'
 

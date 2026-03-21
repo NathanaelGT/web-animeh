@@ -1,6 +1,7 @@
 import { videoEl, iconsEl, overlayEl } from '~c/elements'
 import { toggleFullscreen } from './setup-fullscreen'
-import { moduleChild, updateTooltip } from './util'
+import { tooltip } from './setup-module'
+import { moduleChild } from './util'
 
 videoEl.addEventListener('play', () => {
   moduleChild('playback', iconsEl.pause)
@@ -32,9 +33,9 @@ overlayEl.addEventListener('click', event => {
 export function togglePlayback() {
   if (videoEl.paused || videoEl.ended) {
     videoEl.play()
-    updateTooltip('playback', 'Pause')
+    tooltip.playback.update('Pause')
   } else {
     videoEl.pause()
-    updateTooltip('playback', 'Play')
+    tooltip.playback.update('Play')
   }
 }

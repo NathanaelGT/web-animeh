@@ -1,5 +1,6 @@
 import { playerEl, iconsEl } from '~c/elements'
-import { moduleChild, updateTooltip } from './util'
+import { tooltip } from './setup-module'
+import { moduleChild } from './util'
 
 const playerBg = 'bg-primary-foreground'
 
@@ -25,8 +26,5 @@ export async function toggleFullscreen() {
 
   await promise
 
-  updateTooltip(
-    'fullscreen',
-    `${document.fullscreenElement === playerEl ? 'Exit f' : 'F'}ullscreen`,
-  )
+  tooltip.fullscreen.update(`${document.fullscreenElement === playerEl ? 'Exit f' : 'F'}ullscreen`)
 }
