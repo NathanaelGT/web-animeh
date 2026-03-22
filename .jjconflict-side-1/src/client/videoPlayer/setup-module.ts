@@ -3,6 +3,7 @@ import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
 import { toggleFullscreen } from './setup-fullscreen'
 import { togglePlayback } from './setup-playback'
+import { speedButtonEl, speedWrapperEl } from './setup-speed'
 import { timeEl } from './setup-timeline'
 import { attachTooltip } from './setup-tooltip'
 import { toggleMute, volumeSliderEl } from './setup-volume'
@@ -11,18 +12,20 @@ export const controlModule = (() => {
   const playback = el(iconsEl.play, togglePlayback)
   const volume = el(iconsEl.volume.high, toggleMute)
   const time = timeEl
+  const speed = speedButtonEl
   const fullscreen = el(iconsEl.maximize, toggleFullscreen)
 
   leftControlEl.append(group(playback), group([volume, volumeSliderEl]))
   centerControlEl.append(group(time))
-  rightControlEl.append(group(fullscreen))
+  rightControlEl.append(group(speedWrapperEl), group(fullscreen))
 
   return {
-    el: { playback, volume, time, fullscreen },
+    el: { playback, volume, time, speed, fullscreen },
     tooltip: {
       playback: attachTooltip<'Play' | 'Pause'>(playback, 'Play'),
       volume: attachTooltip<'Mute' | 'Unmute'>(volume, 'Mute'),
       volumeSlider: attachTooltip(volumeSliderEl, 'Volume'),
+      speed: attachTooltip(speedButtonEl, 'Speed'),
       fullscreen: attachTooltip<'Fullscreen' | 'Exit fullscreen'>(fullscreen, 'Fullscreen'),
     },
   }

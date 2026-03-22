@@ -55,6 +55,12 @@ export const iconsEl = (() => {
     maximize: createIcon('M15 3h6v6', 'm21 3-7 7', 'm3 21 7-7', 'M9 21H3v-6'),
 
     minimize: createIcon('m14 10 7-7', 'M20 10h-6V4', 'm3 21 7-7', 'M4 14h6v6'),
+
+    speed: createIcon(
+      'M15.6 2.7a10 10 0 1 0 5.7 5.7',
+      ['circle', { cx: 12, cy: 12, r: 2 }],
+      'M13.4 10.6 19 5',
+    ),
   }
 
   type Shape<T extends Record<string, unknown>> = T & {
