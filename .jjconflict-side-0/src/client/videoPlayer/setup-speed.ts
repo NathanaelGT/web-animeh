@@ -155,7 +155,7 @@ export function decreaseSpeed(silent?: any) {
 
   const newSpeed = Math.max(0.1, videoEl.playbackRate - speedStep)
 
-  setSpeedAndShowOverlay(newSpeed, speedStep, !silent)
+  setSpeed(newSpeed, speedStep, !silent)
 }
 
 export function increaseSpeed(silent?: any) {
@@ -163,39 +163,41 @@ export function increaseSpeed(silent?: any) {
 
   const newSpeed = Math.min(8, videoEl.playbackRate + speedStep)
 
-  setSpeedAndShowOverlay(newSpeed, speedStep, !silent)
+  setSpeed(newSpeed, speedStep, !silent)
 }
 
+let savedSpeed = 1
 export function toggleSpeed() {
   if (videoEl.playbackRate !== 1) {
-    localStorage.setItem('speedToggle', videoEl.playbackRate.toString())
+    savedSpeed = videoEl.playbackRate
 
     videoEl.playbackRate = 1
   } else {
-    const savedSpeed = parseFloat(localStorage.getItem('speedToggle') || '1')
-    if (isNaN(savedSpeed) || savedSpeed === 1) {
-      return
-    }
-
     videoEl.playbackRate = savedSpeed
   }
+
+  showOverlay()
 }
 
 let showOverlayTimeout: NodeJS.Timeout | undefined
-function setSpeedAndShowOverlay(speed: number, step: number, showOverlay?: any) {
+function setSpeed(speed: number, step: number, shouldShowOverlay?: any) {
   const speedStr = speed.toFixed(decimalFractionDigits(step) || decimalFractionDigits(speed))
   videoEl.playbackRate = Number(speedStr) // untuk menghindari floating point precision issue
 
-  if (showOverlay) {
-    speedOverlayEl.textContent = speedStr
-    speedOverlayEl.style.opacity = '1'
-
-    clearTimeout(showOverlayTimeout)
-    showOverlayTimeout = setTimeout(() => {
-      showOverlayTimeout = undefined
-      speedOverlayEl.style.opacity = '0'
-    }, 2000)
+  if (shouldShowOverlay) {
+    showOverlay()
   }
+}
+
+function showOverlay() {
+  speedOverlayEl.textContent = videoEl.playbackRate.toString()
+  speedOverlayEl.style.opacity = '1'
+
+  clearTimeout(showOverlayTimeout)
+  showOverlayTimeout = setTimeout(() => {
+    showOverlayTimeout = undefined
+    speedOverlayEl.style.opacity = '0'
+  }, 2000)
 }
 
 function decimalFractionDigits(value: number): number {
