@@ -1,8 +1,9 @@
 import { videoEl, iconsEl } from '~c/elements'
+import { clientProfileSettingsStore } from '~c/stores'
 import { createElement } from '~c/utils/dom'
 import { tooltip } from './setup-module'
+import { speedOverlayEl } from './setup-overlay'
 
-const SPEED_STEP = 0.1
 const PRESETS = [0.5, 1, 1.3, 1.7, 2]
 
 const minusBtn = createElement(
@@ -109,23 +110,22 @@ function handleOutsideClick(event: PointerEvent) {
 }
 
 function setSpeed(value: number) {
-  const speed = Math.max(value, 0)
+  const speed = Math.max(value, 0.1)
   videoEl.playbackRate = speed
   syncUI(speed)
 }
 
 function syncUI(speed: number) {
-  speedInput.value = speed.toFixed(speed % 1 === 0 ? 0 : 2).replace(/0$/, '')
+  speedInput.value = speed.toFixed(
+    decimalFractionDigits(clientProfileSettingsStore.state.videoPlayer.speedStep) ||
+      decimalFractionDigits(speed),
+  )
   sliderEl.value = speed.toString()
 }
 
-minusBtn.addEventListener('click', () => {
-  setSpeed(videoEl.playbackRate - SPEED_STEP)
-})
+minusBtn.addEventListener('click', decreaseSpeed)
 
-plusBtn.addEventListener('click', () => {
-  setSpeed(videoEl.playbackRate + SPEED_STEP)
-})
+plusBtn.addEventListener('click', increaseSpeed)
 
 sliderEl.addEventListener('input', () => {
   setSpeed(parseFloat(sliderEl.value))
@@ -141,5 +141,67 @@ speedInput.addEventListener('change', () => {
 })
 
 videoEl.addEventListener('ratechange', () => {
-  sliderEl.value = videoEl.playbackRate.toString()
+  syncUI(videoEl.playbackRate)
 })
+
+setTimeout(() => {
+  setSpeed(clientProfileSettingsStore.state.videoPlayer.defaultSpeed)
+})
+
+export function decreaseSpeed(silent?: any) {
+  const { speedStep } = clientProfileSettingsStore.state.videoPlayer
+
+  const newSpeed = Math.max(0.1, videoEl.playbackRate - speedStep)
+
+  setSpeedAndShowOverlay(newSpeed, speedStep, !silent)
+}
+
+export function increaseSpeed(silent?: any) {
+  const { speedStep } = clientProfileSettingsStore.state.videoPlayer
+
+  const newSpeed = Math.min(8, videoEl.playbackRate + speedStep)
+
+  setSpeedAndShowOverlay(newSpeed, speedStep, !silent)
+}
+
+export function toggleSpeed() {
+  if (videoEl.playbackRate !== 1) {
+    localStorage.setItem('speedToggle', videoEl.playbackRate.toString())
+
+    videoEl.playbackRate = 1
+  } else {
+    const savedSpeed = parseFloat(localStorage.getItem('speedToggle') || '1')
+    if (isNaN(savedSpeed) || savedSpeed === 1) {
+      return
+    }
+
+    videoEl.playbackRate = savedSpeed
+  }
+}
+
+let showOverlayTimeout: NodeJS.Timeout | undefined
+function setSpeedAndShowOverlay(speed: number, step: number, showOverlay?: any) {
+  const speedStr = speed.toFixed(decimalFractionDigits(step) || decimalFractionDigits(speed))
+  videoEl.playbackRate = Number(speedStr) // untuk menghindari floating point precision issue
+
+  if (showOverlay) {
+    speedOverlayEl.textContent = speedStr
+    speedOverlayEl.style.opacity = '1'
+
+    clearTimeout(showOverlayTimeout)
+    showOverlayTimeout = setTimeout(() => {
+      showOverlayTimeout = undefined
+      speedOverlayEl.style.opacity = '0'
+    }, 2000)
+  }
+}
+
+function decimalFractionDigits(value: number): number {
+  const valueStr = value.toString()
+  const indexOfDecimal = valueStr.indexOf('.')
+
+  if (indexOfDecimal === -1) {
+    return 0
+  }
+  return valueStr.slice(indexOfDecimal + 1).length
+}

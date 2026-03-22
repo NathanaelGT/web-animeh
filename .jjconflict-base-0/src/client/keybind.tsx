@@ -81,6 +81,9 @@ export const keybindTranslation = {
     PiP: ['Toggle picture in picture'],
     fullscreen: ['Toggle fullscreen'],
     playPause: ['Play/Pause'],
+    decreaseSpeed: ['Turunkan kecepatan'],
+    increaseSpeed: ['Naikkan kecepatan'],
+    toggleSpeed: ['Toggle kecepatan'],
   },
 } satisfies KeybindTranslation
 

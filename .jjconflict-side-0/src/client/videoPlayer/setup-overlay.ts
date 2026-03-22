@@ -2,11 +2,10 @@ import { overlayEl, videoEl } from '~c/elements'
 import { timeStartEl, updateSeeker, updateTime } from './setup-timeline'
 import { getJumpTime } from './util'
 
-const [leftOverlayEl, _centerOverlayEl, rightOverlayEl] = overlayEl.children as unknown as [
-  HTMLDivElement,
-  HTMLDivElement,
-  HTMLDivElement,
-]
+const [leftOverlayEl, _centerOverlayEl, rightOverlayEl, speedOverlayEl] =
+  overlayEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
+
+export { speedOverlayEl }
 
 const backwardInfoEl = leftOverlayEl.firstElementChild as HTMLDivElement
 const forwardInfoEl = rightOverlayEl.firstElementChild as HTMLDivElement

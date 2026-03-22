@@ -70,8 +70,8 @@ function VideoPlayer() {
         label="Durasi maju/mundur jauh"
         tooltip={
           <KeybindCombinationWrapper>
-            <KeybindCombination id={['videoPlayer', 'longForward']} />
             <KeybindCombination id={['videoPlayer', 'longBack']} />
+            <KeybindCombination id={['videoPlayer', 'longForward']} />
           </KeybindCombinationWrapper>
         }
         switchName="relativeLongJump"
@@ -106,6 +106,30 @@ function VideoPlayer() {
           settings.videoPlayer.backupStateMode = mode
         }}
       />
+
+      <InputNumber
+        name="defaultSpeed"
+        label="Kecepatan default"
+        unit="X"
+        step={0.01}
+        min={0.01}
+        max={8}
+      />
+
+      <InputNumber
+        name="speedStep"
+        label="Kecepatan naik/turun"
+        tooltip={
+          <KeybindCombinationWrapper>
+            <KeybindCombination id={['videoPlayer', 'decreaseSpeed']} />
+            <KeybindCombination id={['videoPlayer', 'increaseSpeed']} />
+          </KeybindCombinationWrapper>
+        }
+        unit="X"
+        step={0.01}
+        min={0.01}
+        max={1}
+      />
     </div>
   )
 }
@@ -122,6 +146,7 @@ type InputNumberProps = PropsWithChildren<{
   nextLabel?: ReturnType<typeof Label>
   unit: string
   multiplier?: number
+  step?: number
   min?: number
   max?: number
   childrenClassName?: string
@@ -134,6 +159,7 @@ function InputNumber({
   nextLabel,
   unit,
   multiplier = 1,
+  step = 1,
   min,
   max,
   children,
@@ -213,6 +239,7 @@ function InputNumber({
           <input
             id={name}
             type="number"
+            step={step}
             value={value ?? ''}
             onKeyDown={onKeyDown}
             onInput={onInput}

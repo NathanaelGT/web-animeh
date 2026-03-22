@@ -20,6 +20,7 @@ import {
   setChapter,
   controlState,
 } from '~c/videoPlayer/setup'
+import { decreaseSpeed, increaseSpeed, toggleSpeed } from '~c/videoPlayer/setup-speed'
 import { getJumpTime } from '~c/videoPlayer/util'
 import { toast } from '@/ui/use-toast'
 import { router } from '~/router'
@@ -211,6 +212,9 @@ const setupVideoPlayer = (
     },
     fullscreen: toggleFullscreen,
     playPause: togglePlayback,
+    decreaseSpeed,
+    increaseSpeed,
+    toggleSpeed,
   } satisfies Partial<Record<keyof KeybindGroups['videoPlayer'], () => void>>
 
   removeKeybindHandler = createGlobalKeydownHandler(event => {

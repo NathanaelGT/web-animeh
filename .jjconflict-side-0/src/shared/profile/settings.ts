@@ -33,6 +33,8 @@ export const videoPlayerSchema = object({
   miniplayerMode: picklist(miniplayerMode, 'Smart'),
   miniplayerAnimationDuration: number(300),
   backupStateMode: picklist(backupStateMode, 'Smart'),
+  defaultSpeed: number(1, 0.1, 8),
+  speedStep: number(0.05, 0.01, 1),
 })
 
 export const keybindSchema = object({
@@ -70,6 +72,9 @@ export const keybindSchema = object({
     PiP: createKeybind('Shift', 'i'),
     fullscreen: createKeybind('f'),
     playPause: createKeybind(' '),
+    decreaseSpeed: createKeybind('a'),
+    increaseSpeed: createKeybind('d'),
+    toggleSpeed: createKeybind('s'),
   }),
 })
 
