@@ -49,7 +49,7 @@ PRESETS.forEach(speed => {
 
   btn.textContent = speed.toString()
   btn.addEventListener('click', () => {
-    setSpeed(speed)
+    videoEl.playbackRate = speed
   })
 
   presetRow.append(btn)
@@ -109,13 +109,9 @@ function handleOutsideClick(event: PointerEvent) {
   }
 }
 
-function setSpeed(value: number) {
-  const speed = Math.max(value, 0.1)
-  videoEl.playbackRate = speed
-  syncUI(speed)
-}
+function syncUI() {
+  const speed = videoEl.playbackRate
 
-function syncUI(speed: number) {
   speedInput.value = speed.toFixed(
     decimalFractionDigits(clientProfileSettingsStore.state.videoPlayer.speedStep) ||
       decimalFractionDigits(speed),
@@ -128,25 +124,31 @@ minusBtn.addEventListener('click', decreaseSpeed)
 plusBtn.addEventListener('click', increaseSpeed)
 
 sliderEl.addEventListener('input', () => {
-  setSpeed(parseFloat(sliderEl.value))
+  videoEl.playbackRate = Math.max(sliderEl.valueAsNumber, 0.1)
 })
 
 speedInput.addEventListener('change', () => {
   const parsed = parseFloat(speedInput.value)
   if (isNaN(parsed)) {
-    syncUI(videoEl.playbackRate)
+    syncUI()
   } else {
-    setSpeed(parsed)
+    videoEl.playbackRate = parsed
   }
 })
 
-videoEl.addEventListener('ratechange', () => {
-  syncUI(videoEl.playbackRate)
-})
+videoEl.setSrc = function (src) {
+  videoEl.removeEventListener('ratechange', syncUI)
 
-setTimeout(() => {
-  setSpeed(clientProfileSettingsStore.state.videoPlayer.defaultSpeed)
-})
+  const currentSpeed = videoEl.playbackRate
+
+  // @ts-expect-error wrapper
+  videoEl.src = src
+  videoEl.playbackRate = currentSpeed
+
+  videoEl.addEventListener('ratechange', syncUI)
+}
+
+videoEl.playbackRate = clientProfileSettingsStore.state.videoPlayer.defaultSpeed
 
 export function decreaseSpeed(silent?: any) {
   const { speedStep } = clientProfileSettingsStore.state.videoPlayer

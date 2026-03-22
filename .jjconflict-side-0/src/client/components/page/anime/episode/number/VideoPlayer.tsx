@@ -123,7 +123,7 @@ const changeEpisodeInMiniplayer = async (
   if (isDownloaded) {
     const episodeString = episodeTarget.toString()
 
-    videoEl.src = getSrc(animeId, episodeString)
+    videoEl.setSrc(getSrc(animeId, episodeString))
     videoEl.play()
 
     episodeRef.current = episodeString
@@ -450,7 +450,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
       const episodeString = episodeTarget.toString()
 
       if (episode.download.status === 'DOWNLOADED' && document.fullscreenElement === playerEl) {
-        videoEl.src = getSrc(params.id, episodeString)
+        videoEl.setSrc(getSrc(params.id, episodeString))
         videoEl.play()
 
         gotoEpisodeRef.current = episodeString
@@ -474,7 +474,7 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
 
       const src = streamingUrl || getSrc(params.id, params.number)
       const autoplay = () => {
-        videoEl.src = src
+        videoEl.setSrc(src)
 
         const { backupStateMode } = clientProfileSettingsStore.state.videoPlayer
         if (backupStateMode !== 'Disable') {
@@ -795,7 +795,7 @@ requestAnimationFrame(() => {
     session: Math.random().toString().slice(2),
   }))
 
-  videoEl.src = getSrc(id, ep)
+  videoEl.setSrc(getSrc(id, ep))
 
   videoEl.onended = () => {
     videoEl.onended = null

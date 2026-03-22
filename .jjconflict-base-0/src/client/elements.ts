@@ -8,7 +8,7 @@ export const [playerEl, miniplayerFullscreenButtonEl, miniplayerCloseButtonEl] =
 
 export const [overlayWrapperEl, videoEl, controlEl] = playerEl.children as unknown as [
   HTMLDivElement,
-  HTMLVideoElement,
+  Omit<HTMLVideoElement, 'src'> & { readonly src: string; setSrc(src: string): void },
   HTMLDivElement,
 ]
 
