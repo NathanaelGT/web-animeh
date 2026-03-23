@@ -8,7 +8,11 @@ const [leftOverlayEl, centerOverlayEl, rightOverlayEl, speedOverlayEl] =
 
 const playbackInfoEl = centerOverlayEl.firstElementChild as HTMLDivElement
 
-export { speedOverlayEl, playbackInfoEl }
+const overlayState = {
+  isVisible: false,
+}
+
+export { speedOverlayEl, playbackInfoEl, overlayState }
 
 const backwardInfoEl = leftOverlayEl.firstElementChild as HTMLDivElement
 const forwardInfoEl = rightOverlayEl.firstElementChild as HTMLDivElement
@@ -102,6 +106,7 @@ function registerJumpGesture(
     infoEl.style.opacity = '1'
     infoEl.style.transform = 'scale(1)'
 
+    overlayState.isVisible = true
     isInGracePeriod = true
   }
 
@@ -109,7 +114,12 @@ function registerJumpGesture(
     infoEl.style.opacity = '0'
     infoEl.style.transform = 'scale(0)'
 
-    isInGracePeriod = false
-    total = 0
+    infoEl.ontransitionend = () => {
+      infoEl.ontransitionend = null
+
+      overlayState.isVisible = false
+      isInGracePeriod = false
+      total = 0
+    }
   }
 }

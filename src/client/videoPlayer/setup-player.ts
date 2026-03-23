@@ -1,4 +1,5 @@
 import { controlEl, playerEl, videoEl } from '~c/elements'
+import { overlayState } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
 import { updateTimeline } from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
@@ -47,15 +48,23 @@ export function scheduleHideControl() {
 }
 
 function handlePlayerPointerEnter(event: PointerEvent) {
+  if (overlayState.isVisible) {
+    return
+  }
+
   if (event.pointerType === 'mouse') {
     isHoveringVideo = true
     playerEl.addEventListener('pointerleave', handlePlayerPointerLeave)
   } else {
     if (controlState.isVisible) {
-      hideControl()
-      hideOverlayPlayback()
+      const el = document.elementFromPoint(event.pageX - pageXOffset, event.pageY - pageYOffset)
 
-      return
+      if (!controlEl.contains(el)) {
+        hideControl()
+        hideOverlayPlayback()
+
+        return
+      }
     }
 
     showOverlayPlaybackIcon()
