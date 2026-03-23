@@ -30,7 +30,7 @@ process.env.MODE = 'development'
 
 const client = serverOnly
   ? null
-  : Bun.spawn(['bunx', '--bun', 'vite', '--port', '8888'], {
+  : Bun.spawn(['bunx', '--bun', 'vite', '--host', '--port', '8888'], {
       stdin: 'inherit',
       stdout: 'pipe',
       stderr: 'inherit',
