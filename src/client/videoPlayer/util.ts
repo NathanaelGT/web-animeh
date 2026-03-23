@@ -46,7 +46,9 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
         clearTimeout(captureTimeout)
         capturedTime = 0
 
-        return [newTime - diff, jumpTime - diff] as const
+        const min = diff + setting.smartJumpOffset / 1000
+
+        return [newTime - min, jumpTime - min] as const
       }
     } else {
       capturedTime = videoEl.currentTime

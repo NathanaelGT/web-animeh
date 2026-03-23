@@ -130,6 +130,8 @@ function VideoPlayer() {
         min={0.01}
         max={1}
       />
+
+      <InputNumber name="smartJumpOffset" label="Offset smart jump" unit="ms" min={0} max={2500} />
     </div>
   )
 }

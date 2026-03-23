@@ -35,6 +35,7 @@ export const videoPlayerSchema = object({
   backupStateMode: picklist(backupStateMode, 'Smart'),
   defaultSpeed: number(1, 0.1, 8),
   speedStep: number(0.05, 0.01, 1),
+  smartJumpOffset: number(750, 0, 2500),
 })
 
 export const keybindSchema = object({
