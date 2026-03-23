@@ -56,8 +56,9 @@ PRESETS.forEach(speed => {
 })
 
 const menuEl = createElement(
-  'absolute bottom-full right-0 mb-6 flex flex-col gap-6 rounded-xl bg-black/80 p-8 backdrop-blur-md border border-border',
+  'absolute bottom-full right-0 mb-6 flex-col gap-6 rounded-xl bg-black/80 p-8 backdrop-blur-md border border-border',
 )
+menuEl.style.display = 'none'
 menuEl.style.opacity = '0'
 menuEl.style.transform = 'translateY(4px) scale(0.95)'
 menuEl.style.transition = 'opacity 0.15s ease-in-out, transform 0.15s ease-in-out'
@@ -81,14 +82,20 @@ function toggleMenu() {
 
 function openMenu() {
   isOpen = true
-  menuEl.style.opacity = '1'
-  menuEl.style.transform = 'translateY(0) scale(1)'
-  menuEl.style.pointerEvents = 'auto'
+  menuEl.style.display = 'flex'
 
-  tooltip.speed.disable()
-
+  // gatau kenapa harus 2x
   requestAnimationFrame(() => {
-    document.addEventListener('pointerdown', handleOutsideClick)
+    requestAnimationFrame(() => {
+      menuEl.style.opacity = '1'
+      menuEl.style.transform = 'translateY(0) scale(1)'
+
+      tooltip.speed.disable()
+
+      requestAnimationFrame(() => {
+        document.addEventListener('pointerdown', handleOutsideClick)
+      })
+    })
   })
 }
 
@@ -96,7 +103,10 @@ function closeMenu() {
   isOpen = false
   menuEl.style.opacity = '0'
   menuEl.style.transform = 'translateY(4px) scale(0.95)'
-  menuEl.style.pointerEvents = 'none'
+  menuEl.ontransitionend = () => {
+    menuEl.ontransitionend = null
+    menuEl.style.display = 'none'
+  }
 
   tooltip.speed.enable()
 
