@@ -178,7 +178,7 @@ const server = await (async (): Promise<BunServer> => {
             return response
           } finally {
             const elapsed = Bun.nanoseconds() - startNs
-            const url = request.url.slice(server.url.origin.length)
+            const url = request.url.substring(request.url.indexOf('/', 'https://'.length))
             const range = request.headers.get('range')
             const context = range ? range.replace('bytes=', '') : null
 
