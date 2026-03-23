@@ -21,7 +21,6 @@ import {
   STORYBOARD_FRAMES_PER_GRID,
 } from '~/shared/storyboard'
 import { clamp } from '~/shared/utils/number'
-import { after } from '~/shared/utils/string'
 import { controlState, addPlayerListeners, removePlayerListeners } from './setup-player'
 
 const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
@@ -131,9 +130,6 @@ export function setChapter(newChapters: Chapter[]) {
   )
 }
 
-const allTransition = handleEl.style.transition
-const widthHeightTransition = after(handleEl.style.transition, ',')
-
 storyboardEl.style.width = STORYBOARD_FRAME_WIDTH + 'px'
 storyboardEl.style.height = STORYBOARD_FRAME_HEIGHT + 'px'
 storyboardEl.style.backgroundSize = `${STORYBOARD_FRAME_PERFECT_WIDTH * STORYBOARD_GRID_ROWS}px ${STORYBOARD_FRAME_PERFECT_HEIGHT * STORYBOARD_GRID_COLS}px`
@@ -177,7 +173,6 @@ timelineEl.addEventListener('pointerdown', event => {
   timeStartEl.textContent = updateTime(newTime)
   handleEl.classList.add('hover')
 
-  handleEl.style.transition = widthHeightTransition
   updateSeeker(videoEl.currentTime)
 
   showStoryboardWrapper()
@@ -297,7 +292,6 @@ window.addEventListener('pointerup', () => {
   if (isDragging && !controlState.isFineScrubbing) {
     isDragging = false
     handleEl.classList.remove('hover')
-    handleEl.style.transition = allTransition
     storyboardWrapperEl.style.opacity = '0'
   }
 })
@@ -515,9 +509,5 @@ export function updateSeeker(currentTime: number) {
   const percentage = currentTime / videoEl.duration || 0
 
   seekerEl.style.transform = `scaleX(${percentage})`
-
-  const containerWidth = timelineEl.offsetWidth
-  const position = percentage * containerWidth
-
-  handleEl.style.transform = `translate(calc(${position}px - var(--x)), calc(-50% - 2px))`
+  handleEl.style.transform = `translate(calc(${percentage * 100}cqw - var(--x)), calc(-50% - 2px))`
 }
