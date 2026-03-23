@@ -141,16 +141,16 @@ const setupVideoPlayer = (
 
   const keybindHandler = {
     back() {
-      videoEl.currentTime -= getJumpTime()
+      videoEl.currentTime = getJumpTime(-1)[0]
     },
     forward() {
-      videoEl.currentTime += getJumpTime()
+      videoEl.currentTime = getJumpTime(1)[0]
     },
     longBack() {
-      videoEl.currentTime -= getJumpTime('long')
+      videoEl.currentTime = getJumpTime(-1, 'long')[0]
     },
     longForward() {
-      videoEl.currentTime += getJumpTime('long')
+      videoEl.currentTime = getJumpTime(1, 'long')[0]
     },
     volumeUp() {
       videoEl.volume = Math.min(

@@ -1,5 +1,6 @@
 import { videoEl } from '~c/elements'
 import { clientProfileSettingsStore } from '~c/stores'
+import { clamp } from '~/shared/utils/number'
 import { ucFirst } from '~/shared/utils/string'
 import { controlModule } from './setup-module'
 
@@ -23,12 +24,40 @@ export function moduleChild(module: Module, icon?: SVGSVGElement) {
     return child
   }
 }
-export function getJumpTime(variant: '' | 'long' = '') {
+
+let capturedTime = 0
+let captureTimeout: NodeJS.Timeout | undefined
+export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
+  const setting = clientProfileSettingsStore.state.videoPlayer
+
   const prefix = variant ? (`${variant}J` as const) : 'j'
 
-  const time = clientProfileSettingsStore.state.videoPlayer[`${prefix}umpSec`]
+  const time = setting[`${prefix}umpSec`]
 
-  const isRelative = clientProfileSettingsStore.state.videoPlayer[`relative${ucFirst(variant)}Jump`]
+  const isRelative = setting[`relative${ucFirst(variant)}Jump`]
 
-  return isRelative ? time * videoEl.playbackRate : time
+  const jumpTime = isRelative ? time * videoEl.playbackRate : time
+  const newTime = clamp(videoEl.currentTime + jumpTime * multiplier, 0, videoEl.duration)
+
+  if (!variant) {
+    if (capturedTime) {
+      const diff = Math.abs(newTime - capturedTime)
+      if (diff < jumpTime) {
+        clearTimeout(captureTimeout)
+        capturedTime = 0
+
+        return [newTime - diff, jumpTime - diff] as const
+      }
+    } else {
+      capturedTime = videoEl.currentTime
+
+      clearTimeout(captureTimeout)
+      captureTimeout = setTimeout(() => {
+        captureTimeout = undefined
+        capturedTime = 0
+      }, jumpTime * 1000)
+    }
+  }
+
+  return [newTime, jumpTime] as const
 }

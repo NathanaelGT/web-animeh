@@ -1,5 +1,5 @@
 import { overlayEl, overlayLeftPaddingEl, overlayRightPaddingEl, videoEl } from '~c/elements'
-import { clamp } from '~/shared/utils/number'
+import { formatFloat } from '~/shared/utils/number'
 import { timeStartEl, updateSeeker, updateTime } from './setup-timeline'
 import { getJumpTime } from './util'
 
@@ -86,12 +86,11 @@ function registerJumpGesture(
     showInfo()
   }
 
-  function jump(variant?: Parameters<typeof getJumpTime>[0]) {
-    const jumpTime = getJumpTime(variant)
-    const newTime = clamp(videoEl.currentTime + jumpTime * multiplier, 0, videoEl.duration)
+  function jump(variant?: Parameters<typeof getJumpTime>[1]) {
+    const [newTime, jumpTime] = getJumpTime(multiplier, variant)
 
     videoEl.currentTime = newTime
-    textEl.textContent = (total += jumpTime).toString()
+    textEl.textContent = parseFloat(formatFloat((total += jumpTime))).toString()
 
     timeStartEl.textContent = updateTime(newTime)
     updateSeeker(newTime)
