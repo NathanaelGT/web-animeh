@@ -2,10 +2,12 @@ import { overlayEl, videoEl } from '~c/elements'
 import { timeStartEl, updateSeeker, updateTime } from './setup-timeline'
 import { getJumpTime } from './util'
 
-const [leftOverlayEl, _centerOverlayEl, rightOverlayEl, speedOverlayEl] =
+const [leftOverlayEl, centerOverlayEl, rightOverlayEl, speedOverlayEl] =
   overlayEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
 
-export { speedOverlayEl }
+const playbackInfoEl = centerOverlayEl.firstElementChild as HTMLDivElement
+
+export { speedOverlayEl, playbackInfoEl }
 
 const backwardInfoEl = leftOverlayEl.firstElementChild as HTMLDivElement
 const forwardInfoEl = rightOverlayEl.firstElementChild as HTMLDivElement
@@ -86,7 +88,7 @@ function registerJumpGesture(
     if (graceTimer) {
       clearTimeout(graceTimer)
     }
-    graceTimer = setTimeout(hideInfo, 1500)
+    graceTimer = setTimeout(hideInfo, 2000)
   }
 
   function showInfo() {

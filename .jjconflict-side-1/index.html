@@ -30,7 +30,18 @@
                 -<span></span>
               </div>
             </div>
-            <div class="col-span-4 flex items-center justify-center"></div>
+            <div class="col-span-4 flex items-center justify-center">
+              <div
+                class="flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-2xl"
+                style="
+                  opacity: 0;
+                  transform: scale(0);
+                  transition:
+                    opacity 0.2s ease-in-out,
+                    transform 0.2s ease-in-out;
+                "
+              ></div>
+            </div>
             <div class="col-span-3 flex items-center justify-center">
               <div
                 class="pointer-events-none flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-2xl"

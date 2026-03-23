@@ -1,4 +1,5 @@
 import { controlEl, playerEl, videoEl } from '~c/elements'
+import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
 import { updateTimeline } from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
 
@@ -11,39 +12,65 @@ export const controlState = {
   isFineScrubbing: false,
 }
 
-const showControls = () => {
+export function showControls() {
   if (!controlState.isVisible) {
     controlState.isVisible = true
     updateTimeline()
-  }
 
-  controlEl.style.opacity = '1'
-  playerEl.style.cursor = 'default'
+    controlEl.style.opacity = '1'
+    playerEl.style.cursor = 'default'
+  }
 
   clearTimeout(hideTimer)
 
-  if (isHoveringVideo && !isHoveringControls) {
-    hideTimer = setTimeout(() => {
-      if (controlState.isFineScrubbing) {
-        return
-      }
-
-      hideControl()
-      playerEl.style.cursor = 'none'
-    }, 2000)
+  if (!isHoveringControls) {
+    scheduleHideControl()
   }
 }
 
-function handlePlayerMouseEnter() {
-  isHoveringVideo = true
+export function hideControl() {
+  controlState.isVisible = false
+  controlEl.style.opacity = '0'
+
+  scheduleHide()
+}
+
+export function scheduleHideControl() {
+  hideTimer = setTimeout(() => {
+    if (controlState.isFineScrubbing) {
+      return
+    }
+
+    hideControl()
+    playerEl.style.cursor = 'none'
+  }, 2000)
+}
+
+function handlePlayerPointerEnter(event: PointerEvent) {
+  if (event.pointerType === 'mouse') {
+    isHoveringVideo = true
+    playerEl.addEventListener('pointerleave', handlePlayerPointerLeave)
+  } else {
+    if (controlState.isVisible) {
+      hideControl()
+      hideOverlayPlayback()
+
+      return
+    }
+
+    showOverlayPlaybackIcon()
+
+    playerEl.removeEventListener('pointerleave', handlePlayerPointerLeave)
+  }
+
   showControls()
 }
 
-function handlePlayerMouseMove() {
+function handlePlayerPointerMove() {
   showControls()
 }
 
-function handlePlayerMouseLeave() {
+function handlePlayerPointerLeave() {
   isHoveringVideo = false
   clearTimeout(hideTimer)
 
@@ -59,40 +86,31 @@ function handlePlayerMouseLeave() {
   }, 500)
 }
 
-function handleControlMouseEnter() {
+function handleControlPointerEnter() {
   isHoveringControls = true
   clearTimeout(hideTimer)
 }
 
-function handleControlMouseLeave() {
+function handleControlPointerLeave() {
   isHoveringControls = false
   showControls()
 }
 
 export function addPlayerListeners() {
-  playerEl.addEventListener('mouseenter', handlePlayerMouseEnter)
-  playerEl.addEventListener('mousemove', handlePlayerMouseMove)
-  playerEl.addEventListener('mouseleave', handlePlayerMouseLeave)
-  controlEl.addEventListener('mouseenter', handleControlMouseEnter)
-  controlEl.addEventListener('mouseleave', handleControlMouseLeave)
+  playerEl.addEventListener('pointerenter', handlePlayerPointerEnter)
+  playerEl.addEventListener('pointermove', handlePlayerPointerMove)
+  controlEl.addEventListener('pointerenter', handleControlPointerEnter)
+  controlEl.addEventListener('pointerleave', handleControlPointerLeave)
 }
 
 export function removePlayerListeners() {
-  playerEl.removeEventListener('mouseenter', handlePlayerMouseEnter)
-  playerEl.removeEventListener('mousemove', handlePlayerMouseMove)
-  playerEl.removeEventListener('mouseleave', handlePlayerMouseLeave)
-  controlEl.removeEventListener('mouseenter', handleControlMouseEnter)
-  controlEl.removeEventListener('mouseleave', handleControlMouseLeave)
+  playerEl.removeEventListener('pointerenter', handlePlayerPointerEnter)
+  playerEl.removeEventListener('pointermove', handlePlayerPointerMove)
+  controlEl.removeEventListener('pointerenter', handleControlPointerEnter)
+  controlEl.removeEventListener('pointerleave', handleControlPointerLeave)
 }
 
 addPlayerListeners()
-
-function hideControl() {
-  controlState.isVisible = false
-  controlEl.style.opacity = '0'
-
-  scheduleHide()
-}
 
 const defaultKeybindKeys = new Set([
   'ArrowLeft',

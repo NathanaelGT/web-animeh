@@ -1,6 +1,7 @@
 import { leftControlEl, centerControlEl, rightControlEl, iconsEl } from '~c/elements'
 import { createElement } from '~c/utils/dom'
 import { createReactiveDOMRect } from '~c/utils/reactiveRect'
+import { isTouchDevice } from '../utils'
 import { toggleFullscreen } from './setup-fullscreen'
 import { togglePlayback } from './setup-playback'
 import { speedButtonEl, speedWrapperEl } from './setup-speed'
@@ -15,9 +16,9 @@ export const controlModule = (() => {
   const speed = speedButtonEl
   const fullscreen = el(iconsEl.maximize, toggleFullscreen)
 
-  leftControlEl.append(group(playback), group([volume, volumeSliderEl]))
-  centerControlEl.append(group(time))
-  rightControlEl.append(group(speedWrapperEl), group(fullscreen))
+  assign(leftControlEl, group(playback, true), group([volume, volumeSliderEl]))
+  assign(centerControlEl, group(time))
+  assign(rightControlEl, group(speedWrapperEl), group(fullscreen))
 
   return {
     el: { playback, volume, time, speed, fullscreen },
@@ -42,14 +43,23 @@ export const controlModule = (() => {
   type AtLeastOne<T> = [T, ...T[]]
   type GroupElement = HTMLElement | AtLeastOne<HTMLElement>
 
-  function group(...elements: AtLeastOne<GroupElement>) {
+  function group(...elements: [...GroupElement[], GroupElement | true]) {
+    const isMouseOnly = elements.at(-1) === true
+    if (isMouseOnly) {
+      if (isTouchDevice) {
+        return null
+      }
+
+      elements.pop()
+    }
+
     const classList = ['cursor-pointer', 'rounded-full', 'p-1', 'hover:bg-gray-50/10']
     const element = createElement(
-      'flex items-center rounded-full bg-black/40 p-1 has-[>:nth-child(2)]:*:px-3',
+      'flex  items-center rounded-full bg-black/40 p-1 has-[>:nth-child(2)]:*:px-3',
     )
 
     for (let i = 0; i < elements.length; i++) {
-      const el = elements[i]!
+      const el = elements[i] as GroupElement
       if (el instanceof HTMLElement) {
         el.classList.add(...classList)
         element.append(el)
@@ -77,6 +87,10 @@ export const controlModule = (() => {
     }
 
     return element
+  }
+
+  function assign(controlEl: HTMLElement, ...group: (HTMLDivElement | null)[]) {
+    controlEl.append(...group.filter(el => el !== null))
   }
 })()
 
