@@ -1,4 +1,5 @@
 import os from 'os'
+import readline from 'readline'
 import ky from 'ky'
 import { formatNs } from 'src/server/utils/time'
 import { format } from 'src/shared/utils/date'
@@ -118,7 +119,7 @@ if (shouldPersist) {
   await Promise.all(values.map(([_key, value]) => value))
   const end = Bun.nanoseconds()
 
-  process.stdout.moveCursor(25, -1)
+  readline.moveCursor(process.stdout, 25, -1)
   process.stdout.write(`\x1b[90m(${formatNs(end - start)} elapsed)\x1b[0m\n`)
 } else {
   await Promise.all(values.map(([_key, value]) => value))

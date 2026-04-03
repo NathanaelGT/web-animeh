@@ -24,8 +24,10 @@ if (os.platform() === 'linux') {
 
 const maxWidth = 140
 
-process.stdout.moveCursor(0, -1)
-process.stdout.clearLine(0)
+if (process.stdout.isTTY) {
+  process.stdout.moveCursor(0, -1)
+  process.stdout.clearLine(0)
+}
 process.env.MODE = 'development'
 
 const client = serverOnly

@@ -1,7 +1,6 @@
 import { argv } from '~s/argv'
 // import argv ditaro dipaling atas biar hasil buildnya pengecekan argv dilakukan diawal
 import os from 'os'
-import readline from 'readline'
 import SuperJSON, { type SuperJSONResult } from 'superjson'
 import { seed } from '~s/anime/seed'
 import { SilentError } from '~s/error'
@@ -75,7 +74,9 @@ const log = (...params: Parameters<typeof logMessage>) => {
 
 const startingMessage = logMessage('server', 'Starting')
 if (firstTime) {
-  process.stdout.write('\n\n' + startingMessage)
+  if (process.stdout.isTTY) {
+    process.stdout.write('\n\n' + startingMessage)
+  }
 } else {
   globalForServer.server?.stop(true)
 
@@ -362,9 +363,11 @@ if (firstTime) {
     logMessage('server', 'Started', elapsed),
   )
 
-  readline.moveCursor(process.stdout, 0, -1)
-  process.stdout.cursorTo(0)
-  process.stdout.clearLine(0)
+  if (process.stdout.isTTY) {
+    process.stdout.moveCursor(0, -1)
+    process.stdout.cursorTo(0)
+    process.stdout.clearLine(0)
+  }
 
   if (Bun.env.PROD) {
     const command = env.SERVER_STARTED_HOOK
