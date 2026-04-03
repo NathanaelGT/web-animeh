@@ -6,12 +6,10 @@ import { moduleChild } from './util'
 
 videoEl.addEventListener('play', () => {
   moduleChild('playback', iconsEl.pause)
-  showOverlayPlaybackIcon(iconsEl.play)
 })
 
 videoEl.addEventListener('pause', () => {
   moduleChild('playback', iconsEl.play)
-  showOverlayPlaybackIcon(iconsEl.pause)
 })
 
 let clickTimer: NodeJS.Timeout | undefined | null

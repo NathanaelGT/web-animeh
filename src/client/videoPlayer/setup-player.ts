@@ -1,6 +1,7 @@
-import { controlEl, playerEl, videoEl } from '~c/elements'
+import { controlEl, iconsEl, playerEl, videoEl } from '~c/elements'
 import { overlayState } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
+import { syncSpeedUI } from './setup-speed'
 import { updateTimeline } from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
 
@@ -140,3 +141,52 @@ videoEl.addEventListener(
   },
   true,
 )
+
+function handleVideoPlay() {
+  showOverlayPlaybackIcon(iconsEl.play)
+}
+
+function handleVideoPause() {
+  showOverlayPlaybackIcon(iconsEl.pause)
+}
+
+videoEl.setSrc = function (src) {
+  videoEl.removeEventListener('ratechange', syncSpeedUI)
+
+  videoEl.removeEventListener('play', handleVideoPlay)
+  videoEl.removeEventListener('pause', handleVideoPause)
+
+  videoEl.onloadeddata = () => {
+    videoEl.onloadeddata = null
+
+    const play = () => {
+      videoEl.onplay = () => {
+        videoEl.onplay = null
+
+        videoEl.muted = false
+
+        requestAnimationFrame(() => {
+          videoEl.addEventListener('play', handleVideoPlay)
+          videoEl.addEventListener('pause', handleVideoPause)
+        })
+      }
+
+      videoEl.muted = true
+      videoEl.play()
+    }
+
+    if (document.hidden) {
+      document.addEventListener('visibilitychange', play, { once: true })
+    } else {
+      play()
+    }
+  }
+
+  const currentSpeed = videoEl.playbackRate
+
+  // @ts-expect-error wrapper
+  videoEl.src = src
+  videoEl.playbackRate = currentSpeed
+
+  videoEl.addEventListener('ratechange', syncSpeedUI)
+}

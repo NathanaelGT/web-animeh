@@ -119,7 +119,7 @@ function handleOutsideClick(event: PointerEvent) {
   }
 }
 
-function syncUI() {
+export function syncSpeedUI() {
   const speed = videoEl.playbackRate
 
   speedInput.value = speed.toFixed(
@@ -140,23 +140,11 @@ sliderEl.addEventListener('input', () => {
 speedInput.addEventListener('change', () => {
   const parsed = parseFloat(speedInput.value)
   if (isNaN(parsed)) {
-    syncUI()
+    syncSpeedUI()
   } else {
     videoEl.playbackRate = parsed
   }
 })
-
-videoEl.setSrc = function (src) {
-  videoEl.removeEventListener('ratechange', syncUI)
-
-  const currentSpeed = videoEl.playbackRate
-
-  // @ts-expect-error wrapper
-  videoEl.src = src
-  videoEl.playbackRate = currentSpeed
-
-  videoEl.addEventListener('ratechange', syncUI)
-}
 
 videoEl.playbackRate = clientProfileSettingsStore.state.videoPlayer.defaultSpeed
 
