@@ -165,7 +165,7 @@ export function decreaseSpeed(silent?: any) {
 
   const newSpeed = Math.max(0.1, videoEl.playbackRate - speedStep)
 
-  setSpeed(newSpeed, speedStep, !silent)
+  setSpeed(newSpeed, !silent)
 }
 
 export function increaseSpeed(silent?: any) {
@@ -173,7 +173,7 @@ export function increaseSpeed(silent?: any) {
 
   const newSpeed = Math.min(8, videoEl.playbackRate + speedStep)
 
-  setSpeed(newSpeed, speedStep, !silent)
+  setSpeed(newSpeed, !silent)
 }
 
 let savedSpeed = 1
@@ -190,9 +190,8 @@ export function toggleSpeed() {
 }
 
 let showOverlayTimeout: NodeJS.Timeout | undefined
-function setSpeed(speed: number, step: number, shouldShowOverlay?: any) {
-  const speedStr = speed.toFixed(decimalFractionDigits(step) || decimalFractionDigits(speed))
-  videoEl.playbackRate = Number(speedStr) // untuk menghindari floating point precision issue
+function setSpeed(speed: number, shouldShowOverlay?: any) {
+  videoEl.playbackRate = Math.round((speed + Number.EPSILON) * 1e12) / 1e12 // untuk menghindari floating point precision issue
 
   if (shouldShowOverlay) {
     showOverlay()
@@ -200,7 +199,14 @@ function setSpeed(speed: number, step: number, shouldShowOverlay?: any) {
 }
 
 function showOverlay() {
-  speedOverlayEl.textContent = videoEl.playbackRate.toString()
+  const speed = videoEl.playbackRate
+
+  speedOverlayEl.textContent = speed.toFixed(
+    Math.max(
+      decimalFractionDigits(clientProfileSettingsStore.state.videoPlayer.speedStep),
+      decimalFractionDigits(speed),
+    ),
+  )
   speedOverlayEl.style.opacity = '1'
 
   clearTimeout(showOverlayTimeout)
