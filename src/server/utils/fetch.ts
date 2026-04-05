@@ -10,6 +10,14 @@ export const fetchText = async (
   options: Options = {},
   fetcher: Fetcher = ky,
 ): Promise<string> => {
+  options.timeout ??= 5_000
+
+  options.retry ??= {}
+  if (typeof options.retry === 'object') {
+    options.retry.limit ??= 3
+    options.retry.retryOnTimeout ??= true
+  }
+
   const response = await limitRequest(() => fetcher(url, options))
 
   return response.text()
