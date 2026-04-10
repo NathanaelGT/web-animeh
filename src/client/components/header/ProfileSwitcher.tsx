@@ -81,7 +81,7 @@ export function ProfileSwitcher({ className }: Props) {
             variant="outline"
             role="combobox"
             onMouseDown={fetchProfiles}
-            className={`justify-between sm:w-48 ${className}`}
+            className={`hidden justify-between sm:w-48 md:inline-flex ${className}`}
           >
             <span className="overflow-hidden">{currentProfileName ?? 'Loading'}</span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

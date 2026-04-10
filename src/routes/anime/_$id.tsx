@@ -27,7 +27,7 @@ function AnimeIdLayout() {
   useLayoutEffect(() => {
     headerChildStore.setState(() => (
       <div className="fixed -z-50 h-16 overflow-hidden">
-        <Image src={animeData.id} className="h-screen w-screen opacity-40 blur-xl" />
+        <Image src={animeData.id} className="h-lvh w-lvw opacity-40 blur-xl" />
       </div>
     ))
 
@@ -52,8 +52,8 @@ function AnimeIdLayout() {
 
   return (
     <>
-      <div className="fixed -z-50 h-auto overflow-hidden">
-        <Image src={animeData.id} className="h-screen w-screen opacity-40 blur-xl" />
+      <div className="fixed top-0 bottom-0 -z-50">
+        <Image src={animeData.id} className="h-lvh w-lvw opacity-40 blur-xl" />
       </div>
       <Outlet />
     </>

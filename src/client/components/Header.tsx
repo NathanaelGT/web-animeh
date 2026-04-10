@@ -152,7 +152,7 @@ export function Header() {
 
   const parentClassName = headerChild ? '**:border-slate-400 dark:**:border-slate-900' : ''
   const childClassName = headerChild
-    ? 'bg-white/25 hover:bg-white/50 dark:bg-black/25 dark:hover:bg-black/50'
+    ? 'bg-white/25 hover:bg-white/50 dark:bg-black/25 dark:hover:bg-black/50 z-1'
     : ''
 
   return (
@@ -166,7 +166,12 @@ export function Header() {
       <div className="flex h-16 items-center justify-between px-4">
         <div className="flex items-center space-x-3 lg:space-x-4">
           {/* kalo engga dikasih params splat kosong, paramsnya bakal mengikuti splat yang lagi aktif */}
-          <Link to="/$" preloadDelay={50} params={{ _splat: '' }} className="mr-8 font-extrabold">
+          <Link
+            to="/$"
+            preloadDelay={50}
+            params={{ _splat: '' }}
+            className="mr-4 text-center font-extrabold md:mr-8"
+          >
             Web Animeh
           </Link>
 
