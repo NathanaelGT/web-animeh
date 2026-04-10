@@ -3,11 +3,14 @@ import readline from 'readline'
 import ky from 'ky'
 import { formatNs } from 'src/server/utils/time'
 import { format } from 'src/shared/utils/date'
+import { before } from 'src/shared/utils/string'
+
+type Info = Record<string, { v: unknown; t?: number }>
 
 const infoPath = 'node_modules/info.json'
-const info = (await Bun.file(infoPath)
+const info: Info = await Bun.file(infoPath)
   .json()
-  .catch(() => ({}))) as Record<string, { v: unknown; t?: number }>
+  .catch(() => ({}))
 
 const isProd = Bun.main.endsWith('build.ts') || false
 
@@ -95,6 +98,8 @@ const sources = {
   },
 } satisfies Record<string, { ttl?: number; getter(): Bun.MaybePromise<unknown> }>
 
+const failedList = new Map<string, any>()
+
 let shouldPersist = false
 const values = Object.entries(sources).map(([key, data]) => {
   const ttl = ((data as any).ttl as number | undefined) ?? 0
@@ -106,6 +111,14 @@ const values = Object.entries(sources).map(([key, data]) => {
   const value = shouldRenew ? getter() : info[key]!.v
 
   if (ttl && shouldRenew) {
+    if (key in info && value instanceof Promise) {
+      value.catch(err => {
+        failedList.set(key, err)
+
+        return null
+      })
+    }
+
     shouldPersist = true
   }
 
@@ -116,11 +129,29 @@ if (shouldPersist) {
   process.stdout.write('\n\x1b[34m\x1b[7mINFO\x1b[0m\x1b[34m\x1b[0m Updating metadata\x1b[0m\n')
 
   const start = Bun.nanoseconds()
-  await Promise.all(values.map(([_key, value]) => value))
+  await Promise.allSettled(values.map(([_key, value]) => value))
   const end = Bun.nanoseconds()
 
   readline.moveCursor(process.stdout, 25, -1)
   process.stdout.write(`\x1b[90m(${formatNs(end - start)} elapsed)\x1b[0m\n`)
+
+  if (failedList.size) {
+    let msg = `\n\x1b[33m\x1b[7mWARN\x1b[0m\x1b[33m\x1b[0m ${failedList.size} metadata failed to update, using outdated cache\x1b[0m\n`
+
+    const prefix = ' '.repeat('WARN '.length)
+    failedList.forEach((err, key) => {
+      const prettyKey = key
+        .split('_')
+        .map(key => key[0] + key.slice(1).toLowerCase())
+        .join(' ')
+
+      const prettyError = err instanceof Error ? before(err.message, ':') : String(err)
+
+      msg += prefix + prettyKey + ': ' + prettyError + '\n'
+    })
+
+    process.stdout.write(msg)
+  }
 } else {
   await Promise.all(values.map(([_key, value]) => value))
 }
@@ -142,17 +173,31 @@ const updatedInfo = Object.fromEntries(peekedValues) as {
 }
 
 if (shouldPersist) {
-  const newInfo = Object.fromEntries(
+  const newInfo: Info = Object.fromEntries(
     peekedValues
       .map(([key, value, ttl]) => {
         const shouldIncludeTimestamp = (sources as any)[key].ttl !== undefined
 
-        return ttl ? [key, { v: value, t: shouldIncludeTimestamp ? now : undefined }] : null
+        if (!ttl) {
+          return null
+        }
+
+        return [
+          key,
+          failedList.has(key)
+            ? info[key]!
+            : {
+                v: value,
+                t: shouldIncludeTimestamp ? now : undefined,
+              },
+        ]
       })
       .filter(entry => entry !== null),
   )
 
-  Bun.write(infoPath, JSON.stringify(newInfo))
+  if (!Bun.deepEquals(info, newInfo)) {
+    Bun.write(infoPath, JSON.stringify(newInfo))
+  }
 }
 
 const fileDTsPath = 'src/server/types/info.d.ts'
