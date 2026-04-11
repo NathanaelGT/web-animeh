@@ -27,7 +27,7 @@ export function moduleChild(module: Module, icon?: SVGSVGElement) {
 
 let capturedTime = 0
 let captureTimeout: NodeJS.Timeout | undefined
-export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
+export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = ''): [number, number] {
   const setting = clientProfileSettingsStore.state.videoPlayer
 
   const prefix = variant ? (`${variant}J` as const) : 'j'
@@ -36,8 +36,16 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
 
   const isRelative = setting[`relative${ucFirst(variant)}Jump`]
 
+  const { currentTime } = videoEl
+
+  if (setting.padLongJump && variant && currentTime < setting.padLongJumpThreshold) {
+    const newTime = setting.padLongJumpSec
+
+    return [newTime, newTime - currentTime]
+  }
+
   const jumpTime = isRelative ? time * videoEl.playbackRate : time
-  const newTime = clamp(videoEl.currentTime + jumpTime * multiplier, 0, videoEl.duration)
+  const newTime = clamp(currentTime + jumpTime * multiplier, 0, videoEl.duration)
 
   if (!variant) {
     if (capturedTime) {
@@ -48,10 +56,10 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
 
         const min = diff + setting.smartJumpOffset / 1000
 
-        return [newTime - min, jumpTime - min] as const
+        return [newTime - min, jumpTime - min]
       }
     } else {
-      capturedTime = videoEl.currentTime
+      capturedTime = currentTime
 
       clearTimeout(captureTimeout)
       captureTimeout = setTimeout(() => {
@@ -61,5 +69,5 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = '') {
     }
   }
 
-  return [newTime, jumpTime] as const
+  return [newTime, jumpTime]
 }

@@ -5,19 +5,19 @@ import { useStoreState } from '~c/hooks/useStoreState'
 import { keybindTranslation } from '~c/keybind'
 import { clientProfileSettingsStore, profileStore } from '~c/stores'
 import { api } from '~c/trpc'
-import { cn } from '~c/utils'
 import { formatKeybind } from '~c/utils/keybind'
 import { Checkbox } from '@/ui/checkbox'
 import { Label } from '@/ui/label'
 import { SimpleTooltip } from '@/ui/tooltip'
 import {
-  type videoPlayerSchema,
-  type settingsSchema,
   miniplayerMode,
   backupStateMode,
+  type videoPlayerSchema,
+  type settingsSchema,
 } from '~/shared/profile/settings'
 import { clamp } from '~/shared/utils/number'
 import { Select } from './tampilan'
+import type { CheckedState } from '@radix-ui/react-checkbox'
 import type { InferOutput } from 'valibot'
 
 export const Route = createFileRoute('/_pengaturan/pengaturan/pemutar-video')({
@@ -49,7 +49,7 @@ function VideoPlayer() {
         max={1}
       />
 
-      <InputNumberSwitch
+      <InputNumberExtra
         name="jumpSec"
         label="Durasi maju/mundur"
         tooltip={
@@ -58,14 +58,18 @@ function VideoPlayer() {
             <KeybindCombination id={['videoPlayer', 'back']} />
           </KeybindCombinationWrapper>
         }
-        switchName="relativeJump"
-        switchLabel="Relatif"
-        switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
         unit="Detik"
         min={0.1}
+        extra={[
+          {
+            name: 'relativeJump',
+            label: 'Relatif',
+            tooltip: 'Mengatur durasi maju/mundur relatif terhadap kecepatan video',
+          },
+        ]}
       />
 
-      <InputNumberSwitch
+      <InputNumberExtra
         name="longJumpSec"
         label="Durasi maju/mundur jauh"
         tooltip={
@@ -74,11 +78,42 @@ function VideoPlayer() {
             <KeybindCombination id={['videoPlayer', 'longForward']} />
           </KeybindCombinationWrapper>
         }
-        switchName="relativeLongJump"
-        switchLabel="Relatif"
-        switchTooltip="Mengatur durasi maju/mundur relatif terhadap kecepatan video"
         unit="Detik"
         min={0.1}
+        extra={[
+          {
+            name: 'relativeLongJump',
+            label: 'Relatif',
+            tooltip: 'Mengatur durasi maju/mundur relatif terhadap kecepatan video',
+          },
+        ]}
+      />
+
+      <InputNumberExtra
+        name="padLongJumpSec"
+        label="Target maju jauh diawal video"
+        tooltip={
+          <KeybindCombinationWrapper>
+            <KeybindCombination id={['videoPlayer', 'longForward']} />
+          </KeybindCombinationWrapper>
+        }
+        leftUnit
+        unit="Detik"
+        min={1}
+        extra={[
+          {
+            name: 'padLongJumpThreshold',
+            label: 'Sebelum',
+            unit: 'Detik',
+            min: 1,
+            withRound: false,
+            width: 'w-36',
+          },
+          {
+            name: 'padLongJump',
+            label: 'Aktif',
+          },
+        ]}
       />
 
       <Select
@@ -141,38 +176,40 @@ type SettingsByType<TFilter, TObj = VideoPlayerSettings> = {
   [Key in keyof TObj]: TObj[Key] extends TFilter ? Key : never
 }[keyof TObj]
 
-type InputNumberProps = PropsWithChildren<{
+const inputWrapperClassName =
+  'border border-primary/15 ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
+
+type InputNumberPrimitiveProps = {
   name: SettingsByType<number>
   label: string
-  tooltip?: ReactNode
-  nextLabel?: ReturnType<typeof Label>
+  leftUnit?: boolean
   unit: string
-  multiplier?: number
   step?: number
   min?: number
   max?: number
-  childrenClassName?: string
-}>
+  withRound?: boolean
+  width?: `w-${number}`
+  value: number | undefined
+  setValue: (value: number | undefined) => void
+  setInputError: (error: string) => void
+  children?: (className: string, setInputError: (error: string) => void) => ReactNode
+}
 
-function InputNumber({
+function InputNumberPrimitive({
   name,
   label,
-  tooltip,
-  nextLabel,
+  leftUnit = false,
   unit,
-  multiplier = 1,
   step = 1,
   min,
   max,
+  withRound = true,
+  width = 'w-60',
+  value,
+  setValue,
+  setInputError,
   children,
-  childrenClassName,
-}: InputNumberProps) {
-  const [inputError, setInputError] = useState('')
-  const [value, setValue] = useStoreState(clientProfileSettingsStore, state => {
-    const value = state.videoPlayer[name] * multiplier
-
-    return isNaN(value) ? undefined : value
-  })
+}: InputNumberPrimitiveProps) {
   const update = api.profile.update.useMutation()
 
   const onInput = (event: React.FormEvent<HTMLInputElement>) => {
@@ -211,6 +248,77 @@ function InputNumber({
     })
   }
 
+  const labelEl = (
+    <label
+      htmlFor={name}
+      className={
+        'flex items-center border-primary/15 bg-primary/10 px-3 ' +
+        (withRound
+          ? leftUnit
+            ? (children ? 'rounded-l-md' : '') + ' border-r'
+            : (children ? '' : 'rounded-r-md') + ' border-l'
+          : '')
+      }
+    >
+      {unit}
+    </label>
+  )
+
+  return (
+    <div
+      className={`flex h-10 ${width} ${withRound ? (children ? 'rounded-l-md border-r-0' : 'rounded-md') : 'border-r-0'} ${inputWrapperClassName}`}
+    >
+      {leftUnit ? labelEl : null}
+
+      <input
+        id={name}
+        type="number"
+        step={step}
+        value={value ?? ''}
+        onKeyDown={onKeyDown}
+        onInput={onInput}
+        className="w-full bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-hidden"
+      />
+
+      {leftUnit ? null : labelEl}
+    </div>
+  )
+}
+
+type InputNumberProps = Omit<InputNumberPrimitiveProps, 'value' | 'setValue' | 'setInputError'> & {
+  name: SettingsByType<number>
+  label: string
+  tooltip?: ReactNode
+  nextLabels?: ReturnType<typeof Label>[]
+  leftUnit?: boolean
+  unit: string
+  multiplier?: number
+  step?: number
+  min?: number
+  max?: number
+  children?: (className: string, setInputError: (error: string) => void) => ReactNode
+}
+
+function InputNumber({
+  name,
+  label,
+  tooltip,
+  nextLabels,
+  leftUnit = false,
+  unit,
+  multiplier = 1,
+  step = 1,
+  min,
+  max,
+  children,
+}: InputNumberProps) {
+  const [inputError, setInputError] = useState('')
+  const [value, setValue] = useStoreState(clientProfileSettingsStore, state => {
+    const value = state.videoPlayer[name] * multiplier
+
+    return isNaN(value) ? undefined : value
+  })
+
   const labelElement = (
     <Label
       htmlFor={name}
@@ -225,41 +333,35 @@ function InputNumber({
     </Label>
   )
 
-  const inputWrapperClassName =
-    'border border-primary/15 ring-0! ring-ring ring-offset-transparent focus-within:outline-hidden focus-within:ring-2 focus-within:ring-offset-2 focus-within:rounded-md'
-
   return (
     <div className="flex flex-col gap-y-2">
-      <div className={`grid gap-y-2 ${children ? 'grid-cols-[min-content_min-content]' : ''}`}>
+      <div
+        className="grid gap-y-2"
+        style={
+          nextLabels
+            ? { gridTemplateColumns: ' min-content'.repeat(nextLabels.length + 1) }
+            : undefined
+        }
+      >
         {tooltip ? <SimpleTooltip title={tooltip}>{labelElement}</SimpleTooltip> : labelElement}
 
-        {nextLabel}
+        {nextLabels}
 
-        <div
-          className={`flex h-10 w-60 ${children ? 'rounded-l-md' : 'rounded-md'} ${inputWrapperClassName}`}
-        >
-          <input
-            id={name}
-            type="number"
-            step={step}
-            value={value ?? ''}
-            onKeyDown={onKeyDown}
-            onInput={onInput}
-            className="w-full bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-hidden"
-          />
-          <label
-            htmlFor={name}
-            className="flex items-center border-l border-primary/15 bg-primary/10 px-3"
-          >
-            {unit}
-          </label>
-        </div>
+        <InputNumberPrimitive
+          name={name}
+          label={label}
+          leftUnit={leftUnit}
+          unit={unit}
+          step={step}
+          min={min}
+          max={max}
+          value={value}
+          setValue={setValue}
+          setInputError={setInputError}
+          children={children}
+        />
 
-        {children && (
-          <div className={cn(inputWrapperClassName + ' rounded-r-md', childrenClassName)}>
-            {children}
-          </div>
-        )}
+        {children?.(inputWrapperClassName + ' rounded-r-md', setInputError)}
       </div>
 
       <div className={`mb-auto text-red-600 transition-[height] ${inputError ? 'h-6!' : 'h-0!'}`}>
@@ -269,48 +371,142 @@ function InputNumber({
   )
 }
 
-type InputNumberSwitchProps = Omit<InputNumberProps, 'children' | 'nextLabel'> & {
-  switchName: SettingsByType<boolean>
-  switchLabel: string
-  switchTooltip: ReactNode
+type InputNumberExtraBoolean = {
+  name: SettingsByType<boolean>
+  label: string
+  tooltip?: ReactNode
+  leftUnit?: never
+  unit?: never
+  multiplier?: never
+  step?: never
+  min?: never
+  max?: never
+  withRound?: never
+  width?: never
 }
 
-function InputNumberSwitch(props: InputNumberSwitchProps) {
+type InputNumberExtraNumber<TExcept extends SettingsByType<number>> = {
+  name: Exclude<SettingsByType<number>, TExcept>
+  label: string
+  tooltip?: ReactNode
+  leftUnit?: boolean
+  unit: string
+  multiplier?: number
+  step?: number
+  min?: number
+  max?: number
+  withRound?: boolean
+  width?: `w-${number}`
+}
+
+type InputNumberExtraProps<TName extends SettingsByType<number>> = Omit<
+  InputNumberProps,
+  'name' | 'children' | 'nextLabel'
+> & {
+  name: TName
+  extra: (InputNumberExtraBoolean | InputNumberExtraNumber<TName>)[]
+}
+
+function InputNumberExtra<TName extends SettingsByType<number>>(
+  props: InputNumberExtraProps<TName>,
+) {
   const update = api.profile.update.useMutation()
-  const [checked, setChecked] = useStoreState(
-    clientProfileSettingsStore,
-    state => state.videoPlayer[props.switchName],
+  const [values, setValues] = useStoreState(clientProfileSettingsStore, state =>
+    props.extra.map(({ name }) => state.videoPlayer[name]),
   )
 
-  const onCheckedChange = (checked: boolean) => {
+  const onCheckedChange = (index: number) => (value: CheckedState) => {
     const profile = structuredClone(profileStore.state!)
 
-    profile.settings.videoPlayer[props.switchName] = checked
+    // @ts-expect-error HELP ts god
+    profile.settings.videoPlayer[props.extra[index]!.name] = !!value
 
-    setChecked(checked)
+    setValues(list => {
+      const newList = list.slice()
+      // @ts-expect-error HELP ts god
+      newList[index] = value
+
+      return newList
+    })
 
     update.mutate(profile)
+  }
+
+  const onValueChange = (index: number) => (value: number | undefined) => {
+    setValues(list => {
+      const newList = list.slice()
+      // @ts-expect-error HELP ts god
+      newList[index] = value
+
+      return newList
+    })
   }
 
   return (
     <InputNumber
       {...props}
-      nextLabel={
-        <SimpleTooltip title={props.switchTooltip}>
-          <Label htmlFor={props.switchName}>{props.switchLabel}</Label>
-        </SimpleTooltip>
-      }
-      childrenClassName="h-10 w-10 p-2"
-    >
-      <div className="relative h-full w-full">
-        <Checkbox
-          id={props.switchName}
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          className="absolute inset-0 h-full w-full transition-colors"
-        />
-      </div>
-    </InputNumber>
+      nextLabels={props.extra.map((extra, index) => {
+        const label = extra.unit ? (
+          <Label
+            htmlFor={extra.name}
+            className={
+              'w-fit transition-transform' +
+              (values[index] ===
+              clientProfileSettingsStore.state.videoPlayer[extra.name] * (extra.multiplier || 1)
+                ? ''
+                : 'translate-x-[.1rem] -skew-x-18')
+            }
+          >
+            {extra.label}
+          </Label>
+        ) : (
+          <Label htmlFor={extra.name}>{extra.label}</Label>
+        )
+
+        if (!extra.tooltip) {
+          return label
+        }
+
+        return <SimpleTooltip title={extra.tooltip}>{label}</SimpleTooltip>
+      })}
+      children={(className, setInputError) => {
+        return props.extra.map((extra, index) => {
+          const value = values[index]!
+
+          if (typeof value === 'boolean') {
+            return (
+              <div className={className + ' h-10 w-10 p-2'}>
+                <div className="relative h-full w-full">
+                  <Checkbox
+                    id={extra.name}
+                    checked={value}
+                    onCheckedChange={onCheckedChange(index)}
+                    className="absolute inset-0 h-full w-full transition-colors"
+                  />
+                </div>
+              </div>
+            )
+          }
+
+          return (
+            <InputNumberPrimitive
+              name={extra.name as any}
+              label={extra.label}
+              leftUnit={extra.leftUnit}
+              unit={extra.unit!}
+              step={extra.step}
+              min={extra.min}
+              max={extra.max}
+              withRound={extra.withRound}
+              width={extra.width}
+              value={value}
+              setValue={onValueChange(index)}
+              setInputError={setInputError}
+            />
+          )
+        })
+      }}
+    ></InputNumber>
   )
 }
 
