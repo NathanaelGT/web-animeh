@@ -150,25 +150,35 @@ function handleVideoPause() {
   showOverlayPlaybackIcon(iconsEl.pause)
 }
 
+function addVideoPlayPauseListeners() {
+  videoEl.addEventListener('play', handleVideoPlay)
+  videoEl.addEventListener('pause', handleVideoPause)
+}
+
+function removeVideoPlayPauseListeners() {
+  videoEl.removeEventListener('play', handleVideoPlay)
+  videoEl.removeEventListener('pause', handleVideoPause)
+}
+
 videoEl.setSrc = function (src) {
   videoEl.removeEventListener('ratechange', syncSpeedUI)
 
-  videoEl.removeEventListener('play', handleVideoPlay)
-  videoEl.removeEventListener('pause', handleVideoPause)
+  removeVideoPlayPauseListeners()
 
   videoEl.onloadeddata = () => {
     videoEl.onloadeddata = null
 
     const play = () => {
+      if (!videoEl.paused) {
+        addVideoPlayPauseListeners()
+        return
+      }
+
       videoEl.onplay = () => {
         videoEl.onplay = null
-
         videoEl.muted = false
 
-        requestAnimationFrame(() => {
-          videoEl.addEventListener('play', handleVideoPlay)
-          videoEl.addEventListener('pause', handleVideoPause)
-        })
+        requestAnimationFrame(addVideoPlayPauseListeners)
       }
 
       videoEl.muted = true
