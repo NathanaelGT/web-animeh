@@ -72,6 +72,10 @@ speedButtonEl.addEventListener('click', toggleMenu)
 const wrapperEl = createElement('relative')
 wrapperEl.append(speedButtonEl, menuEl)
 
+let speedIconSize = ''
+const speedIconText = createElement('', 'span')
+iconsEl.speed.append(speedIconText)
+
 export { wrapperEl as speedWrapperEl }
 
 let isOpen = false
@@ -122,11 +126,20 @@ function handleOutsideClick(event: PointerEvent) {
 export function syncSpeedUI() {
   const speed = videoEl.playbackRate
 
-  speedInput.value = speed.toFixed(
+  const pretty = speed.toFixed(
     decimalFractionDigits(clientProfileSettingsStore.state.videoPlayer.speedStep) ||
       decimalFractionDigits(speed),
   )
+
   sliderEl.value = speed.toString()
+  speedInput.value = pretty
+  speedIconText.textContent = pretty
+
+  const newSize = Math.min((100 / (pretty.length - 1)) * 1.25, 60) + 'cqw'
+  if (speedIconSize !== newSize) {
+    speedIconSize = newSize
+    speedIconText.style.fontSize = speedIconSize
+  }
 }
 
 minusBtn.addEventListener('click', decreaseSpeed)
