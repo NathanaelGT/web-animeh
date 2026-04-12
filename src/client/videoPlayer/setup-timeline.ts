@@ -175,7 +175,7 @@ timelineEl.addEventListener('pointerdown', event => {
   timeStartEl.textContent = updateTime(newTime)
   handleEl.classList.add('hover')
 
-  updateSeeker(videoEl.currentTime)
+  updateSeeker(newTime)
 
   showStoryboardWrapper()
 })
@@ -444,8 +444,7 @@ videoEl.addEventListener('timeupdate', () => {
   }
 })
 
-export function updateTimeline() {
-  const time = videoEl.currentTime
+export function updateTimeline(time = videoEl.currentTime) {
   const second = Math.floor(time)
 
   if (lastSecond !== second) {
@@ -454,41 +453,6 @@ export function updateTimeline() {
   }
 
   updateSeeker(time)
-
-  let currentColor = seekerColor
-  for (let i = 0; i < chapters.length; i++) {
-    const chapter = chapters[i]!
-
-    if (second > chapter.end) {
-      if (chapter.state !== 1) {
-        chapter.state = 1
-        chapter.fg.style.transform = 'translateX(0%)'
-        chapter.bg.style.opacity = '1'
-      }
-    } else if (second < chapter.start) {
-      if (chapter.state !== 2) {
-        chapter.state = 2
-        chapter.fg.style.transform = 'translateX(-100%)'
-        chapter.bg.style.opacity = '0.5'
-      }
-    } else {
-      const percent = (second - chapter.start) / (chapter.end - chapter.start)
-
-      chapter.fg.style.transform = `translateX(-${100 - percent * 100}%)`
-
-      if (chapter.state !== 3) {
-        chapter.state = 3
-        chapter.bg.style.opacity = '0.5'
-      }
-
-      currentColor = chapter.color
-    }
-  }
-
-  if (lastHandleColor !== currentColor) {
-    lastHandleColor = currentColor
-    handleEl.style.backgroundColor = currentColor
-  }
 }
 
 export function updateTime(seconds: number) {
@@ -511,4 +475,39 @@ export function updateSeeker(currentTime: number) {
 
   seekerEl.style.transform = `scaleX(${percentage})`
   handleEl.style.transform = `translate(calc(${percentage * 100}cqw - var(--x)), calc(-50% - 2px))`
+
+  let currentColor = seekerColor
+  for (let i = 0; i < chapters.length; i++) {
+    const chapter = chapters[i]!
+
+    if (currentTime > chapter.end) {
+      if (chapter.state !== 1) {
+        chapter.state = 1
+        chapter.fg.style.transform = 'translateX(0%)'
+        chapter.bg.style.opacity = '1'
+      }
+    } else if (currentTime < chapter.start) {
+      if (chapter.state !== 2) {
+        chapter.state = 2
+        chapter.fg.style.transform = 'translateX(-100%)'
+        chapter.bg.style.opacity = '0.5'
+      }
+    } else {
+      const percent = (currentTime - chapter.start) / (chapter.end - chapter.start)
+
+      chapter.fg.style.transform = `translateX(-${100 - percent * 100}%)`
+
+      if (chapter.state !== 3) {
+        chapter.state = 3
+        chapter.bg.style.opacity = '0.5'
+      }
+
+      currentColor = chapter.color
+    }
+  }
+
+  if (lastHandleColor !== currentColor) {
+    lastHandleColor = currentColor
+    handleEl.style.backgroundColor = currentColor
+  }
 }
