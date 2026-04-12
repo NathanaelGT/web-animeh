@@ -1,8 +1,16 @@
-import { controlEl, iconsEl, playerEl, videoEl } from '~c/elements'
+import { controlEl, iconsEl, playerEl, timelineWrapperEl, videoEl } from '~c/elements'
+import { controlModule } from './setup-module'
 import { overlayState } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
 import { syncSpeedUI } from './setup-speed'
-import { updateTimeline } from './setup-timeline'
+import {
+  addTimelineListeners,
+  handleEl,
+  removeTimelineListeners,
+  timeStartEl,
+  timeEndEl,
+  updateTimeline,
+} from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
 
 let isHoveringVideo = false
@@ -12,6 +20,10 @@ let hideTimer: NodeJS.Timeout | undefined
 export const controlState = {
   isVisible: false,
   isFineScrubbing: false,
+}
+
+export const playerState = {
+  ready: false,
 }
 
 export function showControls() {
@@ -160,13 +172,45 @@ function removeVideoPlayPauseListeners() {
   videoEl.removeEventListener('pause', handleVideoPause)
 }
 
+function disableInteraction(...elements: HTMLElement[]) {
+  for (const el of elements) {
+    el.classList.add('pointer-events-none')
+  }
+}
+
+function enableInteraction(...elements: HTMLElement[]) {
+  for (const el of elements) {
+    el.classList.remove('pointer-events-none')
+  }
+}
+
 videoEl.setSrc = function (src) {
+  playerState.ready = false
+
   videoEl.removeEventListener('ratechange', syncSpeedUI)
 
   removeVideoPlayPauseListeners()
+  removeTimelineListeners()
+  disableInteraction(timelineWrapperEl, controlModule.el.playback)
+
+  timeStartEl.textContent = '0:00'
+  timeEndEl.textContent = '0:00'
+
+  handleEl.style.width = '0'
+
+  videoEl.onloadedmetadata = () => {
+    videoEl.onloadedmetadata = null
+
+    addTimelineListeners()
+    enableInteraction(timelineWrapperEl, controlModule.el.playback)
+
+    handleEl.style.width = ''
+  }
 
   videoEl.onloadeddata = () => {
     videoEl.onloadeddata = null
+
+    playerState.ready = true
 
     const play = () => {
       if (!videoEl.paused) {

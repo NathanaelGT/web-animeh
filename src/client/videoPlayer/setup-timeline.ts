@@ -26,6 +26,8 @@ import { controlState, addPlayerListeners, removePlayerListeners } from './setup
 const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
   timelineEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
 
+export { handleEl }
+
 const [, storyboardEl, timePreviewEl] = storyboardWrapperEl.children as unknown as [
   HTMLDivElement,
   HTMLDivElement,
@@ -331,12 +333,12 @@ function handleTimelinePointerMove(event: PointerEvent) {
   })
 }
 
-function addTimelineListeners() {
+export function addTimelineListeners() {
   timelineEl.addEventListener('pointerenter', handleTimelinePointerEnter)
   timelineEl.addEventListener('pointermove', handleTimelinePointerMove)
 }
 
-function removeTimelineListeners() {
+export function removeTimelineListeners() {
   timelineEl.removeEventListener('pointerenter', handleTimelinePointerEnter)
   timelineEl.removeEventListener('pointermove', handleTimelinePointerMove)
 }
@@ -348,7 +350,6 @@ let lastSecond = 0
 videoEl.addEventListener('loadedmetadata', () => {
   lastSecond = 0
 
-  timeStartEl.textContent = '0:00'
   timeEndEl.textContent = updateTime(videoEl.duration)
 
   applyStoryboardUrl(1)

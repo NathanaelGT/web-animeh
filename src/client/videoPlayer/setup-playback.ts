@@ -2,6 +2,7 @@ import { videoEl, iconsEl, overlayEl } from '~c/elements'
 import { toggleFullscreen } from './setup-fullscreen'
 import { tooltip } from './setup-module'
 import { playbackInfoEl } from './setup-overlay'
+import { playerState } from './setup-player'
 import { moduleChild } from './util'
 
 videoEl.addEventListener('play', () => {
@@ -32,6 +33,10 @@ overlayEl.addEventListener('click', event => {
 })
 
 export function togglePlayback() {
+  if (!playerState.ready) {
+    return
+  }
+
   if (videoEl.paused || videoEl.ended) {
     videoEl.play()
     tooltip.playback.update('Pause')
