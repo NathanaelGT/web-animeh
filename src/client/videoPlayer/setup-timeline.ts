@@ -177,7 +177,7 @@ timelineEl.addEventListener('pointerdown', event => {
 
   updateSeeker(newTime)
 
-  showStoryboardWrapper()
+  hideStoryboardWrapper()
 })
 
 let lastUpdate = 0
@@ -217,7 +217,7 @@ function enableFineScrubbing() {
     timelineWrapperEl.style.transform = 'translateY(calc(-100% + var(--spacing) * 14 + 18px))'
     filmstripEl.style.opacity = '1'
     filmstripTimeWrapperEl.style.opacity = '1'
-    storyboardWrapperEl.style.opacity = '0'
+    hideStoryboardWrapper()
     videoEl.pause()
 
     window.addEventListener('keydown', handleWindowKeyDownHandlerWhenFineScrubbing)
@@ -294,12 +294,13 @@ window.addEventListener('pointerup', () => {
   if (isDragging && !controlState.isFineScrubbing) {
     isDragging = false
     handleEl.classList.remove('hover')
-    storyboardWrapperEl.style.opacity = '0'
   }
 })
 
 function handleTimelinePointerEnter() {
-  showStoryboardWrapper()
+  if (!isDragging) {
+    showStoryboardWrapper()
+  }
 }
 
 let hideTimer: NodeJS.Timeout | null = null
@@ -310,13 +311,17 @@ timelineEl.addEventListener('pointerleave', () => {
 
   hideTimer ??= setTimeout(() => {
     hideTimer = null
-    storyboardWrapperEl.style.opacity = '0'
+    hideStoryboardWrapper()
   }, 150)
 })
 
 function showStoryboardWrapper() {
   storyboardWrapperEl.classList.replace('hidden', 'flex')
   storyboardWrapperEl.style.opacity = '1'
+}
+
+function hideStoryboardWrapper() {
+  storyboardWrapperEl.style.opacity = '0'
 }
 
 storyboardWrapperEl.addEventListener('transitionend', () => {
