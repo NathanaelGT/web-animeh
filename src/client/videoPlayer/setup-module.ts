@@ -55,7 +55,7 @@ export const controlModule = (() => {
 
     const classList = ['cursor-pointer', 'rounded-full', 'p-1', 'hover:bg-gray-50/10']
     const element = createElement(
-      'flex  items-center rounded-full bg-black/40 p-1 has-[>:nth-child(2)]:*:px-3',
+      'flex  items-center rounded-full bg-black/60 p-1 has-[>:nth-child(2)]:*:px-3',
     )
 
     for (let i = 0; i < elements.length; i++) {
