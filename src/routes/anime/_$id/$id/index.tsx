@@ -11,7 +11,6 @@ import { AnimePoster } from '@/Anime/Poster'
 import { AnimeRating } from '@/Anime/Rating'
 import { AnimeTitle } from '@/Anime/Title'
 import { AnimeType } from '@/Anime/Type'
-import { SimpleBreadcrumb } from '@/ui/breadcrumb'
 import { Button } from '@/ui/button'
 import { AnimatedNumber } from '@/ui/custom/animated-number'
 import { Separator } from '@/ui/separator'
@@ -24,9 +23,9 @@ export const Route = createFileRoute('/anime/_$id/$id/')({
 
 const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 const MAIN_CLASSNAME = [
-  "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'bread''poster''main''info']",
-  "sm:grid-cols-[225px_1fr] sm:grid-rows-[auto_auto_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_bread''poster_main''info_main']",
-  "lg:grid-cols-[225px_1fr_15rem] lg:grid-rows-[auto_1fr] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_bread_info''poster_main_info']",
+  "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'poster''main''info']",
+  "sm:grid-cols-[225px_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_main''info_main']",
+  "lg:grid-cols-[225px_1fr_15rem] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_main_info']",
   'xl:grid-cols-[225px_1fr_19rem]',
 ].join(' ')
 
@@ -102,18 +101,6 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
 
   return (
     <main key={animeData.id} className={MAIN_CLASSNAME}>
-      <SimpleBreadcrumb
-        links={[
-          <Link to="/$" preloadDelay={50}>
-            Web Animeh
-          </Link>,
-          <AnimeTitle animeData={animeData} />,
-        ]}
-        itemClassName={SHADOW}
-        viewTransitionPrefix={animeData.id}
-        className="[grid-area:bread]"
-      />
-
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
         <AnimePoster anime={animeData} className="shadow-sm shadow-foreground/50" />
 
@@ -268,28 +255,6 @@ const PendingAnimeId = memo(function PendingAnimeId() {
 
   return (
     <main className={MAIN_CLASSNAME}>
-      <SimpleBreadcrumb
-        links={[
-          <div className="flex flex-wrap gap-x-[1ch]">
-            <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={{ width: '29px' }}>
-              &nbsp;
-            </Skeleton>
-            <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={{ width: '47px' }}>
-              &nbsp;
-            </Skeleton>
-          </div>,
-          <div className="flex flex-wrap gap-x-[1ch]">
-            {titleWidth.map(width => (
-              <Skeleton className="mt-0.5 mb-1 h-3.5 select-none" style={width}>
-                &nbsp;
-              </Skeleton>
-            ))}
-          </div>,
-        ]}
-        itemClassName={SHADOW}
-        className="[grid-area:bread]"
-      />
-
       <div className="flex flex-col items-center gap-3 [grid-area:poster]">
         <Skeleton className="h-[318px] w-[225px] rounded-md shadow-sm shadow-foreground/50 outline-1 outline-slate-600/20 outline-solid" />
 

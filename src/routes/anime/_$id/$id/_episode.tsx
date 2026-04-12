@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Filter } from 'lucide-react'
 import { useState, useMemo, useRef, useEffect } from 'react'
@@ -240,12 +240,9 @@ function EpisodeLayout() {
   const hideSidebar = animeData.totalEpisodes === 1 && episodeList.length === 1
 
   return (
-    <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
+    <div className="flex flex-1 flex-col gap-5 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
         links={[
-          <Link to="/$" preloadDelay={50}>
-            Web Animeh
-          </Link>,
           <AnimeTitle animeData={animeData} tag="h1" asLink />,
           hideSidebar ? 'Nonton' : `Episode ${currentEpisode}`,
         ]}
@@ -256,7 +253,7 @@ function EpisodeLayout() {
 
       <div
         className={
-          'flex h-full flex-1 flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-1 outline-primary/5 outline-solid ' +
+          'flex flex-col-reverse overflow-hidden rounded-md bg-primary-foreground text-primary shadow-md outline-1 outline-primary/5 outline-solid ' +
           (hideSidebar ? '' : 'md:grid md:grid-cols-[16rem_1fr]')
         }
       >
@@ -331,13 +328,9 @@ function PendingEpisodeLayout() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 md:px-8 md:py-6 lg:px-12 lg:py-10">
+    <div className="flex flex-1 flex-col gap-5 md:px-8 md:py-6 lg:px-12 lg:py-10">
       <SimpleBreadcrumb
-        links={[
-          <TextSkeleton widths={[29, 47]} />,
-          <TextSkeleton widths={titleWidths} />,
-          <TextSkeleton widths={[49, 10]} />,
-        ]}
+        links={[<TextSkeleton widths={titleWidths} />, <TextSkeleton widths={[49, 10]} />]}
         itemClassName="drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]"
         className="hidden md:block"
       />
