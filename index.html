@@ -16,7 +16,7 @@
       <div class="relative h-full w-full origin-top-left overflow-hidden">
         <div class="absolute inset-0 flex">
           <div class="grow"></div>
-          <div class="z-1 mx-auto grid aspect-video h-full grid-cols-10">
+          <div class="relative z-1 mx-auto grid aspect-video h-full grid-cols-10">
             <div class="col-span-3 flex items-center justify-center">
               <div
                 class="pointer-events-none flex h-16 w-16 items-center justify-center rounded-full bg-black/40 text-2xl"
@@ -58,9 +58,21 @@
               </div>
             </div>
             <div
-              class="pointer-events-none absolute top-6 left-6 flex h-16 w-24 items-center justify-center rounded-full bg-black/40 text-2xl"
-              style="opacity: 0; transition: opacity 0.2s ease-in-out"
-            ></div>
+              class="pointer-events-none absolute top-3 left-6 w-full [font-size:var(--text)] leading-(--size) [--multiplier:6] md:[--multiplier:12] lg:[--multiplier:16]"
+              style="
+                --size: calc(var(--spacing) * var(--multiplier));
+                --text: calc(var(--multiplier) * 0.094rem);
+              "
+            >
+              <div
+                class="mt-3 w-fit max-w-[calc(100%-var(--size))] truncate rounded-full [border-inline-width:var(--text)] border-transparent bg-black/40"
+                style="height: 0; opacity: 0"
+              ></div>
+              <div
+                class="mt-3 h-16 w-24 rounded-full bg-black/40 px-2 text-center"
+                style="opacity: 0; transition: opacity 0.2s ease-in-out"
+              ></div>
+            </div>
           </div>
           <div class="grow"></div>
         </div>

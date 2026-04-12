@@ -1,6 +1,6 @@
 import { controlEl, iconsEl, playerEl, timelineWrapperEl, videoEl } from '~c/elements'
 import { controlModule } from './setup-module'
-import { overlayState } from './setup-overlay'
+import { overlayState, speedOverlayEl, titleOverlayEl } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
 import { syncSpeedUI } from './setup-speed'
 import {
@@ -26,7 +26,7 @@ export const playerState = {
   ready: false,
 }
 
-export function showControls() {
+export function showUi() {
   if (!controlState.isVisible) {
     controlState.isVisible = true
     updateTimeline()
@@ -35,30 +35,66 @@ export function showControls() {
     playerEl.style.cursor = 'default'
   }
 
+  if (document.fullscreenElement === playerEl && titleOverlayEl.style.opacity === '0') {
+    if (speedOverlayEl.style.opacity === '0') {
+      titleOverlayEl.style.transition = 'opacity 0.2s ease-in-out'
+    } else {
+      titleOverlayEl.style.transition = 'opacity 0.2s ease-in-out, height 0.2s ease-in-out'
+    }
+
+    titleOverlayEl.style.opacity = '1'
+    titleOverlayEl.style.height = 'var(--size)'
+  }
+
   clearTimeout(hideTimer)
 
   if (!isHoveringControls) {
-    scheduleHideControl()
+    scheduleHideUi()
   }
 }
 
-export function hideControl() {
+export function hideUi() {
   controlState.isVisible = false
   controlEl.style.opacity = '0'
+
+  titleOverlayEl.style.transition = 'opacity 0.2s ease-in-out'
+  titleOverlayEl.style.opacity = '0'
+  titleOverlayEl.ontransitionend = event => {
+    if (event.propertyName === 'opacity' && titleOverlayEl.style.opacity === '0') {
+      titleOverlayEl.ontransitionend = null
+
+      titleOverlayEl.style.transition = 'height 0.2s ease-in-out'
+      titleOverlayEl.style.height = '0'
+    }
+  }
 
   scheduleHide()
 }
 
-export function scheduleHideControl() {
+export function scheduleHideUi() {
   hideTimer = setTimeout(() => {
     if (controlState.isFineScrubbing) {
       return
     }
 
-    hideControl()
+    hideUi()
     playerEl.style.cursor = 'none'
   }, 2000)
 }
+
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement === playerEl) {
+    if (controlState.isVisible) {
+      titleOverlayEl.style.transition = ''
+      titleOverlayEl.style.opacity = '1'
+      titleOverlayEl.style.height = 'var(--size)'
+    }
+  } else {
+    titleOverlayEl.style.transition = ''
+    titleOverlayEl.style.opacity = '0'
+    titleOverlayEl.style.height = '0'
+  }
+})
 
 function handlePlayerPointerEnter(event: PointerEvent) {
   if (overlayState.isVisible) {
@@ -73,7 +109,7 @@ function handlePlayerPointerEnter(event: PointerEvent) {
       const el = document.elementFromPoint(event.pageX - pageXOffset, event.pageY - pageYOffset)
 
       if (!controlEl.contains(el)) {
-        hideControl()
+        hideUi()
         hideOverlayPlayback()
 
         return
@@ -85,11 +121,11 @@ function handlePlayerPointerEnter(event: PointerEvent) {
     playerEl.removeEventListener('pointerleave', handlePlayerPointerLeave)
   }
 
-  showControls()
+  showUi()
 }
 
 function handlePlayerPointerMove() {
-  showControls()
+  showUi()
 }
 
 function handlePlayerPointerLeave() {
@@ -102,7 +138,7 @@ function handlePlayerPointerLeave() {
         return
       }
 
-      hideControl()
+      hideUi()
       playerEl.style.cursor = 'default'
     }
   }, 500)
@@ -115,7 +151,7 @@ function handleControlPointerEnter() {
 
 function handleControlPointerLeave() {
   isHoveringControls = false
-  showControls()
+  showUi()
 }
 
 export function addPlayerListeners() {

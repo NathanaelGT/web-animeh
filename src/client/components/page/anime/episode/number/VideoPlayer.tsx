@@ -1,5 +1,5 @@
 import { useRouter } from '@tanstack/react-router'
-import { useRef, useLayoutEffect } from 'react'
+import { useRef, useLayoutEffect, useEffect } from 'react'
 import {
   controlEl,
   miniplayerCloseButtonEl,
@@ -19,6 +19,7 @@ import {
   togglePlayback,
   setChapter,
   controlState,
+  titleOverlayEl,
 } from '~c/videoPlayer/setup'
 import { decreaseSpeed, increaseSpeed, toggleSpeed } from '~c/videoPlayer/setup-speed'
 import { getJumpTime } from '~c/videoPlayer/util'
@@ -375,6 +376,16 @@ export function VideoPlayer({ streamingUrl, params }: Props) {
   const gotoEpisodeRef = useRef(params.number)
 
   let skipEffectDoubleCall = import.meta.env.DEV
+
+  useEffect(() => {
+    const episodeTitle = searchEpisode(episodeListStore.state, Number(params.number))?.title
+    let titleContent = 'Episode ' + params.number
+    if (episodeTitle) {
+      titleContent += ': ' + episodeTitle
+    }
+
+    titleOverlayEl.textContent = titleContent
+  }, [params.number])
 
   useLayoutEffect(() => {
     const container = containerRef.current
