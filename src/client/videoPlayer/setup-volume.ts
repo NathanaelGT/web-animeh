@@ -22,7 +22,7 @@ videoEl.addEventListener('volumechange', () => {
   volumeSliderEl.valueAsNumber = volume
 })
 
-export const volumeSliderEl = createElement(
+const volumeSliderEl = createElement(
   'flex flex h-full w-24 cursor-pointer appearance-none items-center gap-1 bg-gray-50 outline-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gray-50',
   'input',
 )
@@ -37,6 +37,9 @@ volumeSliderEl.style.background =
 volumeSliderEl.addEventListener('input', () => {
   videoEl.volume = volumeSliderEl.valueAsNumber
 })
+
+export const volumeSliderWrapperEl = createElement('h-full w-full')
+volumeSliderWrapperEl.append(volumeSliderEl)
 
 export function toggleMute() {
   videoEl.muted = !videoEl.muted

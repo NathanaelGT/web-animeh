@@ -7,7 +7,7 @@ import { togglePlayback } from './setup-playback'
 import { speedButtonEl, speedWrapperEl } from './setup-speed'
 import { timeEl } from './setup-timeline'
 import { attachTooltip } from './setup-tooltip'
-import { toggleMute, volumeSliderEl } from './setup-volume'
+import { toggleMute, volumeSliderWrapperEl } from './setup-volume'
 
 export const controlModule = (() => {
   const playback = el(iconsEl.play, togglePlayback)
@@ -16,7 +16,7 @@ export const controlModule = (() => {
   const speed = speedButtonEl
   const fullscreen = el(iconsEl.maximize, toggleFullscreen)
 
-  assign(leftControlEl, group(playback, true), group([volume, volumeSliderEl]))
+  assign(leftControlEl, group(playback, true), group([volume, volumeSliderWrapperEl]))
   assign(centerControlEl, group(time))
   assign(rightControlEl, group(speedWrapperEl), group(fullscreen))
 
@@ -25,7 +25,7 @@ export const controlModule = (() => {
     tooltip: {
       playback: attachTooltip<'Play' | 'Pause'>(playback, 'Play'),
       volume: attachTooltip<'Mute' | 'Unmute'>(volume, 'Mute'),
-      volumeSlider: attachTooltip(volumeSliderEl, 'Volume'),
+      volumeSlider: attachTooltip(volumeSliderWrapperEl, 'Volume'),
       speed: attachTooltip(speedButtonEl, 'Speed'),
       fullscreen: attachTooltip<'Fullscreen' | 'Exit fullscreen'>(fullscreen, 'Fullscreen'),
     },
@@ -67,7 +67,9 @@ export const controlModule = (() => {
         element.classList.add('w-10', 'overflow-hidden')
         element.style.transition = 'width 0.2s ease-in-out'
 
-        const wrapper = createElement(classList.join(' ') + ' flex items-center gap-3')
+        const wrapper = createElement(
+          classList.join(' ') + ' flex items-center *:px-1.5 *:first:pl-0 *:last:pr-0',
+        )
         wrapper.append(...el)
 
         const wrapperRect = createReactiveDOMRect(wrapper)
