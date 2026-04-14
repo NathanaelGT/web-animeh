@@ -1,4 +1,5 @@
 import { initTRPC } from '@trpc/server'
+import ky from 'ky'
 import SuperJSON from 'superjson'
 import { isValiError } from 'valibot'
 import { fetchAndUpdate } from '~s/anime/update'
@@ -10,9 +11,11 @@ import { logger } from '~s/utils/logger'
 import { getMimeType } from '~s/utils/mime'
 import { imagesDirPath } from '~s/utils/path'
 import { extension } from '~/shared/utils/file'
+import { jikanClient, jikanQueue } from './external/api/jikan'
+import { limitRequest } from './external/limit'
 import type { ServerWebSocket } from 'bun'
 import type { CreateBunContextOptions } from 'trpc-bun-adapter'
-import type { anime } from '~s/db/schema'
+import type { anime, characters } from '~s/db/schema'
 import type { WebSocketData } from '~s/index'
 
 type ContextOpts = CreateBunContextOptions & { client: ServerWebSocket<WebSocketData> }
@@ -93,6 +96,40 @@ export const createTRPCContext = (opts: ContextOpts) => {
 
       if (animeData.imageUrl) {
         this.loadImage([animeData.id, extension(animeData.imageUrl)], handleNoImage)
+      } else {
+        handleNoImage()
+      }
+    },
+    loadCharacterImage(char: Pick<typeof characters.$inferSelect, 'id' | 'imageUrl'>) {
+      const prefix = 'characters/'
+
+      const handleNoImage = async () => {
+        const response = await jikanQueue.add(
+          () => jikanClient.characters.getCharacterPictures(char.id),
+          {
+            throwOnTimeout: true,
+            priority: 4,
+          },
+        )
+
+        let imageUrl = response?.data.at(-1)?.image_url
+
+        if (imageUrl) {
+          if (imageUrl.endsWith('.jpg')) {
+            imageUrl = imageUrl.slice(0, -3) + 'webp'
+          }
+
+          const request = limitRequest(() => ky.get(imageUrl!))
+          const ext = extension(imageUrl)
+
+          await Bun.write(imagesDirPath + prefix + char.id + '.' + ext, await request)
+
+          this.loadImage([prefix + char.id, ext])
+        }
+      }
+
+      if (char.imageUrl) {
+        this.loadImage([prefix + char.id, extension(char.imageUrl)], handleNoImage)
       } else {
         handleNoImage()
       }

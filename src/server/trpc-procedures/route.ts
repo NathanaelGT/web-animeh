@@ -254,6 +254,20 @@ export const RouteRouter = router({
               },
             },
           },
+          characters: {
+            columns: {
+              isMain: true,
+            },
+            with: {
+              character: {
+                columns: {
+                  id: true,
+                  name: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
         },
       })
 
@@ -263,6 +277,10 @@ export const RouteRouter = router({
 
       if (!input.ref) {
         ctx.loadAnimePoster(animeData)
+
+        animeData.characters.forEach(({ character }) => {
+          ctx.loadCharacterImage(character)
+        })
 
         void updateEpisode(animeData)
         void updateCharacter(animeData)
@@ -292,6 +310,7 @@ export const RouteRouter = router({
           'synonyms',
           'animeToGenres',
           'animeToStudios',
+          'characters',
           'imageUrl',
           'updatedAt',
           'episodeUpdatedAt',
@@ -299,6 +318,15 @@ export const RouteRouter = router({
         ),
         synonyms: animeData.synonyms.map(({ synonym }) => synonym),
         genres: animeData.animeToGenres.map(({ genre }) => genre.name),
+        characters: animeData.characters
+          .map(({ character, isMain }) => ({
+            id: character.id,
+            name: character.name,
+            imageUrl: character.imageUrl,
+            isMain,
+          }))
+          .filter(({ name }) => name !== 'Narrator')
+          .sort((a, b) => Number(b.isMain) - Number(a.isMain)),
         studios: animeData.animeToStudios.map(({ studio, type, studioId }) => {
           let name: string | null
           if (studio) {

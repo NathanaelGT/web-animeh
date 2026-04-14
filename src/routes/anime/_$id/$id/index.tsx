@@ -1,7 +1,9 @@
+import { StarFilledIcon } from '@radix-ui/react-icons'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { useStore } from '@tanstack/react-store'
 import { Play } from 'lucide-react'
-import { useEffect, useMemo, memo, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, memo, type ReactNode } from 'react'
+import { Image } from '~c/components/Image'
 import { animeDataStore, videoPlayerStore, type AnimeData } from '~c/stores'
 import { createKeybindHandler } from '~c/utils/eventHandler'
 import { generateTextWidth, generateTextWidthList } from '~c/utils/skeleton'
@@ -15,6 +17,7 @@ import { Button } from '@/ui/button'
 import { AnimatedNumber } from '@/ui/custom/animated-number'
 import { Separator } from '@/ui/separator'
 import { Skeleton } from '@/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip'
 import { randomBetween } from '~/shared/utils/number'
 
 export const Route = createFileRoute('/anime/_$id/$id/')({
@@ -23,9 +26,9 @@ export const Route = createFileRoute('/anime/_$id/$id/')({
 
 const SHADOW = 'drop-shadow-[0_0.1px_0.1px_rgba(0,0,0,.8)]'
 const MAIN_CLASSNAME = [
-  "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'poster''main''info']",
-  "sm:grid-cols-[225px_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_main''info_main']",
-  "lg:grid-cols-[225px_1fr_15rem] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_main_info']",
+  "grid flex-1 gap-x-6 gap-y-3 p-4 [grid-template-areas:'poster''main''info''characters']",
+  "sm:grid-cols-[225px_1fr] sm:grid-rows-[auto_auto_1fr] sm:px-8 sm:py-6 sm:[grid-template-areas:'poster_main''info_main''info_characters']",
+  "lg:grid-cols-[225px_1fr_15rem] lg:grid-rows-[auto_1fr] lg:gap-y-1 lg:px-12 lg:py-10 lg:[grid-template-areas:'poster_main_info''characters_characters_info']",
   'xl:grid-cols-[225px_1fr_19rem]',
 ].join(' ')
 
@@ -90,6 +93,8 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
 
     return [studios, producers, licensors]
   }, [animeData.studios])
+
+  const characterContainerRef = useRef<HTMLDivElement>(null)
 
   if (!animeData) {
     return <main className="flex flex-1 items-center justify-center">Anime tidak ditemukan</main>
@@ -211,6 +216,54 @@ function RealAnimeId({ animeData }: { animeData: AnimeData }) {
         <Stat title="Studio" stat={studios} />
         <Stat title="Produser" stat={producers} />
         <Stat title="Lisensor" stat={licensors} />
+      </div>
+
+      <div className="mt-3 flex w-full flex-nowrap [grid-area:characters]">
+        <div
+          ref={characterContainerRef}
+          onWheel={event => {
+            const container = characterContainerRef.current
+            if (container) {
+              container.scrollLeft += 162 * Math.sign(event.deltaY)
+            }
+          }}
+          className="mt-auto flex w-full snap-x snap-mandatory flex-nowrap gap-3 overflow-hidden scroll-smooth rounded-md"
+        >
+          {animeData.characters.map(char => (
+            <a
+              href={`https://myanimelist.net/character/${char.id}`}
+              target="_blank"
+              className="group relative block h-[182px] w-[117px] flex-none snap-end overflow-hidden rounded-md"
+            >
+              <Image
+                src={'characters/' + char.id}
+                className="relative top-1/2 left-1/2 block h-full w-full -translate-1/2 rounded-md bg-muted object-cover shadow-sm outline-1 outline-slate-600/20 transition-[scale] outline-solid group-hover:scale-105"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger
+                    dangerouslySetInnerHTML={{
+                      __html:
+                        '<p class="truncate">' + char.name.split(',').join(',</p><p>') + '</p>',
+                    }}
+                    className="absolute bottom-[6px] left-1/2 max-w-[105px] -translate-x-1/2 cursor-pointer rounded-md bg-black/60 px-3 py-2 text-sm whitespace-nowrap text-white"
+                  />
+                  <TooltipContent>{char.name}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {char.isMain && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger className="absolute top-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-bl-md bg-black/60">
+                      <StarFilledIcon className="h-5 w-5 text-yellow-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>Main Character</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </a>
+          ))}
+        </div>
       </div>
     </main>
   )
