@@ -233,5 +233,14 @@ export const fetchAndUpdate = async <TConfig extends FetchAndUpdateConfig>(
     },
   )
 
+  if (!data) {
+    await db
+      .update(anime)
+      .set({ fetchedAt: new Date(Date.now() - 12 * 60 * 60 * 1000) })
+      .where(eq(anime.id, localAnime.id))
+
+    return null
+  }
+
   return await update(localAnime.id, data, header, config)
 }

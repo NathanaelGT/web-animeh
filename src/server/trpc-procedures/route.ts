@@ -223,6 +223,7 @@ export const RouteRouter = router({
           updatedAt: true,
           episodeUpdatedAt: true,
           characterUpdatedAt: true,
+          fetchedAt: true,
         },
         with: {
           synonyms: {
@@ -278,7 +279,9 @@ export const RouteRouter = router({
         }, 30_000)
       }
 
-      let shouldFetchData = animeData.synopsis === null
+      let shouldFetchData =
+        animeData.synopsis === null &&
+        animeData.fetchedAt.getTime() < Date.now() - 24 * 60 * 60 * 1000
       if (shouldFetchData) {
         storeRefPromise(fetchAndUpdate(input))
       }

@@ -86,7 +86,9 @@ export const createTRPCContext = (opts: ContextOpts) => {
       const handleNoImage = async () => {
         const updateData = await fetchAndUpdate(animeData, { updateImage: true })
 
-        this.loadImage([animeData.id, extension(updateData.imageUrl)])
+        if (updateData) {
+          this.loadImage([animeData.id, extension(updateData.imageUrl)])
+        }
       }
 
       if (animeData.imageUrl) {
