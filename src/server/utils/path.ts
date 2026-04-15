@@ -13,6 +13,8 @@ export const imagesDirPath = basePath + 'images' + path.sep
 
 export const videosDirPath = basePath + 'videos' + path.sep
 
+export const iframesDirPath = tmpDirPath + 'iframe' + path.sep
+
 export const storyboardsDirPath =
   tmpDirPath +
   'storyboards' +

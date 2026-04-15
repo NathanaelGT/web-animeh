@@ -1,6 +1,7 @@
 import { createBunWSHandler } from 'trpc-bun-adapter'
 import { handleVideoRequest } from '~s/http-handler/video'
 // import { safePath } from '~s/utils/path'
+import { handleIframeRequest } from '~s/http-handler/iframe'
 import { handleStoryboardRequest } from '~s/http-handler/storyboard'
 import { handleWebsocketRequest } from '~s/http-handler/websocket'
 import { TRPCRouter } from '~s/router'
@@ -39,6 +40,10 @@ export const httpHandler = async (
 
   if (path.startsWith('videos')) {
     return handleVideoRequest(request, path)
+  }
+
+  if (path.startsWith('iframe')) {
+    return handleIframeRequest(path)
   }
 
   if (path.startsWith('storyboard')) {

@@ -90,11 +90,11 @@ function VideoPlayer() {
       />
 
       <InputNumberExtra
-        name="padLongJumpSec"
-        label="Target maju jauh diawal video"
+        name="padJumpSec"
+        label="Target maju diawal video"
         tooltip={
           <KeybindCombinationWrapper>
-            <KeybindCombination id={['videoPlayer', 'longForward']} />
+            <KeybindCombination id={['videoPlayer', 'forward']} />
           </KeybindCombinationWrapper>
         }
         leftUnit
@@ -102,7 +102,7 @@ function VideoPlayer() {
         min={1}
         extra={[
           {
-            name: 'padLongJumpThreshold',
+            name: 'padJumpThreshold',
             label: 'Sebelum',
             unit: 'Detik',
             min: 1,
@@ -110,7 +110,7 @@ function VideoPlayer() {
             width: 'w-36',
           },
           {
-            name: 'padLongJump',
+            name: 'padJump',
             label: 'Aktif',
           },
         ]}
@@ -167,6 +167,14 @@ function VideoPlayer() {
       />
 
       <InputNumber name="smartJumpOffset" label="Offset smart jump" unit="ms" min={0} max={2500} />
+
+      <InputNumber
+        name="longSmartJumpOffset"
+        label="Offset smart jump jauh"
+        unit="ms"
+        min={0}
+        max={2500}
+      />
     </div>
   )
 }

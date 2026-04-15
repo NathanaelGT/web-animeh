@@ -1,7 +1,8 @@
 import { videoEl } from '~c/elements'
 import { clientProfileSettingsStore } from '~c/stores'
-import { clamp } from '~/shared/utils/number'
+import { clamp, findClosestNumber } from '~/shared/utils/number'
 import { ucFirst } from '~/shared/utils/string'
+import { iframes } from './setup-jump'
 import { controlModule } from './setup-module'
 
 type Module = keyof (typeof controlModule)['el']
@@ -38,8 +39,8 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = ''): [num
 
   const { currentTime } = videoEl
 
-  if (setting.padLongJump && variant && currentTime < setting.padLongJumpThreshold) {
-    const newTime = setting.padLongJumpSec
+  if (setting.padJump && !variant && currentTime < setting.padJumpThreshold) {
+    const newTime = setting.padJumpSec
 
     return [newTime, newTime - currentTime]
   }
@@ -47,7 +48,27 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = ''): [num
   const jumpTime = isRelative ? time * videoEl.playbackRate : time
   const newTime = clamp(currentTime + jumpTime * multiplier, 0, videoEl.duration)
 
-  if (!variant) {
+  if (variant) {
+    const OP_ED_DURATION = 90
+
+    const iframe = iframes.get(videoEl.src)
+    const offset = setting.longSmartJumpOffset / 1000
+    const distance = Math.max(Math.abs(OP_ED_DURATION - time), 1.5)
+
+    let iframeTime = findClosestNumber(iframe, currentTime, -1, distance)
+    if (iframeTime !== null) {
+      iframeTime += OP_ED_DURATION * multiplier - offset
+
+      return [iframeTime, Math.abs(iframeTime - currentTime)]
+    }
+
+    iframeTime = findClosestNumber(iframe, newTime, time > OP_ED_DURATION ? -1 : 1, distance)
+    if (iframeTime !== null) {
+      iframeTime -= offset
+
+      return [iframeTime, Math.abs(iframeTime - currentTime)]
+    }
+  } else {
     if (capturedTime) {
       const diff = Math.abs(newTime - capturedTime)
       if (diff < jumpTime) {

@@ -29,9 +29,9 @@ export const videoPlayerSchema = object({
   longJumpSec: number(87, 0.1),
   relativeJump: boolean(true),
   relativeLongJump: boolean(false),
-  padLongJump: boolean(true),
-  padLongJumpSec: number(90, 1),
-  padLongJumpThreshold: number(8, 1),
+  padJump: boolean(true),
+  padJumpSec: number(10, 1),
+  padJumpThreshold: number(5, 1),
   volumeStep: number(0.05, 0.01, 1),
   miniplayerMode: picklist(miniplayerMode, 'Smart'),
   miniplayerAnimationDuration: number(300),
@@ -39,6 +39,7 @@ export const videoPlayerSchema = object({
   defaultSpeed: number(1, 0.1, 8),
   speedStep: number(0.05, 0.01, 1),
   smartJumpOffset: number(750, 0, 2500),
+  longSmartJumpOffset: number(500, 0, 2500),
 })
 
 export const keybindSchema = object({

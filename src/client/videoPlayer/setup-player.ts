@@ -1,4 +1,5 @@
 import { controlEl, iconsEl, playerEl, timelineWrapperEl, videoEl } from '~c/elements'
+import { iframePromises, iframes } from './setup-jump'
 import { controlModule } from './setup-module'
 import { overlayState, speedOverlayEl, titleOverlayEl } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
@@ -228,6 +229,9 @@ videoEl.setSrc = function (src) {
   removeVideoPlayPauseListeners()
   removeTimelineListeners()
   disableInteraction(timelineWrapperEl, controlModule.el.playback)
+
+  iframes.delete(videoEl.src)
+  iframePromises.delete(videoEl.src)
 
   timeStartEl.textContent = '0:00'
   timeEndEl.textContent = '0:00'
