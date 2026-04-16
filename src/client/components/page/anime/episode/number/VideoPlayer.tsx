@@ -20,12 +20,14 @@ import {
   setChapter,
   controlState,
   titleOverlayEl,
+  iframes,
 } from '~c/videoPlayer/setup'
 import { decreaseSpeed, increaseSpeed, toggleSpeed } from '~c/videoPlayer/setup-speed'
 import { getJumpTime } from '~c/videoPlayer/util'
 import { toast } from '@/ui/use-toast'
 import { router } from '~/router'
 import { searchEpisode } from '~/shared/utils/episode'
+import { findClosestNumber } from '~/shared/utils/number'
 import { formatTime, parseTime } from '~/shared/utils/time'
 import type { InferOutput } from 'valibot'
 import type { settingsSchema } from '~/shared/profile/settings'
@@ -315,7 +317,17 @@ const setupVideoPlayer = (
             const durationDiff = duration - skip.episodeLength
 
             if (time >= skip.startTime + durationDiff && time < skip.endTime + durationDiff) {
-              videoEl.currentTime = skip.endTime
+              const iframeStartTime = findClosestNumber(
+                iframes.get(videoEl.src),
+                skip.startTime + durationDiff,
+                -1,
+                2,
+              )
+
+              videoEl.currentTime =
+                iframeStartTime === null
+                  ? skip.endTime
+                  : skip.endTime - skip.startTime + iframeStartTime
 
               if (skippedSkips.size === skips.length - 1) {
                 videoEl.ontimeupdate = null
