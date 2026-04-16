@@ -3,8 +3,14 @@ import { formatFloat } from '~/shared/utils/number'
 import { timeStartEl, updateSeeker, updateTime } from './setup-timeline'
 import { getJumpTime } from './util'
 
-const [leftOverlayEl, centerOverlayEl, rightOverlayEl, topLeftOverlayEl] =
-  overlayEl.children as unknown as [HTMLDivElement, HTMLDivElement, HTMLDivElement, HTMLDivElement]
+const [leftOverlayEl, centerOverlayEl, rightOverlayEl, topLeftOverlayEl, bottomRightOverlayEl] =
+  overlayEl.children as unknown as [
+    HTMLDivElement,
+    HTMLDivElement,
+    HTMLDivElement,
+    HTMLDivElement,
+    HTMLDivElement,
+  ]
 
 const playbackInfoEl = centerOverlayEl.firstElementChild as HTMLDivElement
 
@@ -13,11 +19,13 @@ const [titleOverlayEl, speedOverlayEl] = topLeftOverlayEl.children as unknown as
   HTMLDivElement,
 ]
 
+const [chapterOverlayEl] = bottomRightOverlayEl.children as unknown as [HTMLDivElement]
+
 const overlayState = {
   isVisible: false,
 }
 
-export { titleOverlayEl, speedOverlayEl, playbackInfoEl, overlayState }
+export { titleOverlayEl, speedOverlayEl, chapterOverlayEl, playbackInfoEl, overlayState }
 
 const backwardInfoEl = leftOverlayEl.firstElementChild as HTMLDivElement
 const forwardInfoEl = rightOverlayEl.firstElementChild as HTMLDivElement

@@ -21,6 +21,7 @@ import {
   controlState,
   titleOverlayEl,
   iframes,
+  showChapterOverlay,
 } from '~c/videoPlayer/setup'
 import { decreaseSpeed, increaseSpeed, toggleSpeed } from '~c/videoPlayer/setup-speed'
 import { getJumpTime } from '~c/videoPlayer/util'
@@ -300,6 +301,8 @@ const setupVideoPlayer = (
 
         videoEl.currentTime = duration - normalizedSkips[0]!.episodeLength
 
+        let isSkipping = false
+
         videoEl.ontimeupdate = () => {
           if (!skips?.length) {
             videoEl.ontimeupdate = null
@@ -309,32 +312,44 @@ const setupVideoPlayer = (
 
           const time = videoEl.currentTime
 
-          for (const skip of skips) {
-            if (skippedSkips.has(skip)) {
-              continue
-            }
+          let isSkippingInAnyLoop = false
 
+          for (let i = 0; i < skips.length; i++) {
+            const skip = skips[i]!
             const durationDiff = duration - skip.episodeLength
 
             if (time >= skip.startTime + durationDiff && time < skip.endTime + durationDiff) {
-              const iframeStartTime = findClosestNumber(
-                iframes.get(videoEl.src),
-                skip.startTime + durationDiff,
-                -1,
-                2,
-              )
-
-              videoEl.currentTime =
-                iframeStartTime === null
-                  ? skip.endTime
-                  : skip.endTime - skip.startTime + iframeStartTime
-
-              if (skippedSkips.size === skips.length - 1) {
-                videoEl.ontimeupdate = null
+              if (skippedSkips.has(skip)) {
+                if (!isSkipping) {
+                  showChapterOverlay(i)
+                }
               } else {
+                isSkipping = true
+                isSkippingInAnyLoop = true
+
+                const iframeStartTime = findClosestNumber(
+                  iframes.get(videoEl.src),
+                  skip.startTime + durationDiff,
+                  -1,
+                  2,
+                )
+
+                videoEl.currentTime =
+                  iframeStartTime === null
+                    ? skip.endTime
+                    : skip.endTime - skip.startTime + iframeStartTime
+
+                showChapterOverlay(i, ' Skipped')
+
                 skippedSkips.add(skip)
               }
+
+              break
             }
+          }
+
+          if (!isSkippingInAnyLoop) {
+            isSkipping = false
           }
         }
       }

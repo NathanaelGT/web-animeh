@@ -53,7 +53,7 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = ''): [num
 
     const iframe = iframes.get(videoEl.src)
     const offset = setting.longSmartJumpOffset / 1000
-    const distance = Math.max(Math.abs(OP_ED_DURATION - time), 1.5)
+    const distance = Math.max(Math.abs(OP_ED_DURATION - time), 2) * videoEl.playbackRate
 
     let iframeTime = findClosestNumber(iframe, currentTime, -1, distance)
     if (iframeTime !== null) {

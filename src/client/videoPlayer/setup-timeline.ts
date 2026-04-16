@@ -21,6 +21,7 @@ import {
   STORYBOARD_FRAMES_PER_GRID,
 } from '~/shared/storyboard'
 import { clamp } from '~/shared/utils/number'
+import { chapterOverlayEl } from './setup-overlay'
 import { controlState, addPlayerListeners, removePlayerListeners } from './setup-player'
 
 const [seekerEl, chapterContainerEl, handleEl, storyboardWrapperEl] =
@@ -130,6 +131,29 @@ export function setChapter(newChapters: Chapter[]) {
       return el
     }),
   )
+}
+
+let showChapterOverlayTimeout: NodeJS.Timeout | undefined
+let chapterOverlayText = ''
+export function showChapterOverlay(chapterIndex: number, suffix = '') {
+  const chapter = chapters[chapterIndex]!
+  const text = chapter.title + suffix
+
+  if (chapterOverlayText !== text) {
+    chapterOverlayText = text
+    chapterOverlayEl.textContent = text
+  }
+
+  if (showChapterOverlayTimeout) {
+    clearTimeout(showChapterOverlayTimeout)
+  } else {
+    chapterOverlayEl.style.opacity = '1'
+  }
+
+  showChapterOverlayTimeout = setTimeout(() => {
+    showChapterOverlayTimeout = undefined
+    chapterOverlayEl.style.opacity = '0'
+  }, 2000)
 }
 
 storyboardEl.style.width = STORYBOARD_FRAME_WIDTH + 'px'
