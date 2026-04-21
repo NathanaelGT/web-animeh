@@ -436,19 +436,15 @@ function updateStoryboardIndex(frames: number[], time: number) {
 
 function updateStoryboard(event: PointerEvent) {
   const frames = iframes.current
-  if (!frames) {
-    return
-  }
-
   const time = getScrubTime(event)
 
-  updateStoryboardIndex(frames, time)
+  if (frames) {
+    updateStoryboardIndex(frames, time)
 
-  if (lastStoryboardIndex === null) {
-    return
+    if (lastStoryboardIndex !== null) {
+      setStoryboardPreview(lastStoryboardIndex, storyboardEl)
+    }
   }
-
-  setStoryboardPreview(lastStoryboardIndex, storyboardEl)
 
   const centeredX = event.clientX - timelineRect.left - STORYBOARD_FRAME_PERFECT_WIDTH / 2
   const maxX = timelineRect.width - STORYBOARD_FRAME_PERFECT_WIDTH
