@@ -2,7 +2,6 @@ import fs from 'fs/promises'
 import { getRealVideoDirPath } from '~s/http-handler/video'
 import { storyboardsDirPath } from '~s/utils/path'
 import {
-  STORYBOARD_FPS,
   STORYBOARD_FRAME_HEIGHT,
   STORYBOARD_FRAME_PERFECT_HEIGHT,
   STORYBOARD_FRAME_PERFECT_WIDTH,
@@ -84,7 +83,7 @@ const getStoryboardFile = async ([animeId, episodeNumber_gridIndex]: [string, st
       '-i',
       videoPath,
       '-vf',
-      `fps=${STORYBOARD_FPS},` +
+      `select='eq(pict_type,I)',` +
         `scale=${STORYBOARD_FRAME_WIDTH}:${STORYBOARD_FRAME_HEIGHT}:force_original_aspect_ratio=decrease,` +
         `pad=${STORYBOARD_FRAME_PERFECT_WIDTH}:${STORYBOARD_FRAME_PERFECT_HEIGHT}:0:0:black,` +
         `tile=${STORYBOARD_GRID_ROWS}x${STORYBOARD_GRID_COLS}`,
@@ -92,6 +91,8 @@ const getStoryboardFile = async ([animeId, episodeNumber_gridIndex]: [string, st
       'mjpeg',
       '-q:v',
       '2',
+      '-vsync',
+      'vfr',
       '-y',
       storyboardPattern,
     ],

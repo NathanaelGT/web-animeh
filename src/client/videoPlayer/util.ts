@@ -2,7 +2,7 @@ import { videoEl } from '~c/elements'
 import { clientProfileSettingsStore } from '~c/stores'
 import { clamp, findClosestNumber } from '~/shared/utils/number'
 import { ucFirst } from '~/shared/utils/string'
-import { iframes } from './setup-jump'
+import { iframes } from './setup-iframe'
 import { controlModule } from './setup-module'
 
 type Module = keyof (typeof controlModule)['el']
@@ -51,7 +51,7 @@ export function getJumpTime(multiplier: 1 | -1, variant: '' | 'long' = ''): [num
   if (variant) {
     const OP_ED_DURATION = 90
 
-    const iframe = iframes.get(videoEl.src)
+    const iframe = iframes.current
     const offset = setting.longSmartJumpOffset / 1000
     const distance = Math.max(Math.abs(OP_ED_DURATION - time), 2) * videoEl.playbackRate
 

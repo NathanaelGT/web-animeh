@@ -1,5 +1,5 @@
 import { controlEl, iconsEl, playerEl, timelineWrapperEl, videoEl } from '~c/elements'
-import { iframePromises, iframes } from './setup-jump'
+import { iframePromises, iframes } from './setup-iframe'
 import { controlModule } from './setup-module'
 import { overlayState, speedOverlayEl, titleOverlayEl } from './setup-overlay'
 import { hideOverlayPlayback, showOverlayPlaybackIcon } from './setup-playback'
@@ -11,6 +11,7 @@ import {
   timeStartEl,
   timeEndEl,
   updateTimeline,
+  resetStoryboardCache,
 } from './setup-timeline'
 import { scheduleHide } from './setup-tooltip'
 
@@ -70,6 +71,7 @@ export function hideUi() {
   }
 
   scheduleHide()
+  resetStoryboardCache()
 }
 
 export function scheduleHideUi() {
@@ -230,6 +232,7 @@ videoEl.setSrc = function (src) {
   removeTimelineListeners()
   disableInteraction(timelineWrapperEl, controlModule.el.playback)
 
+  iframes.current = null
   iframes.delete(videoEl.src)
   iframePromises.delete(videoEl.src)
 

@@ -1,6 +1,6 @@
 import os from 'os'
 import path from 'path'
-import { STORYBOARD_GRID_ROWS, STORYBOARD_GRID_COLS, STORYBOARD_FPS } from '~/shared/storyboard'
+import { STORYBOARD_GRID_ROWS, STORYBOARD_GRID_COLS } from '~/shared/storyboard'
 import type { GlobScanOptions } from 'bun'
 
 export const basePath = Bun.env.PROD
@@ -22,8 +22,6 @@ export const storyboardsDirPath =
   STORYBOARD_GRID_ROWS +
   'x' +
   STORYBOARD_GRID_COLS +
-  '@' +
-  STORYBOARD_FPS +
   path.sep
 
 export const glob = async (

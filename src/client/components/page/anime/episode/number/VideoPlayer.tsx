@@ -328,7 +328,7 @@ const setupVideoPlayer = (
                 isSkippingInAnyLoop = true
 
                 const iframeStartTime = findClosestNumber(
-                  iframes.get(videoEl.src),
+                  iframes.current,
                   skip.startTime + durationDiff,
                   -1,
                   2,

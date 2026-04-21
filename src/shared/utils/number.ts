@@ -27,7 +27,7 @@ export const randomBetween = (min: number, max: number) => {
   return Math.round(Math.random() * (max - min) + min)
 }
 
-export const findClosestNumber = (
+export const findClosestNumberIndex = (
   numbers: number[] | undefined | null,
   target: number,
   direction: -1 | 0 | 1 = 0,
@@ -39,10 +39,10 @@ export const findClosestNumber = (
   }
 
   if (target <= numbers[0]!) {
-    return direction >= 0 ? checkDistance(numbers[0]!) : null
+    return direction >= 0 ? checkDistance(0) : null
   }
   if (target >= numbers[n - 1]!) {
-    return direction <= 0 ? checkDistance(numbers[n - 1]!) : null
+    return direction <= 0 ? checkDistance(n - 1) : null
   }
 
   let left = 0
@@ -52,7 +52,7 @@ export const findClosestNumber = (
     const mid = Math.floor((left + right) / 2)
 
     if (numbers[mid] === target) {
-      return numbers[mid]
+      return mid
     }
 
     if (target < numbers[mid]!) {
@@ -62,23 +62,34 @@ export const findClosestNumber = (
     }
   }
 
-  const valAtRight = numbers[right]!
-  const valAtLeft = numbers[left]!
-
   if (direction === -1) {
-    return checkDistance(valAtRight)
+    return checkDistance(right)
   }
-
   if (direction === 1) {
-    return checkDistance(valAtLeft)
+    return checkDistance(left)
   }
 
-  const closest =
-    Math.abs(valAtLeft - target) < Math.abs(valAtRight - target) ? valAtLeft : valAtRight
+  const closestIdx =
+    Math.abs(numbers[left]! - target) < Math.abs(numbers[right]! - target) ? left : right
 
-  return checkDistance(closest)
+  return checkDistance(closestIdx)
 
-  function checkDistance(num: number) {
-    return Math.abs(num - target) <= maxDistance ? num : null
+  function checkDistance(idx: number) {
+    return Math.abs(numbers![idx]! - target) <= maxDistance ? idx : null
   }
+}
+
+export const findClosestNumber = (
+  numbers: number[] | undefined | null,
+  target: number,
+  direction: -1 | 0 | 1 = 0,
+  maxDistance: number = Infinity,
+) => {
+  const index = findClosestNumberIndex(numbers, target, direction, maxDistance)
+
+  if (index === null) {
+    return null
+  }
+
+  return numbers![index] ?? null
 }

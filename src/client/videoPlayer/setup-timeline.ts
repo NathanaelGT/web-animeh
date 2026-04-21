@@ -17,10 +17,10 @@ import {
   STORYBOARD_FRAME_PERFECT_HEIGHT,
   STORYBOARD_GRID_ROWS,
   STORYBOARD_GRID_COLS,
-  STORYBOARD_FPS,
   STORYBOARD_FRAMES_PER_GRID,
 } from '~/shared/storyboard'
-import { clamp } from '~/shared/utils/number'
+import { clamp, findClosestNumberIndex } from '~/shared/utils/number'
+import { iframes } from './setup-iframe'
 import { chapterOverlayEl } from './setup-overlay'
 import { controlState, addPlayerListeners, removePlayerListeners } from './setup-player'
 
@@ -62,7 +62,7 @@ const filmstripObserver = new ResizeObserver(entries => {
   // -2 dari setengah widthnya filmstripTimeWrapperEl
   filmstripOffset = (Math.round(width / 2) % STORYBOARD_FRAME_WIDTH) - 2
 
-  const newIdealWindowFrameCount = Math.ceil(width / 240)
+  const newIdealWindowFrameCount = Math.ceil(width / STORYBOARD_FRAME_WIDTH)
   if (idealWindowFrameCount === newIdealWindowFrameCount) {
     return
   }
@@ -336,6 +336,7 @@ timelineEl.addEventListener('pointerleave', () => {
   hideTimer ??= setTimeout(() => {
     hideTimer = null
     hideStoryboardWrapper()
+    resetStoryboardCache()
   }, 150)
 })
 
@@ -384,10 +385,60 @@ videoEl.addEventListener('loadedmetadata', () => {
   applyStoryboardUrl(1)
 })
 
+let lastStoryboardIndex: number | null = null
+let lastStoryboardTime = -1
+
+export function resetStoryboardCache() {
+  lastStoryboardIndex = null
+  lastStoryboardTime = -1
+}
+
+function updateStoryboardIndex(frames: number[], time: number) {
+  if (time === lastStoryboardTime) {
+    return
+  }
+
+  if (lastStoryboardIndex === null) {
+    lastStoryboardIndex = findClosestNumberIndex(frames, time, -1)
+  } else {
+    const frameCount = frames.length
+    let i = lastStoryboardIndex
+
+    if (time > lastStoryboardTime) {
+      while (i < frameCount - 1 && time >= frames[i + 1]!) {
+        i++
+      }
+    } else {
+      while (i > 0 && time < frames[i]!) {
+        i--
+      }
+    }
+
+    if (i < 0 || i >= frameCount) {
+      lastStoryboardIndex = null
+    } else {
+      lastStoryboardIndex = i
+    }
+  }
+
+  lastStoryboardTime = time
+}
+
 function updateStoryboard(event: PointerEvent) {
+  const frames = iframes.current
+  if (!frames) {
+    return
+  }
+
   const time = getScrubTime(event)
 
-  setStoryboardPreview(Math.floor(time * STORYBOARD_FPS), storyboardEl)
+  updateStoryboardIndex(frames, time)
+
+  if (lastStoryboardIndex === null) {
+    return
+  }
+
+  setStoryboardPreview(lastStoryboardIndex, storyboardEl)
 
   const centeredX = event.clientX - timelineRect.left - STORYBOARD_FRAME_PERFECT_WIDTH / 2
   const maxX = timelineRect.width - STORYBOARD_FRAME_PERFECT_WIDTH
@@ -420,19 +471,29 @@ function setStoryboardPreview(absoluteFrameIndex: number, el: HTMLDivElement) {
 }
 
 function updateFineScrubbing(event: PointerEvent) {
+  const frames = iframes.current
+  if (!frames) {
+    return
+  }
+
   const time = getScrubTime(event)
-  const frameCount = videoEl.duration * STORYBOARD_FPS
-  const frame = clamp(time * STORYBOARD_FPS, 0, frameCount)
-  const baseFrame = Math.floor(frame)
-  const fraction = frame - baseFrame
+
+  updateStoryboardIndex(frames, time)
+
+  const frameCount = frames.length
+  const frame = lastStoryboardIndex ?? (time > 0 ? frameCount - 1 : 0)
+
+  const frameStartTime = frames[frame]!
+  const frameEndTime = frames[frame + 1] ?? videoEl.duration
+  const fraction = (time - frameStartTime) / (frameEndTime - frameStartTime)
 
   const shiftX = -(fraction * STORYBOARD_FRAME_WIDTH) + filmstripOffset
   filmstripEl.style.transform = `translateX(${shiftX}px)`
 
-  const startFrame = baseFrame - windowFrameCenter
+  const startFrame = frame - windowFrameCenter
 
   windowFrames.forEach((frame, i) => {
-    const frameToLoad = startFrame + i
+    const frameToLoad = startFrame + i + 1
     const [el] = frame
 
     if (frameToLoad < 0 || frameToLoad >= frameCount) {
