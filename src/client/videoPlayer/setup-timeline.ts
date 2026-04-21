@@ -299,6 +299,10 @@ window.addEventListener('pointermove', event => {
       lastUpdate = now
     }
 
+    if (!videoEl.src.startsWith(origin)) {
+      return
+    }
+
     if (event.y - timelineRect.y < -32) {
       if (!controlState.isFineScrubbing) {
         enableFineScrubbing()
@@ -323,7 +327,7 @@ window.addEventListener('pointerup', () => {
 })
 
 function handleTimelinePointerEnter() {
-  if (!isDragging) {
+  if (!isDragging && videoEl.src.startsWith(origin)) {
     showStoryboardWrapper()
   }
 }
@@ -360,7 +364,10 @@ let timelinePointerMoveRaf = 0
 function handleTimelinePointerMove(event: PointerEvent) {
   timelinePointerMoveRaf ||= requestAnimationFrame(() => {
     timelinePointerMoveRaf = 0
-    updateStoryboard(event)
+
+    if (videoEl.src.startsWith(origin)) {
+      updateStoryboard(event)
+    }
   })
 }
 
@@ -383,7 +390,9 @@ videoEl.addEventListener('loadedmetadata', () => {
 
   timeEndEl.textContent = updateTime(videoEl.duration)
 
-  applyStoryboardUrl(1)
+  if (videoEl.src.startsWith(origin)) {
+    applyStoryboardUrl(1)
+  }
 })
 
 let lastStoryboardIndex: number | null = null
