@@ -85,6 +85,7 @@ const filmstripObserver = new ResizeObserver(entries => {
   while (windowFrames.length > newCount) {
     const [el] = windowFrames.pop()!
     filmstripEl.removeChild(el)
+    storyboardImageList.delete(el)
   }
 })
 
@@ -459,8 +460,21 @@ function updateStoryboard(event: PointerEvent) {
 }
 
 function setStoryboardPreview(absoluteFrameIndex: number, el: HTMLDivElement) {
-  const gridIndex = Math.floor(absoluteFrameIndex / STORYBOARD_FRAMES_PER_GRID) + 1
+  const progress = absoluteFrameIndex / STORYBOARD_FRAMES_PER_GRID
+  const gridIndex = Math.floor(progress) + 1
+  const step = gridIndex - progress
+
   applyStoryboardUrl(gridIndex, el)
+
+  if (step > 0.8) {
+    if (gridIndex > 2) {
+      preloadStoryboardImage(gridIndex - 1)
+    }
+  } else if (step < 0.2) {
+    if (iframes.current?.length ?? 0 > gridIndex + 1) {
+      preloadStoryboardImage(gridIndex + 1)
+    }
+  }
 
   const localFrameIndex = absoluteFrameIndex % STORYBOARD_FRAMES_PER_GRID
   const x = localFrameIndex % STORYBOARD_GRID_ROWS
@@ -515,17 +529,37 @@ function updateFineScrubbing(event: PointerEvent) {
   filmstripTimeEl.textContent = formatTime(time)
 }
 
-function applyStoryboardUrl(gridIndex: number, el = storyboardEl) {
-  const newUrl =
-    'url(' +
+function getStoryboardUrl(gridIndex: number) {
+  return (
     videoEl.src.replace('videos', 'storyboard').slice(0, '.mp4'.length * -1) +
     '_' +
-    String(gridIndex).padStart(3, '0') +
-    ')'
+    String(gridIndex).padStart(3, '0')
+  )
+}
 
-  if (el.style.backgroundImage !== newUrl) {
-    el.style.backgroundImage = newUrl
+const loadedStoryboardImages = new Set<string>()
+const storyboardImageList = new Map<HTMLElement, string>()
+function applyStoryboardUrl(gridIndex: number, el = storyboardEl) {
+  const url = 'url(' + getStoryboardUrl(gridIndex) + ')'
+  loadedStoryboardImages.add(url)
+
+  if (storyboardImageList.get(el) !== url) {
+    el.style.backgroundImage = url
+    storyboardImageList.set(el, url)
   }
+}
+
+function preloadStoryboardImage(gridIndex: number) {
+  const url = getStoryboardUrl(gridIndex)
+
+  if (loadedStoryboardImages.has(url)) {
+    return
+  }
+
+  loadedStoryboardImages.add(url)
+
+  const img = new Image()
+  img.src = url
 }
 
 videoEl.addEventListener('timeupdate', () => {
